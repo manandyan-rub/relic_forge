@@ -16,10 +16,19 @@
 		parallaxOffset: number;
 		ending?: SuccessfulEnding;
 		playbackSpeed?: number;
+		huntScene?: boolean;
 	};
-	let { stage, weather, timeOfDay, parallaxOffset, ending, playbackSpeed = 1 }: Props = $props();
+	let {
+		stage,
+		weather,
+		timeOfDay,
+		parallaxOffset,
+		ending,
+		playbackSpeed = 1,
+		huntScene = false,
+	}: Props = $props();
 	const requestedSrc = $derived(
-		ending
+		ending && !huntScene
 			? getFinishBackground(ending, weather, timeOfDay)
 			: getLandscapeBackground(weather, timeOfDay),
 	);
@@ -54,6 +63,7 @@
 
 <div
 	class="landscape"
+	class:hunt-scene={huntScene}
 	style={`--foreground-drift:${Math.sin((parallaxOffset / 1800) * Math.PI * 2) * 3.5}%;--camera-y:${Math.sin(parallaxOffset / 450) * 1.5}px;`}
 	data-stage={stage}
 	aria-hidden="true"
@@ -73,7 +83,7 @@
 			transition:fade={{ duration: reducedMotion ? 0 : 220 / playbackSpeed }}
 		/>
 	{/key}
-	{#if !ending}<div
+	{#if !ending && !huntScene}<div
 			class="foreground-parallax"
 			style={`background-image:url("${displayedSrc}");`}
 		></div>{/if}
@@ -111,6 +121,11 @@
 		/* Keep the landing anchor visible with any cover crop. */
 		object-position: var(--landing-x) var(--landing-y);
 		transform: none;
+	}
+	/* Mobile hunt uses one cover image, with a gentle camera pan rather than
+	   duplicating the bottom of the landscape or drawing a road over it. */
+	.hunt-scene .landscape-image {
+		transform: translate(var(--landscape-drift), var(--camera-y)) scale(1.045);
 	}
 
 	@media (prefers-reduced-motion: reduce) {

@@ -8,6 +8,14 @@
 	import FlockLineupPicker from './FlockLineupPicker.svelte';
 	import { FLOCK_ORDER, type FlockLineup } from '../flock/types';
 	import type { CreatureId } from '../types';
+	import type { FlightRisk } from '../types';
+	import {
+		HUNTERS,
+		RISK_WEAPONS,
+		hunterImage,
+		weaponImage,
+		type HunterAppearance,
+	} from '../flock/mobilePresentation';
 
 	type Props = {
 		open: boolean;
@@ -17,6 +25,9 @@
 		launchStyle: LaunchStyle;
 		timeLocked?: boolean;
 		lineup: FlockLineup;
+		hunter: HunterAppearance;
+		risk: FlightRisk;
+		onHunterSelect: (hunter: HunterAppearance) => void;
 		onLineupSelect: (slot: number, species: CreatureId) => void;
 		onTimeSelect: (time: TimeOfDay) => void;
 		onLaunchSelect: (launch: LaunchStyle) => void;
@@ -31,6 +42,9 @@
 		launchStyle,
 		timeLocked = false,
 		lineup,
+		hunter,
+		risk,
+		onHunterSelect,
 		onLineupSelect,
 		onTimeSelect,
 		onLaunchSelect,
@@ -39,8 +53,8 @@
 	let dialogElement = $state<HTMLDialogElement>();
 	const defaultSettingsSelected = $derived(
 		timeOfDay === 'day' &&
-			weather === 'clear' &&
 			launchStyle === 'glide' &&
+			hunter === 'forest' &&
 			lineup.every((id, index) => id === FLOCK_ORDER[index]),
 	);
 	const launchCaptions: Record<LaunchStyle, string> = {
@@ -63,6 +77,7 @@
 	function resetDefaults() {
 		if (disabled) return;
 		FLOCK_ORDER.forEach((id, index) => onLineupSelect(index, id));
+		onHunterSelect('forest');
 		onTimeSelect('day');
 
 		onLaunchSelect('glide');
@@ -103,6 +118,30 @@
 		</header>
 		<div class="customize-content">
 			<FlockLineupPicker {lineup} {disabled} onSelect={onLineupSelect} />
+			<fieldset class="option-section" {disabled}>
+				<legend>HUNTER</legend>
+				<div class="hunter-grid">
+					{#each HUNTERS as option (option.id)}<label>
+							<input
+								type="radio"
+								name="hunter-appearance"
+								value={option.id}
+								checked={hunter === option.id}
+								onchange={() => onHunterSelect(option.id)}
+							/>
+							<span class="hunter-option"
+								><img src={hunterImage(option.id)} alt="" /><strong>{option.name}</strong></span
+							>
+						</label>{/each}
+				</div>
+				<p class="weapon-preview">
+					<img src={weaponImage(risk)} alt="" />{RISK_WEAPONS[risk].name} · {risk.toUpperCase()}
+				</p>
+				<p class="option-note">
+					Safe: Glock 17 · Balanced: Trail Rifle · Danger: AK-47. Hunter appearance and bird health
+					are visual only; the round result decides survival.
+				</p>
+			</fieldset>
 			<fieldset
 				class="option-section"
 				disabled={disabled || timeLocked}
@@ -181,7 +220,7 @@
 					class="reset-button"
 					type="button"
 					disabled={disabled || defaultSettingsSelected}
-					onclick={resetDefaults}>{t('changeSettings')}</button
+					onclick={resetDefaults}>{t('resetDefaults')}</button
 				>
 				<button class="done-button" type="button" data-audio-panel onclick={close}
 					>{t('ready')} <span aria-hidden="true">✓</span></button
@@ -192,6 +231,44 @@
 </dialog>
 
 <style>
+	.hunter-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 10px;
+	}
+	.hunter-option {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 5px;
+		padding: 8px;
+		border: 1px solid #566d72;
+		border-radius: 10px;
+		background: #0b1a22;
+		font-size: 0.7rem;
+		text-align: center;
+	}
+	.hunter-option img {
+		width: 64px;
+		height: 80px;
+	}
+	input:checked + .hunter-option {
+		border-color: #efc56e;
+		background: #453419;
+		color: #efc56e;
+	}
+	.weapon-preview {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		color: #efc56e;
+		font-size: 0.75rem;
+	}
+	.weapon-preview img {
+		width: 90px;
+		height: 30px;
+		object-fit: contain;
+	}
 	.customize-dialog {
 		width: min(540px, calc(100vw - 24px));
 		max-width: calc(100vw - 24px);
@@ -428,7 +505,8 @@
 	input:not(:disabled) + .option-content:hover {
 		border-color: #a9d5c3;
 	}
-	input:focus-visible + .option-content {
+	input:focus-visible + .option-content,
+	input:focus-visible + .hunter-option {
 		outline: 2px solid #f0d58c;
 		outline-offset: 3px;
 	}

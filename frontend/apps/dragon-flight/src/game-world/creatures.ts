@@ -4,17 +4,66 @@ import type { CreatureId, CreatureProfile } from './types';
 // Presentational creature profiles for the local prototype.
 
 const decodedFlightFrameCache = new Map<string, Promise<readonly ImageBitmap[]>>();
+const MAX_FRAME_WIDTH = 450;
+const MAX_CONCURRENT_DECODES = 2;
+let activeDecodes = 0;
+const waitingDecodes: (() => void)[] = [];
+
+async function decodeFlightFrame(source: string): Promise<ImageBitmap> {
+	// All four species share this limit, including their initial preload. A small
+	// WebP file can still expand into a large temporary bitmap while decoding.
+	if (activeDecodes >= MAX_CONCURRENT_DECODES)
+		await new Promise<void>((resolve) => waitingDecodes.push(resolve));
+	else activeDecodes++;
+	try {
+		const response = await fetch(source, { cache: 'force-cache' });
+		if (!response.ok) throw new Error(`Unable to load creature frame: ${source}`);
+		const blob = await response.blob();
+		let frame: ImageBitmap;
+		try {
+			// Leaving height unspecified preserves the artwork's natural aspect ratio.
+			frame = await createImageBitmap(blob, {
+				resizeWidth: MAX_FRAME_WIDTH,
+				resizeQuality: 'high',
+			});
+		} catch {
+			// Older bitmap implementations can reject resize options.
+			frame = await createImageBitmap(blob);
+		}
+		if (frame.width <= MAX_FRAME_WIDTH) return frame;
+		// Some browsers accept the options but ignore them. Bound the retained
+		// bitmap in that case, and release the full-size temporary immediately.
+		try {
+			const canvas = document.createElement('canvas');
+			canvas.width = MAX_FRAME_WIDTH;
+			canvas.height = Math.max(1, Math.round((frame.height * MAX_FRAME_WIDTH) / frame.width));
+			const context = canvas.getContext('2d');
+			if (!context) throw new Error('Unable to resize creature frame');
+			context.imageSmoothingEnabled = true;
+			context.imageSmoothingQuality = 'high';
+			context.drawImage(frame, 0, 0, canvas.width, canvas.height);
+			return await createImageBitmap(canvas);
+		} finally {
+			frame.close();
+		}
+	} finally {
+		const next = waitingDecodes.shift();
+		if (next) next();
+		else activeDecodes--;
+	}
+}
 
 async function fetchAndDecodeFlightFrames(
 	frames: readonly string[],
 ): Promise<readonly ImageBitmap[]> {
-	return Promise.all(
-		frames.map(async (source) => {
-			const response = await fetch(source, { cache: 'force-cache' });
-			if (!response.ok) throw new Error(`Unable to load creature frame: ${source}`);
-			return createImageBitmap(await response.blob());
-		}),
-	);
+	const decoded: ImageBitmap[] = [];
+	try {
+		for (const source of frames) decoded.push(await decodeFlightFrame(source));
+		return decoded;
+	} catch (error) {
+		for (const frame of decoded) frame.close();
+		throw error;
+	}
 }
 
 export function loadDecodedFlightFrames(

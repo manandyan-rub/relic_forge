@@ -30,6 +30,73 @@ test('public replay uses only GET, needs no session, and reproduces bonus cost a
 	assert.equal(result.round.finalWin, book.payout / 1e6);
 	assert.equal(result.currency, 'EUR');
 });
+test('public replay defaults malformed optional currency and amount without changing its outcome', async () => {
+	const book = fixtures.find((x) => x.mode === 'safe' && x.payout > 0);
+	const base = '?replay=true&game=game-id&version=1&mode=safe&event=7&rgs_url=rgs.example.test';
+	let calls = 0;
+	const fetcher = async (url, init) => {
+		calls++;
+		assert.equal(url, 'https://rgs.example.test/bet/replay/game-id/1/safe/7');
+		assert.equal(init.body, undefined);
+		return response({ state: book.state, costMultiplier: 1, payoutMultiplier: book.payout / 1e6 });
+	};
+	for (const amount of ['', '0', '-1', '1.5', '1e6', 'NaN', 'Infinity', '9007199254740992']) {
+		const result = await loadStakeReplay(`${base}&currency=invalid&amount=${amount}`, fetcher);
+		assert.equal(result.currency, 'USD');
+		assert.equal(result.round.bet, 1);
+		assert.equal(result.round.finalWin, book.payout / 1e6);
+		assert.equal(result.round.finalMultiplier, book.payout / 1e6);
+	}
+	const missing = await loadStakeReplay(base, fetcher);
+	assert.equal(missing.currency, 'USD');
+	assert.equal(missing.round.bet, 1);
+	const valid = await loadStakeReplay(`${base}&currency=eur&amount=125000`, fetcher);
+	assert.equal(valid.currency, 'EUR');
+	assert.equal(valid.round.bet, 0.125);
+	assert.equal(valid.round.finalWin, (book.payout / 1e6) * 0.125);
+	assert.equal(calls, 10);
+});
+test('public replay still rejects invalid required routing fields and server payouts', async () => {
+	const base = '?replay=true&game=game-id&version=1&mode=safe&event=7&rgs_url=rgs.example.test';
+	let calls = 0;
+	const fetcher = async () => {
+		calls++;
+		return response({ state: [], costMultiplier: 99, payoutMultiplier: 1 });
+	};
+	for (const replacement of [
+		['game=game-id', 'game='],
+		['version=1', 'version=../1'],
+		['mode=safe', 'mode=unknown'],
+		['event=7', 'event=../7'],
+		['rgs_url=rgs.example.test', 'rgs_url=http://rgs.example.test'],
+	]) {
+		await assert.rejects(loadStakeReplay(base.replace(...replacement), fetcher));
+	}
+	assert.equal(calls, 0);
+	await assert.rejects(
+		loadStakeReplay(`${base}&currency=invalid&amount=bad`, fetcher),
+		/Invalid replay payout/,
+	);
+	assert.equal(calls, 1);
+});
+test('authentication exposes the fullscreen restriction and clears it when reconnect permits it', async () => {
+	let fullscreenDisabled = true;
+	const client = new StakeSession(
+		() => {},
+		async () =>
+			response({
+				balance,
+				config: { ...config, jurisdiction: { disabledFullscreen: fullscreenDisabled } },
+			}),
+	);
+	assert.equal(client.state.fullscreenDisabled, false);
+	await client.connect(search, false);
+	assert.equal(client.state.ready, true);
+	assert.equal(client.state.fullscreenDisabled, true);
+	fullscreenDisabled = false;
+	await client.connect(search, false);
+	assert.equal(client.state.fullscreenDisabled, false);
+});
 test('buy-feature restriction is enforced before any play request', async () => {
 	let count = 0;
 	const client = new StakeSession(

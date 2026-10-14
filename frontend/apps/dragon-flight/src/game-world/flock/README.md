@@ -90,7 +90,7 @@ Do not run a new production math export or upload until authoritative flock
 books and their probability tables have been reviewed together. The frontend ZIP
 alone cannot enable Champion Flight against older production books.
 
-Normal flock presentation now replaces base gate artwork with hunter miss shots, and scheduled eliminations with targeted bullets and feather bursts. No runtime bullet collision decides survival. Champion gates and dragon encounters, legacy books and feature-buy routes retain their original presentation.
+Normal flock presentation follows authored terrain, wind and encounter types. Only explicit hunter eliminations use targeted bullets; their HP and feather effects never decide survival. Champion gates, legacy books and feature-buy routes retain their authored outcomes. Dragon encounters use the existing in-world sprite and eliminations use shared-clock feather effects instead of video playback.
 
 ## Optional Fluppy Flight
 

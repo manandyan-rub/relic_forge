@@ -86,7 +86,7 @@
 	<div class="purchase">
 		<div><span>{t('entryCost')}</span><strong>{formatLocalAmount(cost)}</strong></div>
 		<button type="button" {disabled} onclick={() => onBuy(selected)}
-			>{t('buyAgain')} · {formatLocalAmount(cost)}</button
+			>{t('buyFlight')} · {formatLocalAmount(cost)}</button
 		>
 	</div>
 	<p class="demo-note">

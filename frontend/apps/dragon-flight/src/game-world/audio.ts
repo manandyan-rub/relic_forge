@@ -1,5 +1,5 @@
 import { base } from '$app/paths';
-import type { WeatherCondition } from './types';
+import type { FlightRisk, WeatherCondition } from './types';
 
 export const SOUND_NAMES = [
 	'archaeopteryx-fight',
@@ -66,7 +66,7 @@ export function resultSound(payout: number, cost: number): SoundName {
 export class FlightAudio {
 	private context?: AudioContext;
 	private buffers = new Map<SoundName, Promise<AudioBuffer>>();
-	private voices = new Map<string, { source: AudioBufferSourceNode; gain: GainNode }>();
+	private voices = new Map<string, { source: AudioScheduledSourceNode; gain: GainNode }>();
 	private requests = new Map<string, number>();
 	private sequence = 0;
 	private muted = false;
@@ -229,6 +229,31 @@ export class FlightAudio {
 			if (channel === 'ambience' && this.requests.get(channel) === request)
 				this.ambiencePlaying = undefined;
 		}
+	}
+	// Mobile game's short synthesized shot, registered in the existing effect
+	// lifecycle so mute, tab hiding, cancellation and unmount stop it too.
+	shot(risk: FlightRisk, playbackSpeed = 1) {
+		const context = this.context;
+		if (!context || context.state !== 'running' || this.muted || this.hidden || this.disposed)
+			return;
+		this.stop('hunter-shot');
+		const source = context.createOscillator(),
+			gain = context.createGain();
+		const duration = 0.1 / Math.max(1, playbackSpeed);
+		source.type = risk === 'danger' ? 'sawtooth' : 'triangle';
+		source.frequency.setValueAtTime(risk === 'safe' ? 220 : 180, context.currentTime);
+		source.frequency.exponentialRampToValueAtTime(45, context.currentTime + duration * 0.9);
+		gain.gain.setValueAtTime(0.07, context.currentTime);
+		gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
+		source.connect(gain).connect(context.destination);
+		this.voices.set('hunter-shot', { source, gain });
+		source.onended = () => {
+			source.disconnect();
+			gain.disconnect();
+			if (this.voices.get('hunter-shot')?.source === source) this.voices.delete('hunter-shot');
+		};
+		source.start();
+		source.stop(context.currentTime + duration + 0.01);
 	}
 	stop(channel: string) {
 		this.requests.delete(channel);

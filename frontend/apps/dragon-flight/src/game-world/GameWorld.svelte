@@ -161,6 +161,7 @@
 	import { generateMockRound } from './mockRound';
 	import { createTubeFlight, tubeFlightOffer } from './tubeFlight';
 	import { createBonusRound, drawBonusTicket } from './bonusFlights';
+	import { menuFlightOffer } from './wagerPresentation';
 	import BonusFlightsDialog from './components/BonusFlightsDialog.svelte';
 	import FlightHistory from './components/FlightHistory.svelte';
 	import { CREATURES, getCreature, loadDecodedFlightFrames } from './creatures';
@@ -176,18 +177,26 @@
 	import { getWeather } from './weather';
 	import { getTimeOfDay } from './timeOfDay';
 	import { getFinishBackground, LANDING_ANCHOR } from './backgrounds';
+	import { decodeScene } from './sceneCache';
 	import { clampBet, isBetInputValid, roundBet, sanitizeBetInput } from './utils/bet';
-	import { formatLocalAmount as formatAmount } from './utils/format';
+	import { createWinAmountFormatter, formatLocalAmount as formatAmount } from './utils/format';
 	import Atmosphere from './components/Atmosphere.svelte';
 	import Landscape from './components/Landscape.svelte';
 	import DangerEncounter from './components/DangerEncounter.svelte';
-	import DragonVictory from './components/DragonVictory.svelte';
 	import BirdBurst from './components/BirdBurst.svelte';
 	import Flock from './components/Flock.svelte';
 	import { copyLineup, setLineupBird, attachLineup } from './flock/lineup';
 	import type { FlockLineup } from './flock/types';
 	import Hunter from './components/Hunter.svelte';
 	import type { HunterShot } from './flock/hunter';
+	import {
+		attachHunter,
+		planHunterAttack,
+		hunterAttackFrame,
+		applyHunterHealth,
+		type HunterAppearance,
+		type HunterAttack,
+	} from './flock/mobilePresentation';
 	import FlockStatus from './components/FlockStatus.svelte';
 	import ChampionFlight from './components/ChampionFlight.svelte';
 	import {
@@ -242,6 +251,9 @@
 	let focusBirdId = $state<CreatureId>('archaeopteryx');
 	let championActive = $state(false);
 	let hunterShot = $state<HunterShot>();
+	let selectedHunter = $state<HunterAppearance>('forest');
+	let hunterAttack: HunterAttack | undefined;
+	let hunterShotIndex = -1;
 	let championAnnouncement = $state(false);
 	let flockAnnouncement = $state('');
 	const player = $derived(
@@ -270,6 +282,7 @@
 	let helpOpen = $state(false);
 	let settingsMenuOpen = $state(false);
 	async function toggleFullscreen() {
+		if (wallet.fullscreenDisabled) return;
 		try {
 			if (document.fullscreenElement) await document.exitFullscreen();
 			else await document.documentElement.requestFullscreen();
@@ -287,9 +300,13 @@
 	let stageAnnouncement = $state<StageAnnouncement>();
 	let status = $state<PrototypeStatus>('ready');
 	let currentRound = $state<FlightRound>();
+	const menuOffer = $derived(menuFlightOffer(currentRound, status, selectedBet));
 	let currentMultiplier = $state(1);
 	let finalMultiplier = $state(0);
 	let finalWin = $state(0);
+	const winAmountFormatter = $derived(
+		createWinAmountFormatter(currentRound?.finalWin ?? 0, wallet.currency),
+	);
 	let winCelebrationOpen = $state(false);
 	// Retain round telemetry without displaying it in the permanent HUD.
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -299,13 +316,8 @@
 	let activePickup = $state<ActivePickupPresentation>();
 	let activeCurrent = $state<ActiveCurrentPresentation>();
 	let activeEncounter = $state<ActiveEncounterPresentation>();
-	let dragonVictory = $state<'playing' | 'outcome' | 'result'>();
-	let encounterWinner = $state<'dragon' | 'eagle' | 'archaeopteryx' | 'azure-swift' | 'woodpecker'>(
-		'dragon',
-	);
 	let birdBurst = $state<'playing' | 'finished'>();
-	let birdBurstResolver: (() => void) | undefined;
-	let dragonVictoryResolver: ((played: boolean) => void) | undefined;
+	let birdBurstProgress = $state(0);
 	let activeEnding = $state<Exclude<FlightEnding, 'crash'>>();
 	let landingProgress = $state(0);
 	let eventWarning = $state<WarningPresentation>();
@@ -343,6 +355,15 @@
 	const betInputIsValid = $derived(
 		wallet.live ? isValidStakeBet(stakeAmount, wallet) : isBetInputValid(betInput),
 	);
+	const displayedBet = $derived(displayedBetAmount());
+	const displayedBetInput = $derived(
+		displayedBet === selectedBet ? betInput : formatBetInput(displayedBet),
+	);
+	function displayedBetAmount() {
+		return currentRound && status !== 'ready' && status !== 'complete'
+			? currentRound.bet
+			: selectedBet;
+	}
 	const activeCreature = $derived(
 		getCreature(activeBirds.find((b) => b.id === focusBirdId)?.species ?? focusBirdId),
 	);
@@ -354,6 +375,7 @@
 		),
 	);
 	// Route atmosphere is cosmetic; it never changes the stored result or payout.
+	const activeHunter = $derived(currentRound ? (currentRound.hunter ?? 'forest') : selectedHunter);
 	const activeWeather = $derived(currentRound?.weather ?? selectedWeather);
 	const sceneWeather = $derived(championActive ? 'storm' : activeWeather);
 	const activeTimeOfDay = $derived(
@@ -406,8 +428,16 @@
 			? (wallet.levels.at(-1) ?? Math.floor(wallet.maxBet / wallet.stepBet) * wallet.stepBet) / 1e6
 			: MAX_PROTOTYPE_BET,
 	);
+	const betValidationMessage = $derived(
+		`${t('betRange')}: ${formatLocalAmount(minimumBet)}–${formatLocalAmount(maximumBet)}. ` +
+			(wallet.live && wallet.levels.length
+				? t('betLevelsOnly')
+				: wallet.live
+					? `${t('betStep')}: ${formatLocalAmount(wallet.stepBet / 1e6)}.`
+					: t('betDecimalsOnly')),
+	);
 	const tubeOffer = $derived(
-		currentRound
+		currentRound && !wallet.live
 			? tubeFlightOffer(currentRound, minimumBet, maximumBet, wallet.live, isReplay || replayMode)
 			: undefined,
 	);
@@ -425,19 +455,6 @@
 			return;
 		}
 		selectedBet = clampBet(selectedBet + direction * PROTOTYPE_BET_STEP);
-		betInput = formatBetInput(selectedBet);
-	}
-	function setQuickBet(target: number) {
-		if (controlsLocked || !Number.isFinite(target)) return;
-		if (wallet.live) {
-			const ceiling = Math.min(wallet.maxBet, wallet.amount);
-			const desired = Math.min(Math.round(target * 1e6), ceiling);
-			const units = wallet.levels.length
-				? wallet.levels.filter((level) => level <= desired).at(-1)
-				: Math.floor(desired / wallet.stepBet) * wallet.stepBet;
-			if (!isValidStakeBet(units, wallet)) return;
-			selectedBet = units / 1e6;
-		} else selectedBet = clampBet(target);
 		betInput = formatBetInput(selectedBet);
 	}
 
@@ -492,12 +509,8 @@
 	function cancelPresentation() {
 		flightAudio.stopEffects();
 		presentationToken += 1;
-		birdBurstResolver?.();
-		birdBurstResolver = undefined;
 		birdBurst = undefined;
-		dragonVictoryResolver?.(false);
-		dragonVictoryResolver = undefined;
-		dragonVictory = undefined;
+		birdBurstProgress = 0;
 		const resolveGate = gateResolver;
 		gateResolver = undefined;
 		resolveGate?.();
@@ -733,40 +746,6 @@
 		event: Extract<FlightEvent, { type: 'encounter' }>,
 		token: number,
 	) {
-		if (event.encounterType === 'ridgeDragon') {
-			eventWarning = undefined;
-			eventCallout = '';
-			comboFeedback = undefined;
-			stageAnnouncement = undefined;
-			flightAudio.stopEffects();
-			status = 'collided';
-			setLeadBody({ ...player, velocity: { x: 0, y: 0 } });
-			encounterWinner = event.result === 'pass' ? activeCreature.id : 'dragon';
-			dragonVictory = 'playing';
-			const completed = new Promise<boolean>((resolve) => (dragonVictoryResolver = resolve));
-			let guard: ReturnType<typeof setTimeout>;
-			const fallback = new Promise<boolean>((resolve) => {
-				guard = setTimeout(() => resolve(false), 10500);
-			});
-			const played = await Promise.race([completed, fallback]);
-			clearTimeout(guard!);
-			if (token !== presentationToken) return;
-			dragonVictoryResolver = undefined;
-			if (played) {
-				dragonVictory = 'outcome';
-				currentMultiplier = event.multiplier;
-				await delay(1400, false);
-				if (token !== presentationToken) return;
-				dragonVictory = 'result';
-				if (event.result === 'pass') {
-					void flightAudio.play('predator-pass', 0.3, 'predator');
-					dragonVictory = undefined;
-					status = 'flying';
-				}
-				return;
-			}
-			dragonVictory = undefined;
-		}
 		const encounterLabel = ENCOUNTER_LABELS[event.encounterType];
 		void flightAudio.play('encounter-warning', 0.3);
 		const warningShown = await showWarning(encounterLabel, 'danger', token, 430);
@@ -798,7 +777,7 @@
 			eventCallout = 'PREDATOR STRIKE';
 			void flightAudio.play('crash', 0.4);
 			status = 'collided';
-			setLeadBody({ ...player, velocity: { x: 0, y: 0 } });
+			activeBirds = eliminateBird(activeBirds, focusBirdId, 'predator');
 			emitParticles(38, true);
 		}
 		await delay(event.result === 'crash' ? 420 : 300);
@@ -975,6 +954,14 @@
 		hunterShot = undefined;
 		status = 'flying';
 		const kind = presentationKind(event);
+		hunterShotIndex = -1;
+		hunterAttack =
+			event.type === 'elimination' && event.reason === 'hunter'
+				? planHunterAttack(
+						activeBirds.find((b) => b.id === event.bird)?.species ?? event.bird,
+						currentRound?.risk ?? selectedRisk,
+					)
+				: undefined;
 		flightTargetY = bounds.floorY * (kind === 'wind' ? 0.44 : kind === 'predator' ? 0.56 : 0.5);
 		eventLabel = kind.toUpperCase();
 		eventCallout =
@@ -1037,9 +1024,21 @@
 				...flockGateBase,
 				x: bounds.width + flockGateBase.width - p * (bounds.width + flockGateBase.width * 2),
 			};
-		if (kind === 'hunter' && event.type === 'elimination' && p < 0.52) {
-			const target = activeBirds.find((b) => b.id === event.bird)?.body.position;
-			if (target) hunterShot = { target, hit: true, progress: p < 0.16 ? -1 : (p - 0.16) / 0.36 };
+		if (kind === 'hunter' && event.type === 'elimination' && hunterAttack) {
+			const targetBird = activeBirds.find((b) => b.id === event.bird && b.alive);
+			if (targetBird) {
+				const frame = hunterAttackFrame(hunterAttack, p);
+				hunterShot = {
+					target: targetBird.body.position,
+					hit: true,
+					progress: frame.bulletProgress,
+				};
+				activeBirds = applyHunterHealth(activeBirds, event.bird, frame.health, frame.flash);
+				if (frame.index >= 0 && frame.index !== hunterShotIndex) {
+					hunterShotIndex = frame.index;
+					flightAudio.shot(currentRound?.risk ?? selectedRisk, flightPlaybackSpeed);
+				}
+			}
 		}
 		if (kind === 'predator' && (event.type === 'elimination' || championActive)) {
 			const id = event.type === 'elimination' ? event.bird : 'archaeopteryx';
@@ -1168,19 +1167,17 @@
 						comboCount = 0;
 						eventCallout = 'CRASH';
 						flightAudio.stop('wings');
-						if (
-							activeCreature.id === 'woodpecker' ||
-							activeCreature.id === 'eagle' ||
-							activeCreature.id === 'azure-swift' ||
-							activeCreature.id === 'archaeopteryx'
-						) {
-							const completed = new Promise<void>((resolve) => (birdBurstResolver = resolve));
-							birdBurst = 'playing';
-							await completed;
-							if (token !== presentationToken) return;
-							birdBurstResolver = undefined;
-							birdBurst = 'finished';
-						} else void flightAudio.play('crash', 0.4);
+						activeBirds = eliminateBird(
+							activeBirds,
+							focusBirdId,
+							event.hazard === 'windPass' ? 'wind' : 'terrain',
+						);
+						birdBurst = 'playing';
+						birdBurstProgress = 0;
+						void flightAudio.play('crash', 0.4);
+						const completed = await timeline.animate(650, token, (p) => (birdBurstProgress = p));
+						if (!completed || token !== presentationToken) return;
+						birdBurst = 'finished';
 					}
 					if (event.result === 'crash') await delay(420);
 					break;
@@ -1209,17 +1206,13 @@
 		}
 	}
 
-	function startFlight(bonusId?: BonusFlightId, tube = false) {
+	function startFlight(bonusId?: BonusFlightId) {
 		if (controlsLocked || !betInputIsValid) {
 			void flightAudio.play('unavailable', 0.25, 'ui');
 			return;
 		}
 		flightError = '';
 		if (wallet.live) {
-			if (tube) {
-				flightError = 'Fluppy Flight requires a separate server mode.';
-				return;
-			}
 			void startStakeFlight(bonusId);
 			return;
 		}
@@ -1232,18 +1225,7 @@
 			const round: FlightRound = bonusId
 				? createBonusRound(bonusId, selectedBet, roundSequence, drawBonusTicket(), options)
 				: {
-						...(tube
-							? createTubeFlight(
-									{
-										risk: selectedRisk,
-										launchStyle: selectedLaunchStyle,
-										weather: selectedWeather,
-										timeOfDay: selectedRisk === 'safe' ? 'day' : selectedTimeOfDay,
-									},
-									selectedBet,
-									roundSequence,
-								)
-							: generateMockRound(selectedBet, selectedRisk, roundSequence, options)),
+						...generateMockRound(selectedBet, selectedRisk, roundSequence, options),
 						weather: selectedWeather,
 						timeOfDay: selectedRisk === 'safe' ? 'day' : selectedTimeOfDay,
 					};
@@ -1256,24 +1238,39 @@
 		}
 	}
 
+	function startTubeFlight(previous: FlightRound, amount: number) {
+		if (controlsLocked || wallet.live || wallet.busy || wallet.active || !betInputIsValid) return;
+		flightError = '';
+		roundSequence += 1;
+		try {
+			const round = createTubeFlight(previous, amount, roundSequence);
+			bonusOpen = false;
+			beginFlight(round);
+		} catch {
+			bonusOpen = false;
+			flightError = 'Could not start this demo flight. Please try again.';
+			void flightAudio.play('unavailable', 0.3, 'ui');
+		}
+	}
+
 	function beginFlight(round: FlightRound, replay = false) {
 		if (status !== 'ready') return;
-		round = attachLineup(round, selectedLineup, replay);
+		round = attachHunter(attachLineup(round, selectedLineup, replay), selectedHunter, replay);
 		hunterShot = undefined;
 		settingsMenuOpen = false;
 		flightAudio.stopEffects();
 		birdBurst = undefined;
-		dragonVictory = undefined;
+		birdBurstProgress = 0;
 		if (round.bonusFlight) void flightAudio.play('bonus-start', 0.3);
 		isReplay = replay;
-		if (round.ending !== 'crash') {
-			const finishImage = new Image();
-			finishImage.src = getFinishBackground(
-				round.ending,
-				round.weather ?? selectedWeather,
-				round.timeOfDay ?? selectedTimeOfDay,
-			);
-			void finishImage.decode().catch(() => undefined);
+		if (round.ending !== 'crash' && !round.flock) {
+			void decodeScene(
+				getFinishBackground(
+					round.ending,
+					round.weather ?? selectedWeather,
+					round.timeOfDay ?? selectedTimeOfDay,
+				),
+			).catch(() => undefined);
 		}
 		const token = ++presentationToken;
 		championActive = false;
@@ -1338,7 +1335,7 @@
 
 	function flyFromMenu() {
 		if (wallet.busy || !wallet.ready || wallet.active || !betInputIsValid || replayMode) return;
-		if (status === 'complete' && currentRound?.bonusFlight) {
+		if (menuOffer.bonusFlight) {
 			flyAgain();
 			return;
 		}
@@ -1359,13 +1356,11 @@
 		if (!offer || offer.reason) return;
 		const previous = currentRound;
 		resetPresentation();
-		selectedBet = offer.amount;
-		betInput = formatBetInput(offer.amount);
 		selectedRisk = previous.risk;
 		selectedLaunchStyle = previous.launchStyle;
 
 		selectedTimeOfDay = previous.timeOfDay ?? selectedTimeOfDay;
-		startFlight(undefined, true);
+		startTubeFlight(previous, offer.amount);
 	}
 
 	function replayFlight(round: FlightRound) {
@@ -1475,13 +1470,18 @@
 				event.altKey ||
 				event.metaKey ||
 				event.shiftKey ||
-				controlsLocked ||
+				(controlsLocked && status !== 'complete') ||
+				replayMode ||
+				wallet.busy ||
+				!wallet.ready ||
+				wallet.active ||
 				!betInputIsValid ||
 				wallet.spacebarDisabled ||
 				customizeOpen ||
 				helpOpen ||
 				bonusOpen ||
-				historyOpen
+				historyOpen ||
+				settingsMenuOpen
 			)
 				return;
 			const focused = document.activeElement;
@@ -1495,7 +1495,7 @@
 					(target instanceof HTMLElement && target.isContentEditable));
 			if (interactive(focused) || event.composedPath().some(interactive)) return;
 			event.preventDefault();
-			startFlight();
+			flyFromMenu();
 		};
 		const click = (event: MouseEvent) => {
 			const target = event.target instanceof Element ? event.target : undefined;
@@ -1563,17 +1563,15 @@
 				1800;
 			updateParticles(flightDelta);
 
-			if (!dragonVictory || currentRound?.flock) {
-				activeBirds = stepFlock(
-					activeBirds,
-					flightDelta,
-					bounds,
-					flightTargetY,
-					moving,
-					status === 'ending' ? landingProgress : 0,
-					currentRound?.launchStyle,
-				);
-			}
+			activeBirds = stepFlock(
+				activeBirds,
+				flightDelta,
+				bounds,
+				flightTargetY,
+				moving,
+				status === 'ending' ? landingProgress : 0,
+				currentRound?.launchStyle,
+			);
 			if (status === 'flying') {
 				if (!currentRound?.flock)
 					updateActiveGate(flightDelta * (activeGate ? GATE_APPROACH_RATE : 1));
@@ -1619,12 +1617,12 @@
 			bind:this={worldElement}
 			class:has-impact={impactActive}
 			class:has-ending={Boolean(activeEnding)}
-			class:dragon-defeat={Boolean(dragonVictory)}
 			class:bird-burst={Boolean(birdBurst)}
 			class={`world ${currentStage.className} weather-${sceneWeather}`}
 			style={`--floor-scroll:${-(parallaxOffset % (43 / Math.sin(Math.PI / 12)))}px;--flight-offset:${parallaxOffset}px;`}
 		>
 			<Landscape
+				huntScene={!currentRound || Boolean(currentRound.flock)}
 				ending={activeEnding}
 				stage={currentStageId}
 				weather={sceneWeather}
@@ -1692,7 +1690,11 @@
 							/><circle cx="12" cy="12" r="3" /></svg
 						></button
 					>
-					<button type="button" aria-label="Toggle fullscreen" onclick={toggleFullscreen}
+					<button
+						type="button"
+						aria-label="Toggle fullscreen"
+						disabled={wallet.fullscreenDisabled}
+						onclick={toggleFullscreen}
 						><svg viewBox="0 0 24 24" aria-hidden="true"
 							><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5" /></svg
 						></button
@@ -1865,7 +1867,12 @@
 				</div>
 			{/if}
 			{#if !championActive && (!currentRound || currentRound.flock) && (status === 'ready' || status === 'flying')}
-				<Hunter {bounds} shot={hunterShot} />
+				<Hunter
+					{bounds}
+					shot={hunterShot}
+					risk={currentRound?.risk ?? selectedRisk}
+					appearance={activeHunter}
+				/>
 			{/if}
 
 			{#if activePickup}
@@ -1894,7 +1901,7 @@
 			{/if}
 			{#if birdBurst === 'playing'}
 				<BirdBurst
-					playbackSpeed={flightPlaybackSpeed}
+					progress={birdBurstProgress}
 					bird={activeCreature.id === 'archaeopteryx'
 						? 'archaeopteryx'
 						: activeCreature.id === 'azure-swift'
@@ -1904,40 +1911,6 @@
 								: 'woodpecker'}
 					x={player.position.x}
 					y={player.position.y}
-					muted={soundMuted}
-					onfallback={() => {
-						void flightAudio.play(
-							activeCreature.id === 'azure-swift'
-								? 'azure-swift-burst'
-								: activeCreature.id === 'eagle' || activeCreature.id === 'archaeopteryx'
-									? 'eagle-burst'
-									: 'woodpecker-burst',
-							0.8,
-							'bird-burst',
-						);
-					}}
-					onfinish={() => {
-						flightAudio.stop('bird-burst');
-						birdBurstResolver?.();
-					}}
-				/>
-			{/if}
-			{#if dragonVictory}
-				<DragonVictory
-					phase={dragonVictory}
-					winner={encounterWinner}
-					bird={activeCreature.id}
-					onstart={() => {
-						const sound =
-							encounterWinner === 'dragon' && activeCreature.id !== 'eagle'
-								? (`dragon-${activeCreature.id}-fight` as const)
-								: (`${encounterWinner}-fight` as const);
-						void flightAudio.play(sound, 0.55, 'fight-video');
-					}}
-					onfinish={(played) => {
-						flightAudio.stop('fight-video');
-						dragonVictoryResolver?.(played);
-					}}
 				/>
 			{/if}
 
@@ -1968,14 +1941,17 @@
 				></div>{/if}
 
 			<Flock
-				playbackSpeed={flightPlaybackSpeed}
+				showHealth={!currentRound || Boolean(currentRound.flock)}
 				birds={activeBirds}
 				frames={loadedCreatureFrames}
-				hidden={Boolean(dragonVictory) || birdBurst === 'playing' || birdBurst === 'finished'}
+				hidden={birdBurst === 'playing' || birdBurst === 'finished'}
 			/>
 			<ChampionFlight open={championAnnouncement} />
 			<p class="sr-only" role="status" aria-live="polite">{flockAnnouncement}</p>
-			<div class="floor" style={`height:${bounds.height - bounds.floorY}px;`}></div>
+			{#if currentRound && !currentRound.flock}<div
+					class="floor"
+					style={`height:${bounds.height - bounds.floorY}px;`}
+				></div>{/if}
 
 			{#if status === 'complete' && currentRound}
 				<FlightResult
@@ -2004,7 +1980,6 @@
 					onSettings={resetPresentation}
 				/>
 			{/if}
-			{#if status === 'ready'}<div class="start-hint">CHOOSE YOUR BET AND RISK. THEN FLY.</div>{/if}
 		</div>
 
 		<section
@@ -2051,11 +2026,12 @@
 						<input
 							aria-label="Bet amount"
 							aria-invalid={!betInputIsValid}
+							aria-describedby={!betInputIsValid ? 'bet-validation' : undefined}
 							class="bet-input"
 							disabled={controlsLocked}
 							inputmode="decimal"
 							type="text"
-							value={betInput}
+							value={displayedBetInput}
 							oninput={(event) => updateBetInput(event.currentTarget as HTMLInputElement)}
 							onblur={normalizeBetInput}
 						/>
@@ -2100,21 +2076,6 @@
 					{/each}
 				</div>
 			</div>
-			<div class="quick-bets" role="group" aria-label="Bet presets">
-				{#each [1, 5, 10, 50, 100] as amount (amount)}
-					<button
-						type="button"
-						class:active={selectedBet === amount}
-						aria-label={`Set bet to ${formatLocalAmount(amount)}`}
-						aria-pressed={selectedBet === amount}
-						disabled={controlsLocked ||
-							amount < minimumBet ||
-							amount > maximumBet ||
-							(wallet.live && !isValidStakeBet(Math.round(amount * 1e6), wallet))}
-						onclick={() => setQuickBet(amount)}>{amount}</button
-					>
-				{/each}
-			</div>
 
 			<button
 				type="button"
@@ -2150,6 +2111,7 @@
 				<button
 					class="fly-button"
 					class:launch-ready={wallet.ready && (!controlsLocked || status === 'complete')}
+					class:repeat-buy={Boolean(menuOffer.bonusFlight)}
 					aria-live="polite"
 					disabled={(controlsLocked && status !== 'complete') ||
 						wallet.busy ||
@@ -2163,11 +2125,20 @@
 							? t('reconnect').toUpperCase()
 							: controlsLocked && status !== 'complete'
 								? t('flightActive')
-								: t('fly').toUpperCase()}<small>{formatLocalAmount(selectedBet)}</small></button
+								: t(menuOffer.label).toUpperCase()}<small>{formatLocalAmount(menuOffer.cost)}</small
+					></button
 				>
 			{/if}
-			<div class="bet-panel-footer">
-				<span class="risk-note"><i aria-hidden="true"></i>{selectedPathNote}</span><span
+			<div class="bet-panel-footer" class:has-validation={!betInputIsValid}>
+				<span
+					class="risk-note"
+					class:bet-error={!betInputIsValid}
+					id="bet-validation"
+					role={!betInputIsValid ? 'alert' : undefined}
+					><i aria-hidden="true"></i>{!betInputIsValid
+						? betValidationMessage
+						: selectedPathNote}</span
+				><span
 					>{replayMode
 						? 'Replay — no bet is placed'
 						: wallet.live
@@ -2187,7 +2158,8 @@
 	<WinCelebration
 		tier={resultWinTier}
 		multiplier={`x${finalMultiplier.toFixed(2)}`}
-		win={formatLocalAmount(finalWin)}
+		win={winAmountFormatter.format(finalWin)}
+		targetWin={winAmountFormatter.format(currentRound.finalWin)}
 	/>
 {/if}
 
@@ -2220,6 +2192,11 @@
 	timeOfDay={selectedRisk === 'safe' ? 'day' : selectedTimeOfDay}
 	launchStyle={selectedLaunchStyle}
 	lineup={selectedLineup}
+	hunter={selectedHunter}
+	risk={selectedRisk}
+	onHunterSelect={(hunter) => {
+		if (!controlsLocked && !wallet.busy && !wallet.active) selectedHunter = hunter;
+	}}
 	onLineupSelect={chooseLineupBird}
 	timeLocked={selectedRisk === 'safe'}
 	onTimeSelect={(time) => {
@@ -2269,10 +2246,6 @@
 		align-items: flex-start;
 		flex-direction: column;
 		gap: 6px;
-	}
-	.dragon-defeat .floor,
-	.dragon-defeat .flight-particle {
-		visibility: hidden;
 	}
 	.prototype-shell,
 	.prototype-shell * {
@@ -2361,22 +2334,6 @@
 		background: repeating-linear-gradient(165deg, #293e36 0 22px, #31473e 23px 43px);
 		transform: translate3d(var(--floor-scroll), 0, 0);
 	}
-	.start-hint {
-		position: absolute;
-		z-index: 9;
-		left: 50%;
-		bottom: 12%;
-		padding: 8px 12px;
-		border: 1px solid rgba(68, 229, 154, 0.5);
-		background: rgba(3, 20, 14, 0.8);
-		color: #72f0b6;
-		font:
-			700 0.62rem/1 system-ui,
-			sans-serif;
-		letter-spacing: 0.12em;
-		transform: translateX(-50%);
-		white-space: nowrap;
-	}
 	.has-ending .floor {
 		opacity: 0;
 	}
@@ -2444,12 +2401,6 @@
 		.event-callout {
 			top: 27%;
 			width: max-content;
-		}
-		.start-hint {
-			max-width: calc(100% - 24px);
-			font-size: 0.52rem;
-			text-align: center;
-			white-space: normal;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
@@ -2538,11 +2489,11 @@
 	@keyframes event-callout-in {
 		from {
 			opacity: 0;
-			transform: translate(-50%, -8px) scale(0.94);
+			transform: translateY(-4px);
 		}
 		to {
 			opacity: 1;
-			transform: translate(-50%, 0) scale(1);
+			transform: translateY(0);
 		}
 	}
 	.stage-transition {
@@ -3242,7 +3193,7 @@
 	}
 	.control-dock {
 		grid-template-columns: minmax(140px, 1fr) minmax(230px, 1.5fr) minmax(190px, 1.1fr) 150px 170px;
-		grid-template-areas: 'risk bet quick action' 'details details details details';
+		grid-template-areas: 'risk bet customize action' 'details details details details';
 		align-items: end;
 		gap: 14px 18px;
 		padding: 16px;
@@ -3311,27 +3262,6 @@
 	.control-dock .bet-input {
 		font-size: 1.15rem;
 	}
-	.quick-bets {
-		grid-area: quick;
-		display: grid;
-		grid-template-columns: repeat(6, minmax(0, 1fr));
-		gap: 4px;
-	}
-	.quick-bets button {
-		grid-column: span 2;
-		min-height: 23px;
-		padding: 3px 4px;
-		border-radius: 4px;
-		background: #1b2733;
-		color: #41f0a5;
-		font-size: 0.65rem;
-		letter-spacing: 0;
-		white-space: nowrap;
-	}
-	.quick-bets button:hover:not(:disabled) {
-		background: #2c4058;
-	}
-	.quick-bets button:focus-visible,
 	.control-dock button:focus-visible {
 		outline: 2px solid #41f0a5;
 		outline-offset: 2px;
@@ -3369,6 +3299,12 @@
 		flex-shrink: 0;
 		border-radius: 50%;
 		background: var(--risk-color);
+	}
+	.bet-error {
+		color: #ffaaa0;
+	}
+	.bet-error i {
+		background: #ffaaa0;
 	}
 
 	/* Gold framed controls matching the supplied reference. */
@@ -3496,7 +3432,7 @@
 				145px,
 				0.75fr
 			);
-		grid-template-areas: 'risk bet customize action' 'risk quick customize action' 'bonus details details details';
+		grid-template-areas: 'risk bet customize action' 'bonus details details details';
 		align-items: stretch;
 		gap: 12px 20px;
 		padding: 20px;
@@ -3596,28 +3532,6 @@
 	.bet-heading {
 		flex-wrap: wrap;
 	}
-	.quick-bets {
-		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		gap: 7px;
-		align-items: end;
-	}
-	.quick-bets button {
-		grid-column: auto;
-		min-height: 44px;
-		padding: 8px 2px;
-		border: 1px solid #535b5f;
-		border-radius: 10px;
-		background: linear-gradient(#272d31, #14191d);
-		color: #f1f1eb;
-		font-size: 0.9rem;
-	}
-	.quick-bets button.active {
-		border: 2px solid #ffd471;
-		color: #fff4d2;
-		background: linear-gradient(#775323, #312213);
-		box-shadow: 0 0 12px #f7b52d44;
-	}
 	.control-dock .fly-button {
 		grid-area: action;
 		display: flex;
@@ -3642,6 +3556,9 @@
 	.control-dock .fly-button.launch-ready {
 		font-size: clamp(2rem, 3.7vw, 3.4rem);
 		font-weight: 900;
+	}
+	.control-dock .fly-button.launch-ready.repeat-buy {
+		font-size: clamp(1rem, 2vw, 1.8rem);
 	}
 	.control-dock .fly-button small {
 		display: block;
@@ -3722,7 +3639,7 @@
 	@media (max-width: 1100px) {
 		.control-dock {
 			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 112px minmax(145px, 0.8fr);
-			grid-template-areas: 'risk risk risk risk' 'bet quick customize action' 'bonus details details details';
+			grid-template-areas: 'risk risk risk risk' 'bet bet customize action' 'bonus details details details';
 			gap: 14px;
 			padding: 16px;
 		}
@@ -3762,7 +3679,7 @@
 		}
 		.control-dock {
 			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-			grid-template-areas: 'risk risk' 'bet action' 'quick action' 'customize customize' 'bonus bonus' 'details details';
+			grid-template-areas: 'risk risk' 'bet action' 'customize customize' 'bonus bonus' 'details details';
 			padding: 14px;
 			gap: 14px;
 			border-radius: 18px;
@@ -3804,13 +3721,6 @@
 		.control-dock .bet-input {
 			font-size: 1rem;
 		}
-		.quick-bets {
-			gap: 4px;
-		}
-		.quick-bets button {
-			font-size: 0.7rem;
-			min-height: 38px;
-		}
 		.bet-panel-footer {
 			flex-direction: column;
 			gap: 4px;
@@ -3821,7 +3731,8 @@
 		top: 12px;
 		left: 12px;
 		right: 12px;
-		z-index: 60;
+		/* Keep settings/history usable above the inline result card (z-index 100). */
+		z-index: 120;
 		width: auto;
 		margin: 0;
 		padding: 0;
@@ -3914,24 +3825,12 @@
 		.world .replay-label {
 			top: 64px;
 		}
-		.world .start-hint {
-			bottom: 66px;
-			max-width: 80%;
-			padding: 6px 8px;
-			font-size: 0.55rem;
-			white-space: normal;
-			text-align: center;
-			line-height: 1.4;
-		}
 	}
 	.bonus-gift,
 	.bonus-arrow {
 		display: none;
 	}
 	@media (max-width: 700px) {
-		.world .start-hint {
-			display: none;
-		}
 		.control-dock {
 			gap: 10px;
 			padding: 12px;
@@ -3980,11 +3879,6 @@
 			font-size: 0.85rem;
 			padding: 5px 12px;
 		}
-		.quick-bets button {
-			min-height: 30px;
-			font-size: 0.6rem;
-			border-radius: 7px;
-		}
 		.control-dock .dock-customize {
 			min-height: 40px;
 			padding: 6px 10px;
@@ -4018,10 +3912,10 @@
 			margin-left: auto;
 			width: 14px;
 		}
-		.bet-panel-footer .risk-note {
+		.bet-panel-footer .risk-note:not(.bet-error) {
 			display: none;
 		}
-		.bet-panel-footer:has(> span:last-child:empty) {
+		.bet-panel-footer:not(.has-validation):has(> span:last-child:empty) {
 			display: none;
 		}
 		.bet-panel-footer {
@@ -4055,10 +3949,21 @@
 	}
 	.world .event-callout {
 		border-radius: 16px;
+		top: 154px;
+		left: auto;
+		right: 16px;
+		max-width: min(340px, calc(100% - 160px));
+		transform: none;
 	}
 	@media (max-width: 700px) {
 		.world .event-callout {
 			border-radius: 12px;
+			top: 100px;
+			right: 12px;
+			max-width: calc(100% - 132px);
+			padding: 5px 8px;
+			font-size: 0.55rem;
+			letter-spacing: 0.06em;
 		}
 	}
 
@@ -4183,12 +4088,15 @@
 	/* Four-bird gameplay has no creature-selection column. */
 	.control-dock {
 		grid-template-columns: minmax(240px, 1.2fr) minmax(220px, 1fr) 112px minmax(160px, 0.8fr);
-		grid-template-areas: 'risk bet customize action' 'risk quick customize action' 'bonus details details details';
+		grid-template-areas: 'risk bet customize action' 'bonus details details details';
+	}
+	.bet-control {
+		align-self: center;
 	}
 	@media (min-width: 701px) and (max-width: 1000px) {
 		.control-dock {
 			grid-template-columns: minmax(240px, 1fr) 112px minmax(160px, 1fr);
-			grid-template-areas: 'risk risk risk' 'bet customize action' 'quick customize action' 'bonus details details';
+			grid-template-areas: 'risk risk risk' 'bet customize action' 'bonus details details';
 		}
 	}
 	.sr-only {
@@ -4202,7 +4110,7 @@
 	@media (max-width: 700px) {
 		.control-dock {
 			grid-template-columns: 1fr 1fr;
-			grid-template-areas: 'risk risk' 'bet action' 'quick action' 'customize customize' 'bonus bonus' 'details details';
+			grid-template-areas: 'risk risk' 'bet action' 'customize customize' 'bonus bonus' 'details details';
 		}
 	}
 </style>

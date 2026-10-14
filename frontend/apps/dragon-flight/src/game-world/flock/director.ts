@@ -1,4 +1,6 @@
 import type { FlightEvent, FlightRound } from '../types';
+import { HUNTER_IMPACT, planHunterAttack } from './mobilePresentation';
+import { FLOCK_ORDER } from './types';
 export type PresentationKind =
 	| 'launch'
 	| 'terrain'
@@ -30,6 +32,11 @@ export function presentationKind(event: FlightEvent): PresentationKind {
 	}
 }
 export function buildFlockTimeline(round: FlightRound) {
+	const eliminationDuration = (event: FlightEvent) =>
+		event.type === 'elimination' && event.reason === 'hunter'
+			? planHunterAttack(round.lineup?.[FLOCK_ORDER.indexOf(event.bird)] ?? event.bird, round.risk)
+					.duration
+			: 720;
 	const championIndex = round.events.findIndex((e) => e.type === 'championFlight');
 	const baseEvents = round.events.filter(
 		(e, i) =>
@@ -41,7 +48,13 @@ export function buildFlockTimeline(round: FlightRound) {
 	const reserved = baseEvents.reduce(
 		(n, e) =>
 			n +
-			(e.type === 'launch' ? 800 : e.type === 'elimination' ? 720 : e.type === 'ending' ? 850 : 0),
+			(e.type === 'launch'
+				? 800
+				: e.type === 'elimination'
+					? eliminationDuration(e)
+					: e.type === 'ending'
+						? 850
+						: 0),
 		0,
 	);
 	const minorDuration = Math.max(400, Math.min(800, (9500 - reserved) / Math.max(1, minorCount)));
@@ -53,7 +66,7 @@ export function buildFlockTimeline(round: FlightRound) {
 		return e.type === 'launch'
 			? 800
 			: e.type === 'elimination'
-				? 720
+				? eliminationDuration(e)
 				: e.type === 'ending'
 					? 850
 					: minorDuration;
@@ -129,7 +142,9 @@ export async function runFlockTimeline(round: FlightRound, hooks: Hooks) {
 				p >=
 					(step.event.type === 'elimination' ||
 					(step.event.type === 'encounter' && step.event.result === 'crash')
-						? 0.52
+						? step.event.type === 'elimination' && step.event.reason === 'hunter'
+							? HUNTER_IMPACT
+							: 0.52
 						: step.event.type === 'championFlight'
 							? 0.22
 							: 1)

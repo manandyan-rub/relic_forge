@@ -40,10 +40,12 @@ export async function loadStakeReplay(search: string, fetcher: typeof fetch = fe
 	const mode = choice(parts[2], Object.keys(STAKE_MODES) as StakeMode[]);
 	if (params.get('social') === 'true')
 		throw new Error('Social replay is not supported by this review build');
-	const currency = params.get('currency') ?? 'USD';
-	if (!/^[A-Z]{3}$/.test(currency)) throw new Error('Invalid replay currency');
-	const amount = integer(Number(params.get('amount') ?? 1000000));
-	if (!amount) throw new Error('Invalid replay amount');
+	// Optional display parameters must not prevent an otherwise valid public replay.
+	const requestedCurrency = params.get('currency')?.trim().toUpperCase() ?? '';
+	const currency = /^[A-Z]{3}$/.test(requestedCurrency) ? requestedCurrency : 'USD';
+	const requestedAmount = params.get('amount') ?? '';
+	const replayAmount = /^\d+$/.test(requestedAmount) ? Number(requestedAmount) : NaN;
+	const amount = Number.isSafeInteger(replayAmount) && replayAmount > 0 ? replayAmount : 1000000;
 	const response = await fetcher(`${url.origin}/bet/replay/${parts.join('/')}`, {
 		signal: AbortSignal.timeout(15000),
 	});
@@ -291,6 +293,7 @@ export type WalletState = {
 	stepBet: number;
 	defaultBet: number;
 	spacebarDisabled: boolean;
+	fullscreenDisabled: boolean;
 	turboDisabled: boolean;
 	buyDisabled: boolean;
 	error: string;
@@ -308,6 +311,7 @@ export const initialWallet = (): WalletState => ({
 	stepBet: 1,
 	defaultBet: 0,
 	spacebarDisabled: false,
+	fullscreenDisabled: false,
 	turboDisabled: false,
 	buyDisabled: false,
 	error: '',
@@ -408,6 +412,7 @@ export class StakeSession {
 				stepBet,
 				defaultBet,
 				spacebarDisabled: jurisdiction.disabledSpacebar === true,
+				fullscreenDisabled: jurisdiction.disabledFullscreen === true,
 				levels: [...new Set(levels)].sort((a, b) => a - b),
 				turboDisabled: jurisdiction.disabledTurbo === true,
 				buyDisabled: jurisdiction.disabledBuyFeature === true,

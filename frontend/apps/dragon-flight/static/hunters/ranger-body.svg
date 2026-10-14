@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 200"><defs><linearGradient id="hunter-coat" x2="1" y2="1"><stop stop-color="#698fa4"/><stop offset="1" stop-color="#203b4a"/></linearGradient></defs><g transform="translate(0 25)">
+			<path
+				d="m94 104-12 54-9 11h31l6-57 10 47-1 10h30l-14-18-9-53"
+				fill="#17232a"
+				stroke="#83908a"
+				stroke-width="1.5"
+			/>
+			<path
+				d="m95 36-18 35 5 43 49 1-5-55-11-21"
+				fill="url(#hunter-coat)"
+				stroke="#b09b6e"
+				stroke-width="1.5"
+			/>
+			<path d="m88 83 43 7-2 12-45-7" fill="#8a6540" />
+			<rect x="104" y="89" width="11" height="10" rx="2" fill="#c7a45d" />
+			<path d="m98 21-6 11 9 9 12-3 3-18" fill="#c39b75" />
+			<path
+				d="m83 19 41 4-9-9-5-10-18 2-4 10-17 3"
+				fill="#294756"
+				stroke="#b9a273"
+				stroke-width="1.5"
+			/>
+			<path d="m102 26 8 2-7 2" fill="#1b2426" />
+			</g></svg>

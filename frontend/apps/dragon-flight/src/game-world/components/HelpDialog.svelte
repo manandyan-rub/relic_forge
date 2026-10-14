@@ -5,7 +5,8 @@
 	import { TIME_OF_DAY_OPTIONS } from '../timeOfDay';
 	import { LAUNCH_OPTIONS } from '../config';
 	import payouts from '../payouts.json';
-	import { language, rulesSummary, t } from '../i18n';
+	import { language, t } from '../i18n';
+	import { operationalRules, flockSummary } from '../operatingRules';
 	import {
 		PICKUP_LABELS,
 		CURRENT_LABELS,
@@ -78,11 +79,11 @@
 			</button>
 		</header>
 
-		<div class="help-content" class:translated={language !== 'en'}>
+		<div class="help-content">
 			{#if language !== 'en'}
 				<section class="localized-guide">
 					<h3>{t('guide').toUpperCase()}</h3>
-					<p>{rulesSummary[language]}</p>
+					<p>{flockSummary[language]}</p>
 					{#if live}
 						<div class="localized-payouts">
 							{#each payouts as mode (mode.id)}
@@ -96,24 +97,31 @@
 					{/if}
 				</section>
 			{/if}
+			<section aria-labelledby="help-operating-rules">
+				<h3 id="help-operating-rules">{t('gameConditions')}</h3>
+				<p>{operationalRules[language]}</p>
+			</section>
 			<section aria-labelledby="help-play">
 				<h3 id="help-play">YOUR FLIGHT</h3>
 				<ol>
 					<li>Set your bet.</li>
 					<li>Choose Safe, Balanced or Danger.</li>
-					<li>Adjust weather, time and launch in Customize.</li>
+					<li>Choose your lineup, hunter, time and launch in Customize.</li>
 					<li>
-						Press <strong>FLY</strong> to launch your four-bird flock. Space also starts a flight when
-						permitted and no menu or control has focus.
+						Press <strong>FLY</strong> to launch the flight. The local demo uses four birds; connected
+						play follows the server book, which may use one bird. Space also starts a flight when permitted
+						and no menu or control has focus.
 					</li>
 					<li>See your result, then choose Fly Again or Change Settings.</li>
 				</ol>
 				<p>
-					Watch the survivor count as the flock dodges hunter shots and rides currents. A bullet hit
-					bursts the scheduled bird into feathers. If all four reach the destination, Archaeopteryx
-					continues alone in Champion Flight within the same paid round. No extra bet is charged. A
-					Champion crash keeps the normal flight payout. Existing feature-buy routes and older
-					server books can present a single bird.
+					Watch the survivor count and health bars as the flock dodges hunter shots and rides
+					currents. Health is visual feedback for the authored incident, not a separate survival
+					chance. Safe uses a Glock 17, Balanced a Trail Rifle, and Danger an AK-47. A scheduled
+					hunter elimination is shown as a short volley ending in a feather burst. If all four reach
+					the destination, Archaeopteryx continues alone in Champion Flight within the same paid
+					round. No extra bet is charged. A Champion crash keeps the normal flight payout. Existing
+					feature-buy routes and older server books can present a single bird.
 				</p>
 			</section>
 
@@ -127,9 +135,11 @@
 					{/each}
 				</div>
 				<p class="note">
-					The flock always launches Woodpecker, Azure Swift, Eagle and Archaeopteryx in that order.
-					Movement, weather, time and launch style only change presentation. Outcomes are determined
-					before the animation; connected play uses the server result.
+					Customize lets you choose four birds, including duplicates, and a Forest Hunter or
+					Mountain Ranger. Woodpecker starts with 50 visual HP, Azure Swift 60, Eagle 85 and
+					Archaeopteryx 100. Lineup, health, hunter appearance, movement, weather, time and launch
+					style only change presentation. Outcomes are determined before the animation; connected
+					play uses the server result.
 				</p>
 			</section>
 
@@ -184,8 +194,9 @@
 					{/each}
 					<p>
 						Pickups and currents show potential rewards, not separate payments. Only the final
-						payout is paid. A crash pays zero. Interruptions do not create a new outcome; reconnect
-						to recover the server round.
+						payout is paid. Losing the base flight pays zero. If the server book includes Champion
+						Flight, its failure retains the banked base win. Interruptions do not create a new
+						outcome; reconnect to recover the server round.
 					</p>
 				</section>
 			{/if}
@@ -198,8 +209,10 @@
 			<section aria-labelledby="help-customize">
 				<h3 id="help-customize">CUSTOMIZE</h3>
 				<p>
-					Choose time of day, weather and launch animation in any order. Choices apply immediately
-					and do not change odds or payouts. Reset defaults restores Day, Clear and Glide.
+					Risk sets the weather: Safe uses Clear and Day, Balanced uses Rain, and Danger uses Storm.
+					Customize changes the birds, hunter appearance, time (outside Safe) and launch animation.
+					These choices do not change odds or payouts. Reset defaults restores the original lineup,
+					Forest Hunter, Day and Glide while keeping the selected risk.
 				</p>
 				<div class="guide-grid three-grid">
 					{#each TIME_OF_DAY_OPTIONS as option (option.id)}
@@ -278,7 +291,7 @@
 				</p>
 				<p class="note">
 					{live
-						? 'Theoretical RTP is 96% in each mode. Normal maximum payouts: Safe 20x, Balanced 100x, Danger 1000x base bet. Rewards shown during flight are potential only and are lost on a crash. There is no cashout or timing advantage.'
+						? 'Published single-bird books have theoretical RTP of 96% in each mode. Normal maximum payouts: Safe 20x, Balanced 100x, Danger 1000x base bet. Rewards shown during flight are potential until the final result. A Champion failure, when supplied by the server, retains the base win. There is no cashout or timing advantage.'
 						: 'Demo risk settings are not certified RTP.'}
 				</p>
 			</section>
@@ -398,9 +411,6 @@
 	}
 	.help-content section {
 		padding: 0 0 20px;
-	}
-	.help-content.translated > section:not(.localized-guide) {
-		display: none;
 	}
 	.localized-payouts {
 		display: grid;

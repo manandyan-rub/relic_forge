@@ -2,7 +2,15 @@ import type { CreatureId, FlightRound, LaunchStyle, PlayerBody, WorldBounds } fr
 import { getCreature } from '../creatures';
 import { clamp, createPlayer } from '../physics';
 import { copyLineup } from './lineup';
+import { BIRD_HEALTH, speciesDrift } from './mobilePresentation';
 import { FLOCK_ORDER, type FlockLineup, type ActiveBird, type EliminationReason } from './types';
+
+function flockTop(bounds: WorldBounds) {
+	return Math.min(
+		bounds.floorY - 80,
+		Math.max(bounds.width <= 700 ? 170 : 214, bounds.height * 0.38),
+	);
+}
 
 export function createFlock(
 	bounds: WorldBounds,
@@ -11,6 +19,9 @@ export function createFlock(
 ): ActiveBird[] {
 	const ids: readonly CreatureId[] = round && !round.flock ? [round.creature] : FLOCK_ORDER;
 	const species = copyLineup(round?.flock ? round.lineup : lineup);
+	const previewTop = flockTop(bounds);
+	const previewBottom = Math.max(previewTop + 12, bounds.floorY - 28);
+	const previewSpacing = Math.min(54, (previewBottom - previewTop) / Math.max(1, ids.length - 1));
 	return ids.map((id, index) => ({
 		id,
 		species: round && !round.flock ? id : species[index],
@@ -20,7 +31,7 @@ export function createFlock(
 				x: round
 					? -60 - index * 15
 					: bounds.width * (0.17 + (index % 2) * 0.12 + Math.floor(index / 2) * 0.04),
-				y: bounds.floorY * (0.34 + index * 0.14),
+				y: round ? bounds.floorY * (0.34 + index * 0.14) : previewTop + index * previewSpacing,
 			},
 		},
 		alive: true,
@@ -31,6 +42,9 @@ export function createFlock(
 		age: round ? 0 : 1,
 		frame: 1,
 		rotation: 0,
+		health: BIRD_HEALTH[round && !round.flock ? id : species[index]],
+		maxHealth: BIRD_HEALTH[round && !round.flock ? id : species[index]],
+		hitFlash: 0,
 		targetY: bounds.floorY * 0.5,
 		exiting: false,
 	}));
@@ -52,6 +66,8 @@ export function eliminateBird(
 			? {
 					...bird,
 					alive: false,
+					health: 0,
+					hitFlash: 0,
 					elimination: { reason, age: 0 },
 					body: { ...bird.body, velocity: { x: -85, y: reason === 'wind' ? -160 : 120 } },
 				}
@@ -65,6 +81,8 @@ export function startChampion(birds: ActiveBird[]): ActiveBird[] {
 					...bird,
 					species: bird.id === 'archaeopteryx' ? 'archaeopteryx' : bird.species,
 					frame: bird.id === 'archaeopteryx' ? 1 : bird.frame,
+					health: bird.id === 'archaeopteryx' ? BIRD_HEALTH.archaeopteryx : bird.health,
+					maxHealth: bird.id === 'archaeopteryx' ? BIRD_HEALTH.archaeopteryx : bird.maxHealth,
 					exiting: bird.id !== 'archaeopteryx',
 					finished: false,
 				}
@@ -121,7 +139,7 @@ export function stepFlock(
 		if (bird.alive && !bird.exiting) count++;
 		if (bird.exiting) champion = true;
 	}
-	const top = Math.min(165, Math.max(145, bounds.height * 0.38));
+	const top = flockTop(bounds);
 	const bottom = Math.max(top + 12, bounds.floorY - 28);
 	const spacing = Math.min(54, (bottom - top) / Math.max(1, count - 1));
 	const center = clamp(
@@ -131,6 +149,7 @@ export function stepFlock(
 	);
 	let slot = 0;
 	return birds.map((bird, index) => {
+		if (bird.hitFlash > 0) bird = { ...bird, hitFlash: Math.max(0, bird.hitFlash - dt) };
 		const age = bird.age + dt;
 		const profile = getCreature(bird.species ?? bird.id);
 		const animation = profile.flightAnimation;
@@ -176,7 +195,7 @@ export function stepFlock(
 		const goalY = clamp(
 			center +
 				(ownSlot - (count - 1) / 2) * spacing +
-				Math.sin(age * (1.5 + index * 0.13) + index * 1.7) * 4,
+				speciesDrift(bird.species ?? bird.id, age, index * 1.7),
 			top,
 			bottom,
 		);

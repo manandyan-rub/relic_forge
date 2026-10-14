@@ -9,12 +9,156 @@ const load = (name, options) =>
 const { generateMockRound, RISK_PROFILES } = await load('mockRound');
 const { validateFlock } = await load('flock/outcome');
 const { payoutForMultiplier } = await load('utils/number');
-const { formatLocalAmount } = await load('utils/format');
-const { isBetInputValid, sanitizeBetInput } = await load('utils/bet');
-const { CREATURES } = await load('creatures');
+const { createWinAmountFormatter, formatLocalAmount } = await load('utils/format');
+const { isBetInputValid, sanitizeBetInput, permittedBetPresets } = await load('utils/bet');
+const { CREATURES, loadDecodedFlightFrames } = await load('creatures');
 const { createPlayer, steerPlayer } = await load('physics');
 const { DEV_SCENARIOS, createDevFlightRound } = await load('devScenarios');
 const appearance = { creature: 'archaeopteryx', launchStyle: 'glide' };
+
+function bitmapEnvironment({ rejectResize = false, ignoreResize = false, failedSource = '' } = {}) {
+	const previous = {
+		fetch: globalThis.fetch,
+		bitmap: globalThis.createImageBitmap,
+		document: globalThis.document,
+	};
+	const fetched = [],
+		options = [],
+		bitmaps = [],
+		drawn = [];
+	let active = 0,
+		maximumActive = 0;
+	globalThis.fetch = async (source, init) => {
+		assert.equal(init.cache, 'force-cache');
+		fetched.push(source);
+		return { ok: source !== failedSource, blob: async () => ({ width: 4093, height: 2894 }) };
+	};
+	globalThis.createImageBitmap = async (source, resize) => {
+		options.push(resize);
+		active++;
+		maximumActive = Math.max(maximumActive, active);
+		try {
+			await new Promise((resolve) => setImmediate(resolve));
+			if (resize && rejectResize) throw new Error('Resize options unsupported');
+			const width = resize && !ignoreResize ? resize.resizeWidth : source.width;
+			const bitmap = {
+				width,
+				height: Math.round((source.height * width) / source.width),
+				closed: false,
+				close() {
+					this.closed = true;
+				},
+			};
+			bitmaps.push(bitmap);
+			return bitmap;
+		} finally {
+			active--;
+		}
+	};
+	globalThis.document = {
+		createElement(tag) {
+			assert.equal(tag, 'canvas');
+			return {
+				width: 0,
+				height: 0,
+				getContext: () => ({ drawImage: (...args) => drawn.push(args) }),
+			};
+		},
+	};
+	return {
+		fetched,
+		options,
+		bitmaps,
+		drawn,
+		get maximumActive() {
+			return maximumActive;
+		},
+		restore() {
+			globalThis.fetch = previous.fetch;
+			if (previous.bitmap) globalThis.createImageBitmap = previous.bitmap;
+			else delete globalThis.createImageBitmap;
+			if (previous.document) globalThis.document = previous.document;
+			else delete globalThis.document;
+		},
+	};
+}
+
+test('flight bitmaps are shared, bounded and decoded at most two at a time across all four species', async () => {
+	const env = bitmapEnvironment();
+	try {
+		const requests = CREATURES.map((creature) =>
+			loadDecodedFlightFrames(creature.flightAnimation.frames),
+		);
+		assert.equal(loadDecodedFlightFrames(CREATURES[0].flightAnimation.frames), requests[0]);
+		const frames = await Promise.all(requests);
+		assert.equal(env.fetched.length, 33);
+		assert(env.maximumActive <= 2);
+		assert.equal(env.maximumActive, 2);
+		for (const resized of frames.flat()) {
+			assert.equal(resized.width, 450);
+			assert.equal(resized.height, 318);
+			assert.equal(resized.closed, false);
+		}
+		for (const resize of env.options)
+			assert.deepEqual(resize, { resizeWidth: 450, resizeQuality: 'high' });
+		assert.equal(await loadDecodedFlightFrames(CREATURES[0].flightAnimation.frames), frames[0]);
+		assert.equal(env.fetched.length, 33, 'a new round must reuse loaded bitmaps');
+	} finally {
+		env.restore();
+	}
+});
+
+test('browser resize fallbacks preserve aspect and release full-size temporary bitmaps', async () => {
+	for (const mode of ['rejectResize', 'ignoreResize']) {
+		const env = bitmapEnvironment({ [mode]: true });
+		try {
+			const [frame] = await loadDecodedFlightFrames([`./fallback-${mode}.webp`]);
+			assert.equal(frame.width, 450);
+			assert.equal(frame.height, 318);
+			assert.equal(env.drawn.length, 1);
+			assert.equal(env.bitmaps[0].closed, true);
+			assert.equal(frame.closed, false);
+		} finally {
+			env.restore();
+		}
+	}
+});
+
+test('failed frame loads close partial results, release decoder slots and permit a fresh retry', async () => {
+	const frames = ['./cleanup-first.webp', './cleanup-failed.webp'];
+	let env = bitmapEnvironment({ failedSource: frames[1] });
+	try {
+		await assert.rejects(loadDecodedFlightFrames(frames), /Unable to load creature frame/);
+		assert.equal(env.bitmaps.length, 1);
+		assert.equal(env.bitmaps[0].closed, true);
+	} finally {
+		env.restore();
+	}
+	env = bitmapEnvironment();
+	try {
+		assert.equal((await loadDecodedFlightFrames(frames)).length, 2);
+		assert.equal(env.fetched.length, 2);
+	} finally {
+		env.restore();
+	}
+});
+
+test('authored WebP frames fit below a 20MiB retained RGBA budget at sprite resolution', () => {
+	let originalBytes = 0,
+		retainedBytes = 0;
+	for (const creature of CREATURES)
+		for (const source of creature.flightAnimation.frames) {
+			const bytes = fs.readFileSync(new URL('../static' + source.slice(1), import.meta.url));
+			assert.equal(bytes.toString('ascii', 12, 16), 'VP8L');
+			const dimensions = bytes.readUInt32LE(21);
+			const width = 1 + (dimensions & 0x3fff),
+				height = 1 + ((dimensions >>> 14) & 0x3fff);
+			originalBytes += width * height * 4;
+			retainedBytes += 450 * Math.round((height * 450) / width) * 4;
+		}
+	assert(originalBytes > 800 * 1024 ** 2);
+	assert(retainedBytes < 20 * 1024 ** 2);
+});
 
 test('normal profiles target 96% and retain increasing volatility across risks', () => {
 	const profiles = ['safe', 'balanced', 'danger'].map((risk) =>
@@ -53,6 +197,30 @@ test('settlement and display preserve fractional wallet units', () => {
 			assert.equal(payoutForMultiplier(cents / 100, hundredths / 100), expected);
 		}
 });
+test('win counters keep their final decimal precision without rounding away wallet units', () => {
+	const fractional = createWinAmountFormatter(0.145);
+	assert.equal(fractional.format(0), '$0.000');
+	assert.equal(fractional.format(0.02), '$0.020');
+	assert.equal(fractional.format(0.1), '$0.100');
+	assert.equal(fractional.format(0.145), '$0.145');
+	for (const [amount, currency, decimals] of [
+		[12, 'USD', 2],
+		[6.25, 'USD', 2],
+		[0.145, 'USD', 3],
+		[123.0125, 'EUR', 4],
+		[0.000016, 'USD', 6],
+		[123, 'JPY', 0],
+		[1.125, 'JPY', 3],
+	]) {
+		const formatter = createWinAmountFormatter(amount, currency);
+		for (let frame = 0; frame <= 120; frame++) {
+			const parts = formatter.formatToParts((amount * frame) / 120);
+			assert.equal(parts.find((part) => part.type === 'fraction')?.value.length ?? 0, decimals);
+		}
+		assert.equal(formatter.format(amount), formatLocalAmount(amount, currency));
+	}
+});
+
 test('normal rounds reject invalid bets, risk and round IDs', () => {
 	for (const bet of [NaN, Infinity, -1, 0, 0.09, 1.001, 100.01])
 		assert.throws(() => generateMockRound(bet, 'safe', 1, appearance));
@@ -63,6 +231,57 @@ test('normal rounds reject invalid bets, risk and round IDs', () => {
 	for (const input of ['', '-1', '1e2', 'Infinity', '0.09', '1.001'])
 		assert.equal(isBetInputValid(input), false);
 	assert.equal(sanitizeBetInput('1,25', '1.00'), '1.25');
+});
+
+test('wallet presets use permitted levels and retain familiar amounts when valid', () => {
+	const limits = { minBet: 100000, maxBet: 100000000, stepBet: 100000, levels: [] };
+	assert.deepEqual(permittedBetPresets(limits), [1, 5, 10, 50, 100]);
+	assert.deepEqual(
+		permittedBetPresets({ ...limits, levels: [600000, 200000, 400000, 200000] }),
+		[0.2, 0.4, 0.6],
+	);
+	assert.deepEqual(permittedBetPresets({ ...limits, levels: [NaN, 1, 123456, 200000] }), [0.2]);
+	assert.deepEqual(permittedBetPresets({ ...limits, levels: [123456] }), []);
+	assert.deepEqual(
+		permittedBetPresets({ ...limits, levels: [1000000, 5000000, 10000000, 50000000, 100000000] }),
+		[1, 5, 10, 50, 100],
+	);
+	const many = {
+		...limits,
+		levels: Array.from({ length: 11 }, (_, index) => (index + 1) * 200000),
+	};
+	const presets = permittedBetPresets(many);
+	assert.equal(presets.length, 5);
+	assert.deepEqual(presets, [0.2, 0.6, 1.2, 1.6, 2.2]);
+	for (const amount of presets) assert(many.levels.includes(Math.round(amount * 1e6)));
+});
+
+test('wallet presets align wager steps and sample huge ranges without enumerating units', () => {
+	assert.deepEqual(
+		permittedBetPresets({ minBet: 110000, maxBet: 610000, stepBet: 200000, levels: [] }),
+		[0.2, 0.4, 0.6],
+	);
+	assert.deepEqual(
+		permittedBetPresets({ minBet: 210000, maxBet: 390000, stepBet: 200000, levels: [] }),
+		[],
+	);
+	assert.deepEqual(
+		permittedBetPresets({ minBet: 199999, maxBet: 200001, stepBet: 200000, levels: [] }),
+		[0.2],
+	);
+	const huge = { minBet: 1, maxBet: 8000000000000000, stepBet: 3, levels: [] };
+	const presets = permittedBetPresets(huge);
+	assert.equal(presets.length, 5);
+	assert.equal(presets[0], 0.000003);
+	assert.equal(presets.at(-1), 7999999999.999998);
+	assert.equal(new Set(presets).size, 5);
+	assert(presets.every((amount, index) => !index || amount > presets[index - 1]));
+	for (const bad of [
+		{ ...huge, stepBet: 0 },
+		{ ...huge, maxBet: Infinity },
+		{ ...huge, minBet: -1 },
+	])
+		assert.deepEqual(permittedBetPresets(bad), []);
 });
 function auditRound(round) {
 	assert(Number.isFinite(round.finalWin));
@@ -186,16 +405,7 @@ test('all live artwork URLs resolve at root and under a deployment subpath', asy
 					paths.add(art.src);
 					paths.add(art.silhouette);
 				}
-		for (const name of [
-			'day',
-			'dawn',
-			'sunset',
-			'night',
-			'eclipse',
-			'glide',
-			'boost',
-			'dive',
-		])
+		for (const name of ['day', 'dawn', 'sunset', 'night', 'eclipse', 'glide', 'boost', 'dive'])
 			paths.add(`${base || '.'}/customize/${name}.webp`);
 		for (const name of ['storm-run', 'summit-expedition'])
 			paths.add(`${base || '.'}/bonuses/${name}.webp`);

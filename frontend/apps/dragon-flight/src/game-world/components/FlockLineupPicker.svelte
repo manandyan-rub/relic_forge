@@ -2,6 +2,7 @@
 	import { CREATURES, getCreature } from '../creatures';
 	import { FLOCK_ORDER, type FlockLineup } from '../flock/types';
 	import type { CreatureId } from '../types';
+	import { BIRD_HEALTH } from '../flock/mobilePresentation';
 	let {
 		lineup,
 		disabled = false,
@@ -34,6 +35,7 @@
 			<label class="slot" style={`--bird-color:${colors[species]};`}>
 				<span>Bird {slot + 1}</span>
 				<div class="portrait"><img src={bird.assets?.portrait} alt="" draggable="false" /></div>
+				<small>{BIRD_HEALTH[species]} HP</small>
 				<select
 					aria-label={`Bird ${slot + 1} species`}
 					value={species}

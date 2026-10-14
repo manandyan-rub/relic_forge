@@ -1,4 +1,5 @@
 import type { FlockLineup } from '../flock/types';
+import type { HunterAppearance } from '../flock/mobilePresentation';
 import type { CreatureId } from './creature';
 import type { EliminationReason, FlockOutcome } from '../flock/types';
 
@@ -80,6 +81,8 @@ export type FlightRound = {
 	flock?: FlockOutcome;
 	// Cosmetic lineup snapshot for history and replay; never used to generate outcomes.
 	lineup?: FlockLineup;
+	// Cosmetic hunter snapshot, retained by local history/replay.
+	hunter?: HunterAppearance;
 	bonusFlight?: BonusFlightId;
 	entryCost?: number;
 	id: number;

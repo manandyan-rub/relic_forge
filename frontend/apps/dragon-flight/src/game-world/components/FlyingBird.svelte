@@ -29,6 +29,7 @@
 <div
 	class="flying-bird"
 	class:eliminated={!bird.alive}
+	class:hit={bird.hitFlash > 0}
 	style={`transform:translate3d(${bird.body.position.x}px,${bird.body.position.y}px,0) translate(-50%,-50%) rotate(${bird.rotation}deg) scale(${profile.sizeScale});opacity:${bird.elimination ? Math.max(0, 1 - bird.elimination.age / 0.9) : 1};`}
 	aria-hidden="true"
 >
@@ -55,6 +56,9 @@
 	}
 	.eliminated {
 		filter: brightness(1.3) saturate(0.7);
+	}
+	.hit {
+		filter: brightness(1.8) drop-shadow(0 0 5px #fff0b8);
 	}
 	@media (max-width: 700px) {
 		.flying-bird {

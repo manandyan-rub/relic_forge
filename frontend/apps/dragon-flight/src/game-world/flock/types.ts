@@ -37,6 +37,9 @@ export type ActiveBird = {
 	age: number;
 	frame: number;
 	rotation: number;
+	health: number;
+	maxHealth: number;
+	hitFlash: number;
 	targetY: number;
 	elimination?: { reason: EliminationReason; age: number };
 	exiting: boolean;

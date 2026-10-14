@@ -6,9 +6,10 @@
 		tier: WinTier;
 		multiplier: string;
 		win: string;
+		targetWin: string;
 	};
 
-	let { tier, multiplier, win }: Props = $props();
+	let { tier, multiplier, win, targetWin }: Props = $props();
 </script>
 
 <div class={`win-celebration ${tier.id}`} aria-live="polite">
@@ -21,7 +22,14 @@
 	<div class="win-content">
 		<small>Lucky Flight</small>
 		<strong>{t('payout')}</strong>
-		<b dir="ltr">{win}</b>
+		<div
+			class="win-amount"
+			dir="ltr"
+			style={`--amount-characters:${Math.max(6, targetWin.length)}`}
+		>
+			<b class="amount-reserve" aria-hidden="true">{targetWin}</b>
+			<b class="amount-value">{win}</b>
+		</div>
 		<span dir="ltr">{multiplier}</span>
 	</div>
 </div>
@@ -55,6 +63,8 @@
 		letter-spacing: 0.16em;
 	}
 	.win-celebration span {
+		min-width: 8ch;
+		text-align: right;
 		margin-top: 28px;
 		padding: 9px 24px;
 		border-radius: 999px;
@@ -63,16 +73,28 @@
 		font:
 			800 clamp(1rem, 3vw, 1.8rem) / 1 system-ui,
 			sans-serif;
+		font-variant-numeric: tabular-nums;
 	}
-	.win-celebration b {
+	.win-amount {
+		display: grid;
 		margin-top: 5px;
+		max-width: 100%;
 		color: #ffe3a0;
-		font-size: clamp(2.8rem, 14vw, 12rem);
+		font-size: min(
+			clamp(2.8rem, 14vw, 12rem),
+			calc((100vw - 48px) / (var(--amount-characters) * 0.7))
+		);
 		font-weight: 900;
 		line-height: 1.15;
 		font-variant-numeric: tabular-nums;
-		overflow-wrap: anywhere;
-		max-width: 100%;
+		white-space: nowrap;
+	}
+	.win-amount b {
+		grid-area: 1 / 1;
+		text-align: right;
+	}
+	.amount-reserve {
+		visibility: hidden;
 	}
 	.win-celebration small {
 		margin-top: 5px;

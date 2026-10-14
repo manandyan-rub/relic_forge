@@ -69,6 +69,7 @@ function fakeAudio() {
 				gain: {
 					setValueAtTime() {},
 					linearRampToValueAtTime() {},
+					exponentialRampToValueAtTime() {},
 					cancelScheduledValues() {},
 					setTargetAtTime() {},
 				},
@@ -83,6 +84,7 @@ function fakeAudio() {
 				playbackRate: { value: 1 },
 				started: false,
 				stopped: false,
+				stops: [],
 				loop: false,
 				connect() {
 					return this;
@@ -91,11 +93,17 @@ function fakeAudio() {
 				start() {
 					this.started = true;
 				},
-				stop() {
+				stop(time) {
+					this.stops.push(time);
 					this.stopped = true;
 				},
 			};
 			sources.push(source);
+			return source;
+		}
+		createOscillator() {
+			const source = this.createBufferSource();
+			source.frequency = { setValueAtTime() {}, exponentialRampToValueAtTime() {} };
 			return source;
 		}
 	};
@@ -118,6 +126,30 @@ function fakeAudio() {
 		},
 	};
 }
+test('mobile shot sounds obey mute and cancellation and do not fetch new assets', async () => {
+	const fake = fakeAudio();
+	const audio = new FlightAudio();
+	try {
+		audio.shot('safe');
+		assert.equal(fake.sources.length, 0);
+		audio.unlock();
+		await flush();
+		audio.shot('safe', 2);
+		const shot = fake.sources.at(-1);
+		assert.equal(shot.started, true);
+		assert.equal(shot.stops[0], 0.060000000000000005);
+		audio.stopEffects();
+		assert.equal(shot.stopped, true);
+		assert.equal(shot.stops.length, 2);
+		audio.setMuted(true);
+		const count = fake.sources.length;
+		audio.shot('danger');
+		assert.equal(fake.sources.length, count);
+	} finally {
+		audio.dispose();
+		fake.restore();
+	}
+});
 test('gesture unlock, single ambience, mute and disposal control playback', async () => {
 	const fake = fakeAudio();
 	const audio = new FlightAudio();

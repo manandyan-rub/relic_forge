@@ -12,6 +12,23 @@ const { hunterTrajectory } = await load('flock/hunter');
 const appearance = { creature: 'eagle', launchStyle: 'glide' };
 const samples = [];
 
+test('initial responsive flock preview keeps health clear of the header and status', () => {
+	for (const [width, height] of [
+		[320, 300],
+		[390, 300],
+		[768, 380],
+		[1280, 480],
+		[568, 280],
+	]) {
+		const bounds = { width, height, floorY: height - 34 };
+		const birds = createFlock(bounds);
+		const hudBottom = width <= 700 ? 123 : 163;
+		const healthOffset = width <= 700 ? 32 : 48;
+		assert(birds.every((b) => b.body.position.y - healthOffset >= hudBottom));
+		assert(birds.every((b) => b.body.position.y < bounds.floorY));
+	}
+});
+
 test('hunter bullets reach their authored target at desktop and mobile sizes', () => {
 	for (const width of [390, 1280]) {
 		const bounds = { width, height: 440, floorY: 405 };
@@ -476,4 +493,139 @@ test('invalid lineups fall back safely and do not change single-bird feature rou
 	const legacy = generateLegacyMockRound(1, 'safe', 1, appearance);
 	assert.equal(attachLineup(legacy, ['eagle', 'eagle', 'eagle', 'eagle'], false), legacy);
 	assert.equal(createFlock({ width: 390, height: 300, floorY: 266 }, legacy).length, 1);
+});
+
+const {
+	BIRD_HEALTH,
+	RISK_WEAPONS,
+	planHunterAttack,
+	hunterAttackFrame,
+	applyHunterHealth,
+	HUNTER_IMPACT,
+	weaponImage,
+	hunterImage,
+} = await load('flock/mobilePresentation');
+test('mobile health volleys never remove a bird before the authored elimination', () => {
+	const bounds = { width: 390, height: 440, floorY: 405 };
+	for (const risk of ['safe', 'balanced', 'danger']) {
+		for (const species of FLOCK_ORDER) {
+			const plan = planHunterAttack(species, risk);
+			assert.equal(plan.health, BIRD_HEALTH[species]);
+			let birds = createFlock(bounds, undefined, [species, species, species, species]);
+			let previous = plan.health;
+			for (let i = 0; i <= 100; i++) {
+				const frame = hunterAttackFrame(plan, (HUNTER_IMPACT * i) / 100);
+				assert(frame.health <= previous);
+				previous = frame.health;
+				birds = applyHunterHealth(birds, 'woodpecker', frame.health, frame.flash);
+				assert(birds.every((b) => b.alive));
+				assert(birds[0].health >= 1);
+				assert.equal(birds[1].health, plan.health);
+			}
+			assert.equal(previous, 0);
+			birds = eliminateBird(birds, 'woodpecker', 'hunter');
+			assert.equal(birds[0].health, 0);
+			birds = applyHunterHealth(birds, 'woodpecker', 100, true);
+			assert.equal(birds[0].alive, false);
+			assert.equal(birds[0].health, 0);
+		}
+	}
+});
+test('risk weapons use the mobile art and muzzle anchors within responsive world bounds', () => {
+	assert.deepEqual(
+		Object.values(RISK_WEAPONS).map((g) => g.id),
+		['glock', 'trail', 'ak47'],
+	);
+	for (const width of [320, 390, 768, 1280]) {
+		const bounds = { width, height: 300, floorY: 266 };
+		for (const risk of ['safe', 'balanced', 'danger']) {
+			const target = { x: width * 0.25, y: 150 };
+			const result = hunterTrajectory(bounds, { target, progress: 1, hit: true }, risk);
+			assert.deepEqual(result.bullet, target);
+			assert(result.origin.x < width && result.origin.y < bounds.floorY);
+			assert(result.muzzle.x > 0 && result.muzzle.y > 0);
+		}
+	}
+	for (const risk of ['safe', 'balanced', 'danger'])
+		assert(weaponImage(risk).startsWith('./hunters/'));
+	assert(hunterImage('ranger').endsWith('/hunters/ranger-body.svg'));
+});
+test('Champion restores Archaeopteryx presentation health without reviving an eliminated slot', () => {
+	const bounds = { width: 1280, height: 500, floorY: 460 };
+	let birds = createFlock(bounds, undefined, ['eagle', 'eagle', 'eagle', 'woodpecker']);
+	birds = eliminateBird(birds, 'azure-swift', 'wind');
+	const champion = startChampion(birds);
+	assert.equal(champion[3].maxHealth, 100);
+	assert.equal(champion[3].health, 100);
+	assert.equal(champion[1].health, 0);
+	assert.deepEqual(champion[3].body, birds[3].body);
+});
+
+test('hunter projectiles retain 160ms flight time across species and risk volleys', () => {
+	for (const risk of ['safe', 'balanced', 'danger']) {
+		for (const species of FLOCK_ORDER) {
+			const attack = planHunterAttack(species, risk);
+			const start =
+				attack.duration * HUNTER_IMPACT -
+				(attack.shots - 1) * attack.shotInterval -
+				attack.bulletFlight;
+			assert(attack.duration >= 600 && attack.duration <= 1000);
+			assert(start >= 99.999);
+			assert(attack.shotInterval >= attack.bulletFlight);
+			for (let shot = 0; shot < attack.shots; shot++) {
+				const halfway = (start + shot * attack.shotInterval + 80) / attack.duration;
+				const frame = hunterAttackFrame(attack, halfway);
+				assert.equal(frame.index, shot);
+				assert(Math.abs(frame.bulletProgress - 0.5) < 1e-8);
+				assert.equal(frame.health, Math.max(0, attack.health - shot * attack.damage));
+				const impact = (start + shot * attack.shotInterval + 160) / attack.duration;
+				const hit = hunterAttackFrame(attack, impact);
+				assert.equal(hit.health, Math.max(0, attack.health - (shot + 1) * attack.damage));
+				assert.equal(hit.flash, true);
+			}
+			const crossed = hunterAttackFrame(attack, HUNTER_IMPACT + 0.04);
+			assert.equal(crossed.health, 0);
+			assert.equal(crossed.bulletProgress, 1);
+		}
+	}
+});
+
+test('hunter cadence and final impact follow the shared clock at every playback speed', async () => {
+	for (const speed of [1, 1.5, 2]) {
+		for (const hz of [30, 60, 120]) {
+			const attack = planHunterAttack('archaeopteryx', 'safe');
+			const clock = new PresentationTimeline();
+			const shots = new Set();
+			let finalHealth = attack.health;
+			const done = clock.animate(attack.duration, 1, (p) => {
+				const frame = hunterAttackFrame(attack, p);
+				if (frame.index >= 0) shots.add(frame.index);
+				finalHealth = frame.health;
+			});
+			let frames = 0;
+			while (clock.pending) {
+				clock.tick(1 / hz, speed, 1);
+				frames++;
+			}
+			assert.equal(await done, true);
+			assert.equal(shots.size, attack.shots);
+			assert.equal(finalHealth, 0);
+			assert(Math.abs((frames * 1000) / hz - attack.duration / speed) <= 1000 / hz + 1e-8);
+		}
+	}
+});
+
+test('director uses the saved lineup for hunter volley timing without changing outcomes', () => {
+	const base = samples.find((round) => round.events.some((event) => event.reason === 'hunter'));
+	assert(base);
+	for (const species of FLOCK_ORDER) {
+		const round = attachLineup(base, [species, species, species, species], false);
+		for (const step of buildFlockTimeline(round)) {
+			if (step.event.type === 'elimination' && step.event.reason === 'hunter')
+				assert.equal(step.duration, planHunterAttack(species, round.risk).duration);
+		}
+		assert.equal(round.events, base.events);
+		assert.equal(round.finalWin, base.finalWin);
+		assert.equal(round.finalMultiplier, base.finalMultiplier);
+	}
 });
