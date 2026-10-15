@@ -48,10 +48,10 @@
   abort.signal.addEventListener('abort',done,{once:true});
  });
  function chime(kind: 'spin' | 'win' | 'wild') {
-  if (!sound || !mounted) return;
+  if (!sound || !mounted || feature) return;
   audio ??= new AudioContext(); void audio.resume();
   const osc=audio.createOscillator(), gain=audio.createGain();
-  osc.type='sine'; osc.frequency.value=kind==='win'?660:kind==='wild'?440:220;
+  osc.type=kind==='spin'?'triangle':'sine'; osc.frequency.value=kind==='win'?660:kind==='wild'?440:220;
   gain.gain.setValueAtTime(.025,audio.currentTime); gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.25);
   osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.25);
  }
@@ -62,6 +62,7 @@
   const amount=(v=0) => stake*v/100;
   if(e.type==='reveal') {
    reaction='spin';moving=true;
+   if(animate&&!feature)chime('spin');
    if (!feature) wilds=[];
    highlights=[];lineDetail='';
    if(animate) await wait(feature?480:720);
@@ -111,7 +112,7 @@
   const cost=modeCost(mode), purchaseMode=isBonusMode(mode);
   if(busy||blocked||replay()||replayDone||modeWorld(mode)!==world||!validBet||stateBet.balanceAmount<bet*cost)return false;
   if(purchaseMode ? (auto>0||Boolean(bonusUnavailableReason(mode))) : !available(world))return false;
-  busy=true;error='';win=0;featureWin=0;highlights=[];lineDetail='';reaction='spin';moving=true;if(reduced)chime('spin');
+  busy=true;error='';win=0;featureWin=0;highlights=[];lineDetail='';reaction='spin';moving=true;
   const stake=bet, started=Date.now();
   try {
    const round=await play(mode,stake,sequence++);
@@ -173,7 +174,7 @@
  <section class="game-scene">
   <CharacterStage {world} {reaction} {moving} {feature} {reduced} {sound} winnings={money(win)} hasWin={win/bet>=20}/>
   <div class="slot-stage">
-   <div class="title-lockup"><img src="/art/logo.webp" alt="The Last Petal"/><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
+   <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
    <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights}/></div>
    <div class="under-reels"><span class="world-description">{world==='BLOOM'?'❀ More frequent features · Gentler magic':'✦ Rarer features · Greater volatility'}</span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>

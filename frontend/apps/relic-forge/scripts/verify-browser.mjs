@@ -57,13 +57,19 @@ try{
  await navigate(origin+'/?demo=true');await idle();
  check(await ev("document.querySelectorAll('.reel-cell').length===25"),'5 by 5 board');
  check(await ev("document.title==='The Last Petal'"),'new branding');
+ check(await ev("!document.querySelector('.title-lockup img')"),'round title logo removed');
  for(const [w,h,name] of [[1536,960,'bloom-desktop'],[768,1024,'bloom-tablet'],[390,844,'bloom-mobile'],[844,390,'bloom-landscape']]){
   await viewport(w,h);await delay(150);await wait("[...document.images].every(i=>i.complete)",'images loaded');
   check(await ev("[...document.images].filter(i=>i.closest('.petal-world')).every(i=>i.naturalWidth>0)"),name+' artwork loads');
   check(await ev('document.documentElement.scrollWidth<=innerWidth'),name+' no horizontal overflow');
   check(await ev("(()=>{const b=document.querySelector('.reel-window').getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.width>=300})()"),name+' readable board');
   if(w>1000)check(await ev("document.querySelector('.bet-controls').getBoundingClientRect().bottom<=innerHeight"),name+' all controls visible');
+  if(w>700)check(await ev("(()=>{const b=document.querySelector('.bet-controls').getBoundingClientRect(),s=document.querySelector('.spin-button').getBoundingClientRect();return Math.abs((s.left+s.right-b.left-b.right)/2)<1})()"),name+' Spin centered in bottom bar');
+  check(await ev("[...document.querySelectorAll('.secondary-control svg')].every(i=>{const p=i.parentElement,b=p.getBoundingClientRect(),a=getComputedStyle(p).flexDirection==='row'?[...p.children].reduce((r,c)=>{const x=c.getBoundingClientRect();return {left:Math.min(r.left,x.left),right:Math.max(r.right,x.right)}},{left:Infinity,right:-Infinity}):i.getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})"),name+' control icons centered in buttons');
+  check(await ev("(()=>{const a=document.querySelector('.win-presentation').getBoundingClientRect(),b=document.querySelector('.under-reels').getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})()"),name+' win display centered below reels');
+
   await shot(name);
+  if(name==='bloom-mobile'){await ev("document.querySelector('.bet-controls').scrollIntoView({block:'center'})");await shot('bloom-mobile-controls');await ev('scrollTo(0,0)');}
  }
  // Character videos match each world; only big wins show amounts above the head.
  await viewport(2322,1267);await media(false);await navigate(origin+'/?demo=true');await idle();
@@ -72,8 +78,7 @@ try{
  for(const world of ['BLOOM','BLIGHT']){
   await navigate(origin+'/?demo=true');await idle();if(world==='BLIGHT')await click('.world-choice:nth-child(2)');
   await click('.spin-button');await delay(120);
-  await wait("document.querySelector('.motion-active video[data-phase=spin]')?.readyState>=2",world+' spin restored');
-  check(await ev(`document.querySelector('video').src.includes('${world==='BLOOM'?'bloom-traveler':'blight-keeper'}-spin')`),world+' correct character video');
+  check(await ev("!document.querySelector('video,audio')"),world+' base spins use still character without clip audio');
   await idle();await click('.spin-button');await idle();
   check(await ev("!document.querySelector('.character-winnings')"),world+' small win stays below reels');
   await click('.spin-button');await wait("document.querySelector('.motion-active video.cinematic')?.readyState>=2",world+' full-screen big win');
@@ -81,18 +86,18 @@ try{
   check(await ev("document.querySelector('.cinematic-win strong').textContent===document.querySelector('.win-presentation strong').textContent"),world+' big amount above head matches win');
   await shot(world.toLowerCase()+'-fullscreen-big-win');await click('[aria-label="Close big win animation"]');await idle();
  }
- // A Blight bonus keeps one video/audio pair through every free spin and pause.
+ // A Blight bonus keeps one silent video through every free spin and pause.
  await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
  await click('.world-choice:nth-child(2)');await click('[aria-label="Toggle turbo"]');
  await click('[aria-label="Open Bonus Buy"]');await click('[aria-label="Select STANDARD bonus"]');
  const confirm=await ev("(()=>{const b=document.querySelector('[aria-label=\"Confirm bonus purchase\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
  await send('Input.dispatchMouseEvent',{type:'mousePressed',...confirm,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...confirm,button:'left',clickCount:1});
- await wait("document.querySelector('.free-spins-banner')&&document.querySelector('video')?.readyState>=2&&!document.querySelector('audio')?.paused",'Blight continuous feature media');
- await ev(`(()=>{const video=document.querySelector('video'),audio=document.querySelector('audio');window.__featureMedia={samples:0,changes:0,paused:0,between:0,counts:[]};const sample=()=>{const b=document.querySelector('.free-spins-banner'),m=window.__featureMedia;if(b){m.samples++;if(document.querySelector('video')!==video||document.querySelector('audio')!==audio)m.changes++;if(video.paused||audio.paused)m.paused++;if(!document.querySelector('.reel-spin-track'))m.between++;const count=b.querySelector('strong').textContent;if(!m.counts.includes(count))m.counts.push(count);}window.__featureMediaRaf=requestAnimationFrame(sample)};sample()})()`);
+ await wait("document.querySelector('.free-spins-banner')&&document.querySelector('video')?.readyState>=2",'Blight continuous feature media');
+ await ev(`(()=>{const video=document.querySelector('video'),audio=document.querySelector('audio');window.__featureMedia={samples:0,changes:0,paused:0,between:0,counts:[]};const sample=()=>{const b=document.querySelector('.free-spins-banner'),m=window.__featureMedia;if(b){m.samples++;if(document.querySelector('video')!==video||document.querySelector('audio')!==audio)m.changes++;if(video.paused||audio)m.paused++;if(!document.querySelector('.reel-spin-track'))m.between++;const count=b.querySelector('strong').textContent;if(!m.counts.includes(count))m.counts.push(count);}window.__featureMediaRaf=requestAnimationFrame(sample)};sample()})()`);
  await idle();
  const continuous=await ev("(()=>{cancelAnimationFrame(window.__featureMediaRaf);return window.__featureMedia})()");
  check(continuous.samples>30&&continuous.between>0&&continuous.counts.length>=10,'Blight media observed across all ten free spins and pauses');
- check(continuous.changes===0&&continuous.paused===0,'Blight keeps the same playing video and soundtrack throughout the feature');
+ check(continuous.changes===0&&continuous.paused===0,'Blight keeps the same playing video and stays silent throughout the feature');
  check(await ev("!document.querySelector('audio')&&!document.querySelector('video')"),'Blight feature media stops after completion');
  // Observe layout throughout real motion, wins and a purchased sticky feature.
  for(const [w,h] of [[1536,960],[768,1024],[390,844],[844,390]]){

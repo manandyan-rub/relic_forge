@@ -1,18 +1,5 @@
 [
   {
-    "id": "bloom-keeper",
-    "source": "C:\\Users\\user\\Downloads\\Untitled91_0004-35-53.png",
-    "preservedSource": "art/sources/Untitled91_0004-35-53.png",
-    "sha256": "529a3cd511ec378ef7b250414fa8443cbfefa82ab3ef0eda1424a3daee8ead1c",
-    "role": "Bloom gnome / premium keeper",
-    "url": "/art/bloom-keeper.webp",
-    "dimensions": [
-      860,
-      1000
-    ],
-    "bytes": 113758
-  },
-  {
     "id": "bloom-traveler",
     "source": "C:\\Users\\user\\Downloads\\Untitled90 (2).png",
     "preservedSource": "art/sources/Untitled90 (2).png",
@@ -104,19 +91,6 @@
     "bytes": 648608
   },
   {
-    "id": "bloom-bedroom",
-    "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored3.jpg",
-    "preservedSource": "art/sources/Untitled97_Restored3.jpg",
-    "sha256": "cc689356743f169f0cad8cae8f3b6b40c78dc089eda151e1076d2e4efcb90173",
-    "role": "Additional Bloom scene",
-    "url": "/art/bloom-bedroom.webp",
-    "dimensions": [
-      2000,
-      1414
-    ],
-    "bytes": 420990
-  },
-  {
     "id": "blight-room",
     "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored_20260607113127.jpg",
     "preservedSource": "art/sources/Untitled97_Restored_20260607113127.jpg",
@@ -128,45 +102,6 @@
       1697
     ],
     "bytes": 313576
-  },
-  {
-    "id": "blight-composite",
-    "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored_20260607113326.jpg",
-    "preservedSource": "art/sources/Untitled97_Restored_20260607113326.jpg",
-    "sha256": "cbc73c48012095c13fbdcc5f79f1ac530a1fdbd2ad376ff23d27dbb9d296356c",
-    "role": "Reference composite, not used behind independent character",
-    "url": "/art/blight-composite.webp",
-    "dimensions": [
-      1600,
-      1131
-    ],
-    "bytes": 195964
-  },
-  {
-    "id": "logo",
-    "source": "C:\\Users\\user\\Downloads\\Untitled122.png",
-    "preservedSource": "art/sources/Untitled122.png",
-    "sha256": "b85bcabc05f8b457b6b876442d84760ccceaa6c5497484d9c28ca48f50ebf532",
-    "role": "The Last Petal logo",
-    "url": "/art/logo.webp",
-    "dimensions": [
-      650,
-      650
-    ],
-    "bytes": 72336
-  },
-  {
-    "id": "bloom-keeper-alternate",
-    "source": "C:\\Users\\user\\Downloads\\Untitled91_0004-35-53 (1).png",
-    "preservedSource": "art/sources/Untitled91_0004-35-53 (1).png",
-    "sha256": "529a3cd511ec378ef7b250414fa8443cbfefa82ab3ef0eda1424a3daee8ead1c",
-    "role": "Alternate supplied gnome reference",
-    "url": "/art/bloom-keeper-alternate.webp",
-    "dimensions": [
-      559,
-      650
-    ],
-    "bytes": 64582
   },
   {
     "id": "bloom-keeper-symbol",
@@ -193,97 +128,6 @@
       240
     ],
     "bytes": 17136
-  },
-  {
-    "id": "bloom-tools-sheet",
-    "source": "C:\\Users\\user\\Downloads\\Untitled93.png",
-    "preservedSource": "art/sources/Untitled93.png",
-    "sha256": "bf1a603287db8d95e47eaec7ba8ce40e3997ee59843c12adb07a7a3aa74aaff6",
-    "role": "Separated Bloom props source sheet",
-    "url": "/art/bloom-tools-sheet.webp",
-    "dimensions": [
-      861,
-      1000
-    ],
-    "bytes": 69954
-  },
-  {
-    "id": "traveler-tools-sheet",
-    "source": "C:\\Users\\user\\Downloads\\Untitled95.png",
-    "preservedSource": "art/sources/Untitled95.png",
-    "sha256": "184f30d57913acdd89b320a66ddde80f0a6c96eb4c5648a988bb79a269538e33",
-    "role": "Separated traveler props source sheet",
-    "url": "/art/traveler-tools-sheet.webp",
-    "dimensions": [
-      536,
-      1000
-    ],
-    "bytes": 62310
-  },
-  {
-    "id": "traveler-hammer",
-    "source": "C:\\Users\\user\\Downloads\\Untitled91 (1).png",
-    "preservedSource": "art/sources/Untitled91 (1).png",
-    "sha256": "0964d4d7bfa6cd624a8abafc80485d013859c95423fe898c61c610f5bb0539e6",
-    "role": "Traveler hammer",
-    "url": "/art/traveler-hammer.webp",
-    "dimensions": [
-      320,
-      268
-    ],
-    "bytes": 11528
-  },
-  {
-    "id": "blight-tools-sheet",
-    "source": "C:\\Users\\user\\Downloads\\Untitled110.png",
-    "preservedSource": "art/sources/Untitled110.png",
-    "sha256": "bc204902589735fd8297aeedd8cbc139be4c28c6e9b2638082ca4768076f6b57",
-    "role": "Hooded keeper props source sheet",
-    "url": "/art/blight-tools-sheet.webp",
-    "dimensions": [
-      556,
-      1000
-    ],
-    "bytes": 31372
-  },
-  {
-    "id": "skull-tools-sheet",
-    "source": "C:\\Users\\user\\Downloads\\Untitled97.png",
-    "preservedSource": "art/sources/Untitled97.png",
-    "sha256": "fa073f7484f8a5872215c1abbfc65b8f8954b8c18df35d96f98bafdc6c0be8a1",
-    "role": "Skull gnome props source sheet",
-    "url": "/art/skull-tools-sheet.webp",
-    "dimensions": [
-      711,
-      1000
-    ],
-    "bytes": 86598
-  },
-  {
-    "id": "brute-tools-sheet",
-    "source": "C:\\Users\\user\\Downloads\\Untitled118.png",
-    "preservedSource": "art/sources/Untitled118.png",
-    "sha256": "7fb5bfcb40793311b2f6285509c73b71a0a9e55332229dd8307e3785ed885467",
-    "role": "Corrupted brute props source sheet",
-    "url": "/art/brute-tools-sheet.webp",
-    "dimensions": [
-      747,
-      1000
-    ],
-    "bytes": 102312
-  },
-  {
-    "id": "guardian-charms-sheet",
-    "source": "C:\\Users\\user\\Downloads\\Ռիմա3.png",
-    "preservedSource": "art/sources/Ռիմա3.png",
-    "sha256": "392069308964c1575f01275810a087cdcd60026f841e21a145277671ab9d64f2",
-    "role": "Guardian scarf, brooch and pendant source sheet",
-    "url": "/art/guardian-charms-sheet.webp",
-    "dimensions": [
-      698,
-      800
-    ],
-    "bytes": 12570
   },
   {
     "id": "bloom-flower",

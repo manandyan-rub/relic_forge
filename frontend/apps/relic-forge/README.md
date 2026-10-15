@@ -29,7 +29,7 @@ The active app is `src/petal/SlotGame.svelte`, loaded by the existing SvelteKit 
 - `MathEventAdapter`: fail-closed version/geometry/mode/event/payout validation, independent best-line reconciliation; never chooses an outcome.
 - `rgs.ts`: shared SDK wallet calls, original stake, progress recording and one-attempt settlement; replay never writes to a wallet.
 
-See `LAST_PETAL_CONTRACT.md` for units, events, math and readiness limits. See `art/manifest.json` for source filenames, SHA-256, output URLs, explicit crop regions and individual prop contours. Supplied originals are preserved in `art/sources` (~142 MB); optimized assets total ~2.9 MB. Missing source files: none.
+See `LAST_PETAL_CONTRACT.md` for units, events, math and readiness limits. See `art/manifest.json` for source filenames, SHA-256, output URLs, explicit crop regions and individual prop contours. Supplied originals and lossless motion inputs are preserved in `art/sources`; only runtime assets are shipped. Missing source files: none.
 
 The lower-value IDs are stable math identifiers, with world-specific labels: `flower` is flowerpot/stone, `lantern` is lantern/flail, `key` is brooch/pouch, `book` is hammer/shears, and `mushroom` is traveler hat/spiked club. These identifiers do not imply new generated images. Wild and Scatter are simple temporary SVG flowers pending dedicated hand-drawn special symbols.
 
@@ -62,4 +62,15 @@ The wallet request sends the original base bet with the exact purchase mode; the
 
 
 
-Current character presentation: both worlds use their supplied transparent videos and original audio. Bloom spin uses 21:18:08 seconds 1–2; Bloom big win uses 21:23:21 seconds 0–5. Blight spin uses 21:29:23 seconds 3–4; Blight big win uses seconds 0–5. Both bonus features keep the spin video/audio running across all ten free spins and pauses. Big wins (20× or more) fill the screen with the world background and winnings above the character. The side character never shows a win label. Regular and feature totals appear below the reels; only the full-screen big-win display shows the large prize. Reduced motion restores still art; Sound effects controls original audio.
+Bloom uses the first 500 ms of its previous edited spin loop, with a one-second smooth return cycle. Blight uses the first 500 ms of its original 21:29:23 video, with a two-second smooth return cycle. Both render at 60 fps with transparent backgrounds and temporal blending. Lossless prepared inputs are preserved in `art/sources/bloom-spin-input.mkv` and `art/sources/blight-spin-input.mkv`. Exact frame mappings and output hashes are recorded in `art/*-spin-loop.json`. `scripts/prepare-character-loop.py` accepts `--video` to rebuild directly from those inputs.
+
+Normal base spins use the still character artwork. Character loops run only throughout bonus features and stay silent. A short reel-spin cue plays on normal base spins when Sound effects is enabled. All bonus sound effects are muted. During bonuses, the same animation continues through all ten free spins and their pauses.
+
+Big wins (20× or more) play the corresponding five-second clip full-screen against the current world's background, with original audio controlled by Sound effects. Bloom big-win source: 21:23:21; Blight: 21:29:23. Win labels never appear above the side characters; totals remain below the reels and on the full-screen big-win display. Reduced motion uses still artwork.
+
+Rebuild the current loops with Python (Pillow/NumPy) and FFmpeg:
+
+```powershell
+python scripts/prepare-character-loop.py --video art/sources/bloom-spin-input.mkv --source-start 0 --source-duration 0.5 --source-fps 60 --cycle-duration 1 --source-kind previous-two-second-loop --output-name bloom-traveler-spin --scratch art/qa/rebuild-bloom
+python scripts/prepare-character-loop.py --video art/sources/blight-spin-input.mkv --source-start 0 --source-duration 0.5 --source-fps 24 --cycle-duration 2 --output-name blight-keeper-spin --scratch art/qa/rebuild-blight
+```

@@ -7,7 +7,8 @@
  let video = $state<HTMLVideoElement>();
  let soundtrack = $state<HTMLAudioElement>();
  const name = $derived(world==='BLOOM'?'bloom-traveler':'blight-keeper');
- const phase = $derived(reduced ? null : feature ? 'spin' : celebration ? 'big' : moving ? 'spin' : null);
+ const spinRevision = $derived(world==='BLIGHT'?'original500':'previous-loop500');
+ const phase = $derived(reduced ? null : feature ? 'spin' : celebration ? 'big' : null);
  $effect(()=>{void world;celebration=false;});
  $effect(()=>{if(feature || moving || reduced)celebration=false;else if(reaction==='big')celebration=true;});
  $effect(()=>{
@@ -19,7 +20,7 @@
  });
  $effect(()=>{
   const element=soundtrack;if(!element)return;
-  if(phase && sound){element.volume=.7;element.currentTime=0;void element.play().catch(()=>{});}
+  if(phase==='big' && !feature && sound){element.volume=.7;element.currentTime=0;void element.play().catch(()=>{});}
   else{element.pause();element.currentTime=0;}
   return ()=>element.pause();
  });
@@ -30,14 +31,14 @@
 </script>
 <svelte:window onkeydown={cinematicKey}/>
 {#key `${name}-${phase}`}
- {#if phase}<audio bind:this={soundtrack} src={`/art/${name}-${phase}.mp3`} loop={phase==='spin'} preload="auto"></audio>{/if}
+ {#if phase==='big' && !feature}<audio bind:this={soundtrack} src={`/art/${name}-${phase}.mp3`} preload="auto"></audio>{/if}
 {/key}
 <aside class="character-stage" data-reaction={reaction} aria-label={`${world === 'BLOOM' ? 'The Lantern Traveler' : 'The Withered Keeper'}: ${reaction}`}>
  <div class="character-aura"></div>
  <div class="character-figure" class:motion-active={visible && !!phase}>
   <img class="character-art" src={art(world,world === 'BLOOM' ? 'traveler-stage' : 'keeper')} alt={world === 'BLOOM' ? 'Magical forest traveler holding a lantern staff' : 'Hooded Blight creature with a chained weapon'} />
   {#key `${name}-${phase}`}
-   {#if phase}<video bind:this={video} class="character-motion" class:cinematic={phase==='big'} style:--cinematic-scene={`url('${art(world,'room')}')`} data-phase={phase} src={`/art/${name}-${phase}.webm`} poster={`/art/${name}-${phase}-poster.webp`} muted playsinline loop={phase==='spin'} preload="auto" aria-hidden="true" onended={()=>celebration=false} onerror={()=>visible=false}></video>{/if}
+   {#if phase}<video bind:this={video} class="character-motion" class:cinematic={phase==='big'} style:--cinematic-scene={`url('${art(world,'room')}')`} data-phase={phase} src={`/art/${name}-${phase}.webm${phase==='spin'?`?v=${spinRevision}`:''}`} poster={`/art/${name}-${phase}-poster.webp${phase==='spin'?`?v=${spinRevision}`:''}`} muted playsinline loop={phase==='spin'} preload="auto" aria-hidden="true" onended={()=>celebration=false} onerror={()=>visible=false}></video>{/if}
   {/key}
   {#if phase==='big'}<button class="cinematic-close" onclick={()=>celebration=false} aria-label="Close big win animation">×</button>{/if}
   {#if hasWin && phase==='big'}<div class="character-winnings" class:cinematic-win={phase==='big'} class:windfall={reaction==='big'}><small>{phase==='big'?'BIG WIN':'YOU WON'}</small><strong>{winnings}</strong></div>{/if}

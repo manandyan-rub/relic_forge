@@ -31,6 +31,7 @@ ENTRIES = [
  ('brute-tools-sheet','Untitled118.png','Corrupted brute props source sheet',1000),
  ('guardian-charms-sheet','Ռիմա3.png','Guardian scarf, brooch and pendant source sheet',800),
 ]
+ACTIVE_ASSET_IDS = ['blight-book', 'blight-flower', 'blight-guardian', 'blight-keeper', 'blight-keeper-symbol', 'blight-key', 'blight-lantern', 'blight-mushroom', 'blight-room', 'blight-traveler', 'bloom-book', 'bloom-flower', 'bloom-guardian', 'bloom-keeper-symbol', 'bloom-key', 'bloom-lantern', 'bloom-mushroom', 'bloom-room', 'bloom-traveler', 'bloom-traveler-stage']
 REGIONS = [
  ('bloom-flower','Untitled93.png',(.14,.25,.35,.39),'Flowerpot reel symbol'),
  ('bloom-lantern','Untitled95.png',(.145,.16,.25,.295),'Lantern reel symbol'),
@@ -59,6 +60,7 @@ def main():
     for key,name,role,size in ENTRIES:
         src=SOURCE/name
         shutil.copy2(src,originals/name)
+        if key not in ACTIVE_ASSET_IDS: continue
         im=Image.open(src)
         if im.mode=='RGBA':
             im=im.crop(im.getchannel('A').getbbox())
