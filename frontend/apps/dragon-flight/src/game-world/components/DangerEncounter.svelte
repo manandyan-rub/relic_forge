@@ -65,15 +65,11 @@
 	}
 	.encounter-label strong {
 		color: #f1e4c8;
-		font:
-			800 0.72rem/1 system-ui,
-			sans-serif;
+		font: 800 0.72rem/1 var(--font-ui);
 		letter-spacing: 0.08em;
 	}
 	.encounter-label span {
-		font:
-			700 0.56rem/1 system-ui,
-			sans-serif;
+		font: 700 0.56rem/1 var(--font-ui);
 		letter-spacing: 0.12em;
 	}
 	.engage .encounter-artwork {

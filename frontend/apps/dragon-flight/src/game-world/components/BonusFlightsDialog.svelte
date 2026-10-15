@@ -99,9 +99,7 @@
 
 <style>
 	p {
-		font:
-			400 0.85rem/1.5 system-ui,
-			sans-serif;
+		font: 400 0.85rem/1.5 var(--font-ui);
 		color: #becfce;
 	}
 	.intro {
@@ -118,9 +116,7 @@
 	}
 	legend {
 		margin-bottom: 10px;
-		font:
-			650 0.8rem system-ui,
-			sans-serif;
+		font: 650 0.8rem var(--font-ui);
 	}
 	.routes {
 		display: grid;
@@ -137,7 +133,7 @@
 		cursor: pointer;
 	}
 	label.selected {
-		border-color: #80edc9;
+		border-color: #e4bd73;
 	}
 	label:focus-within {
 		outline: 2px solid #efcd80;
@@ -150,7 +146,7 @@
 		z-index: 1;
 		width: 20px;
 		height: 20px;
-		accent-color: #80edc9;
+		accent-color: #e4bd73;
 	}
 	img {
 		position: absolute;
@@ -166,32 +162,26 @@
 		gap: 7px;
 		padding: 14px 12px;
 		border-radius: 10px;
-		background: #0b2225c7;
+		background: #0c1a24ed;
 		backdrop-filter: blur(3px);
 	}
 	.caption span {
-		font:
-			650 0.6rem system-ui,
-			sans-serif;
+		font: 650 0.6rem var(--font-ui);
 		letter-spacing: 0.08em;
-		color: #a9d6ca;
+		color: #bdc8ce;
 	}
 	.caption strong {
-		font:
-			750 1.2rem/1.15 system-ui,
-			sans-serif;
+		font: 750 1.2rem/1.15 var(--font-ui);
 	}
 	.caption b {
-		font:
-			650 0.85rem system-ui,
-			sans-serif;
+		font: 650 0.85rem var(--font-ui);
 		color: #ffe3a8;
 	}
 	details {
 		border: 1px solid #496568;
 		border-radius: 10px;
 		padding: 12px;
-		font-family: system-ui, sans-serif;
+		font-family: var(--font-ui);
 	}
 	summary {
 		cursor: pointer;
@@ -218,14 +208,12 @@
 		bottom: -20px;
 		margin: 16px -2px 0;
 		padding: 14px 2px;
-		background: #12272c;
+		background: #0e1c24;
 	}
 	.purchase div {
 		display: grid;
 		gap: 4px;
-		font:
-			600 0.75rem system-ui,
-			sans-serif;
+		font: 600 0.75rem var(--font-ui);
 	}
 	.purchase strong {
 		font-size: 1.25rem;
@@ -234,13 +222,11 @@
 	button {
 		min-height: 46px;
 		padding: 12px 18px;
-		border: 1px solid #87ebca;
+		border: 1px solid #ffe5ad;
 		border-radius: 9px;
-		background: #b8ead7;
-		color: #102b29;
-		font:
-			750 0.8rem system-ui,
-			sans-serif;
+		background: #e4bd73;
+		color: #2a2318;
+		font: 750 0.8rem var(--font-ui);
 		cursor: pointer;
 	}
 	button:disabled {

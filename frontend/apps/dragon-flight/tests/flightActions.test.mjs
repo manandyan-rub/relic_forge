@@ -35,7 +35,7 @@ const { easeOut } = await loadTypescript(
 const { copyLineup, setLineupBird, attachLineup } = await loadTypescript(
 	new URL('../src/game-world/flock/lineup.ts', import.meta.url),
 );
-const { attachHunter, planHunterAttack, hunterAttackFrame, applyHunterHealth, HUNTER_IMPACT } =
+const { attachHunter, planHunterAttack, hunterAttackFrame, applyHunterImpact, HUNTER_IMPACT } =
 	await loadTypescript(new URL('../src/game-world/flock/mobilePresentation.ts', import.meta.url));
 // Exercise the component's real action bodies, with only rendering/animation boundaries stubbed.
 const source = fs.readFileSync(
@@ -94,7 +94,7 @@ function setup(ticket = 9999) {
 		attachHunter,
 		planHunterAttack,
 		hunterAttackFrame,
-		applyHunterHealth,
+		applyHunterImpact,
 		HUNTER_IMPACT,
 		selectedHunter: 'forest',
 		flightPlaybackSpeed: 1,
@@ -277,13 +277,17 @@ test('hunter final impact survives a coarse tick and dead targets cannot be shot
 	ctx.flightAudio.shot = () => shots++;
 	ctx.beginFlockEvent(event, 1);
 	ctx.frameFlockEvent(event, 0.82);
-	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').health, 1);
+	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').alive, true);
+	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').hitFlash, 0.12);
 	assert.equal(ctx.hunterShot.progress, 1);
+	const velocity = ctx.activeBirds.find((b) => b.id === 'eagle').body.velocity;
+	ctx.frameFlockEvent(event, 0.84);
+	assert.deepEqual(ctx.activeBirds.find((b) => b.id === 'eagle').body.velocity, velocity);
 	ctx.commitFlockEvent(event);
 	const count = shots;
 	ctx.frameFlockEvent(event, 0.95);
 	assert.equal(ctx.hunterShot, undefined);
-	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').health, 0);
+	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').alive, false);
 	assert.equal(shots, count);
 });
 
@@ -671,7 +675,7 @@ test('custom four-bird lineup is locked during flight and saved for history repl
 	assert.equal(ctx.finalWin, round.finalWin);
 });
 
-test('mobile health and hunter replay follow the same authored casino result', async () => {
+test('hunter incident feedback and cosmetic replay follow the same authored casino result', async () => {
 	const ctx = setup();
 	ctx.selectedHunter = 'ranger';
 	ctx.selectedRisk = 'danger';
@@ -683,14 +687,14 @@ test('mobile health and hunter replay follow the same authored casino result', a
 	ctx.beginFlockEvent(elimination, 1);
 	ctx.frameFlockEvent(elimination, 0.65);
 	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').alive, true);
-	assert(ctx.activeBirds.find((b) => b.id === 'eagle').health > 0);
+	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').hitFlash, 0.12);
 	ctx.commitFlockEvent(elimination);
-	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').health, 0);
 	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').alive, false);
 	await ctx.presentFinalResult(round, ctx.presentationToken);
 	ctx.selectedHunter = 'forest';
 	ctx.replayFlight(round);
 	assert.equal(ctx.currentRound.hunter, 'ranger');
 	assert.deepEqual([round.finalWin, round.finalMultiplier, round.entryCost], financials);
-	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').health, 85);
+	assert.equal(ctx.activeBirds.find((b) => b.id === 'eagle').alive, true);
+	assert(ctx.activeBirds.every((bird) => !('health' in bird) && !('maxHealth' in bird)));
 });

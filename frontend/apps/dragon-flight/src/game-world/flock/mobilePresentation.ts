@@ -3,14 +3,8 @@ import type { CreatureId, FlightRisk, FlightRound } from '../types';
 import type { ActiveBird } from './types';
 
 export type HunterAppearance = 'forest' | 'ranger';
-// Presentation values carried over from lucky-flight-mobile. These are not
-// probability, hitbox, survival or payout inputs.
-export const BIRD_HEALTH: Record<CreatureId, number> = {
-	woodpecker: 50,
-	'azure-swift': 60,
-	eagle: 85,
-	archaeopteryx: 100,
-};
+// Original placeholder artwork remains visible until the user's replacement
+// art is ready. Appearance metadata also stays compatible with saved replays.
 export const HUNTERS = [
 	{ id: 'forest', name: 'Forest Hunter' },
 	{ id: 'ranger', name: 'Mountain Ranger' },
@@ -20,7 +14,6 @@ export const RISK_WEAPONS = {
 		id: 'glock',
 		name: 'Glock 17',
 		file: 'glock-17.png',
-		damage: 28,
 		length: 28,
 		grip: 0.47,
 		muzzleX: 0.79,
@@ -31,7 +24,6 @@ export const RISK_WEAPONS = {
 		id: 'trail',
 		name: 'Trail Rifle',
 		file: 'trail-rifle.png',
-		damage: 50,
 		length: 57,
 		grip: 0.36,
 		muzzleX: 0.97,
@@ -42,7 +34,6 @@ export const RISK_WEAPONS = {
 		id: 'ak47',
 		name: 'AK-47',
 		file: 'ak-47.png',
-		damage: 45,
 		length: 57,
 		grip: 0.44,
 		muzzleX: 0.99,
@@ -64,8 +55,6 @@ export function attachHunter(
 
 export const HUNTER_IMPACT = 0.76;
 export type HunterAttack = {
-	health: number;
-	damage: number;
 	shots: number;
 	duration: number;
 	shotInterval: number;
@@ -73,16 +62,14 @@ export type HunterAttack = {
 };
 // A short volley illustrates ONE authored elimination. There is no collision
 // simulation: only the timeline's commit is allowed to remove its outcome slot.
-export function planHunterAttack(species: CreatureId, risk: FlightRisk): HunterAttack {
-	const health = BIRD_HEALTH[species];
-	const damage = RISK_WEAPONS[risk].damage;
-	const shots = Math.ceil(health / damage);
+export function planHunterAttack(risk: FlightRisk): HunterAttack {
+	const shots = risk === 'safe' ? 1 : risk === 'balanced' ? 2 : 3;
 	// Presentation milliseconds. A projectile must finish before the next shot
-	// replaces it; neither health nor screen width should change its travel time.
+	// replaces it; cosmetic species never change its travel time or cadence.
 	const bulletFlight = 160;
 	const shotInterval = risk === 'balanced' ? 220 : 160;
 	const duration = Math.max(600, (100 + (shots - 1) * shotInterval + bulletFlight) / HUNTER_IMPACT);
-	return { health, damage, shots, duration, shotInterval, bulletFlight };
+	return { shots, duration, shotInterval, bulletFlight };
 }
 export function hunterAttackFrame(attack: HunterAttack, progress: number) {
 	const finalImpact = attack.duration * HUNTER_IMPACT;
@@ -98,29 +85,21 @@ export function hunterAttackFrame(attack: HunterAttack, progress: number) {
 	return {
 		index: clock < 0 ? -1 : index,
 		bulletProgress: clock < 0 ? -1 : Math.min(1, local / attack.bulletFlight),
-		health: Math.max(0, attack.health - completed * attack.damage),
+		impacts: completed,
 		flash: completed > 0 && sinceImpact >= -1e-8 && sinceImpact < 90,
 	};
 }
-export function applyHunterHealth(
-	birds: ActiveBird[],
-	id: CreatureId,
-	health: number,
-	flash: boolean,
-) {
+export function applyHunterImpact(birds: ActiveBird[], id: CreatureId) {
+	if (!birds.some((bird) => bird.id === id && bird.alive)) return birds;
 	return birds.map((bird) =>
 		bird.id === id && bird.alive
 			? {
 					...bird,
-					health: Math.max(1, Math.min(bird.maxHealth, health)),
-					hitFlash: flash ? 0.12 : bird.hitFlash,
-					body:
-						health < bird.health
-							? {
-									...bird.body,
-									velocity: { x: bird.body.velocity.x - 18, y: bird.body.velocity.y - 45 },
-								}
-							: bird.body,
+					hitFlash: 0.12,
+					body: {
+						...bird.body,
+						velocity: { x: bird.body.velocity.x - 18, y: bird.body.velocity.y - 45 },
+					},
 				}
 			: bird,
 	);

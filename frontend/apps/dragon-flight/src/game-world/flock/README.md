@@ -90,7 +90,7 @@ Do not run a new production math export or upload until authoritative flock
 books and their probability tables have been reviewed together. The frontend ZIP
 alone cannot enable Champion Flight against older production books.
 
-Normal flock presentation follows authored terrain, wind and encounter types. Only explicit hunter eliminations use targeted bullets; their HP and feather effects never decide survival. Champion gates, legacy books and feature-buy routes retain their authored outcomes. Dragon encounters use the existing in-world sprite and eliminations use shared-clock feather effects instead of video playback.
+Normal flock presentation follows authored terrain, wind and encounter types. Only explicit hunter eliminations use targeted bullets; hit flashes and feather effects never decide survival. Numeric health and damage were removed. Fixed Safe/Balanced/Danger volleys use one/two/three shots independently of cosmetic bird choices. The existing placeholder hunter and guns stay visible until the user's custom drawings are ready. Background artwork stays fixed; weather, birds and hazards still animate. Original asset paths and recorded hunter metadata remain compatible. Champion gates, legacy books and feature-buy routes retain their authored outcomes. Dragon encounters use the existing in-world sprite and eliminations use shared-clock feather effects instead of video playback.
 
 ## Optional Fluppy Flight
 

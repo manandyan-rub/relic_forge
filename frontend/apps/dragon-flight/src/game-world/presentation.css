@@ -1,0 +1,970 @@
+/* Lucky Flight's shared visual system. Art stays in the scene; controls use
+   quiet surfaces, a single gold action, and readable local typography. */
+.prototype-shell,
+.prototype-shell * {
+	box-sizing: border-box;
+}
+.prototype-shell {
+	position: fixed;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	height: 100dvh;
+	overflow: auto;
+	padding: clamp(8px, 1.2vw, 18px);
+	background: #08151b;
+	color: #f0eee5;
+	font-family: var(--font-ui);
+	font-variant-numeric: tabular-nums;
+}
+.game-layout {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: minmax(340px, 1fr) auto;
+	flex: 1 0 auto;
+	gap: 10px;
+	width: min(1440px, 100%);
+	min-width: 0;
+	margin-inline: auto;
+}
+.world {
+	--glass-background: #0c1a24ed;
+	--glass-border: #b5c5cc38;
+	--glass-text: #f0eee5;
+	position: relative;
+	width: 100%;
+	min-width: 0;
+	min-height: 340px;
+	overflow: hidden;
+	border: 1px solid #b8c7cb38;
+	border-radius: 18px;
+	background: #192f3d;
+	isolation: isolate;
+}
+.prototype-shell button {
+	min-height: 44px;
+	border: 1px solid #51616a;
+	border-radius: 10px;
+	background: #14232c;
+	color: #f0eee5;
+	font: 600 0.875rem/1.25 var(--font-ui);
+	cursor: pointer;
+	transition:
+		background-color 140ms,
+		border-color 140ms,
+		opacity 140ms;
+}
+.prototype-shell button:hover:not(:disabled) {
+	border-color: #b5c5cc;
+	background: #21333f;
+}
+.prototype-shell button:disabled {
+	opacity: 0.48;
+	cursor: not-allowed;
+}
+.world .prototype-header {
+	position: absolute;
+	z-index: 120;
+	top: 14px;
+	left: 14px;
+	right: 14px;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: 12px;
+	pointer-events: none;
+}
+.header-balance,
+.top-icons {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	border: 1px solid var(--glass-border);
+	border-radius: 12px;
+	background: var(--glass-background);
+	color: var(--glass-text);
+	pointer-events: auto;
+}
+.header-balance {
+	justify-self: start;
+	min-width: 0;
+	max-width: 100%;
+	padding: 9px 14px;
+	min-height: 58px;
+}
+.header-balance > div {
+	display: grid;
+	min-width: 0;
+	gap: 2px;
+}
+.header-balance span {
+	font-size: 0.75rem;
+	color: #bdc8ce;
+}
+.header-balance strong {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 1.15rem;
+	line-height: 1.2;
+}
+.header-balance .currency-medallion {
+	display: grid;
+	place-items: center;
+	width: 30px;
+	height: 30px;
+	border: 1px solid #dec28a;
+	border-radius: 50%;
+	background: #32414a;
+	color: #f1d39d;
+	font-weight: 700;
+	font-size: 1rem;
+}
+.flight-title {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 12px;
+	margin: 0;
+	color: #ffdfa0;
+	font: 600 clamp(1.6rem, 3vw, 2.8rem) / 0.95 var(--font-display);
+	letter-spacing: 0.045em;
+	text-transform: uppercase;
+	text-align: center;
+	text-shadow: 0 2px 8px #0a192d80;
+}
+.flight-title > span:first-child,
+.flight-title > span:last-child {
+	width: clamp(24px, 4vw, 55px);
+}
+.flight-title > span:last-child {
+	transform: scaleX(-1);
+}
+.flight-title svg {
+	width: 100%;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 3;
+	stroke-linecap: round;
+}
+.top-icons {
+	justify-self: end;
+	gap: 0;
+	padding: 4px;
+}
+.top-icons button {
+	display: grid;
+	place-items: center;
+	width: 46px;
+	height: 46px;
+	padding: 10px;
+	border: 0;
+	background: transparent;
+}
+.top-icons button + button {
+	border-left: 1px solid #b5c5cc20;
+	border-radius: 0 8px 8px 0;
+}
+.top-icons svg,
+.help-button svg {
+	width: 22px;
+	height: 22px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.control-tools {
+	position: absolute;
+	z-index: 130;
+	top: calc(100% + 10px);
+	right: 0;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	width: min(400px, calc(100vw - 40px));
+	padding: 16px;
+	border: 1px solid #5c6b73;
+	border-radius: 14px;
+	background: #0d1b24;
+	box-shadow: 0 12px 32px #0005;
+	pointer-events: auto;
+}
+.control-tools[hidden] {
+	display: none;
+}
+.control-tools button {
+	padding: 10px 14px;
+}
+.control-tools .help-button {
+	width: 44px;
+	padding: 8px;
+}
+.playback-control,
+.language-control {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.875rem;
+	color: #becbd2;
+}
+.control-tools select {
+	min-height: 44px;
+	max-width: 150px;
+	padding: 8px;
+	border: 1px solid #51616a;
+	border-radius: 8px;
+	background: #14232c;
+	color: #f0eee5;
+	font: inherit;
+}
+.flight-hud {
+	position: absolute;
+	z-index: 80;
+	top: 96px;
+	left: 14px;
+	right: 14px;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 12px;
+	pointer-events: none;
+}
+.flock-hud-group {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+.round-status,
+.multiplier-readout {
+	border: 1px solid var(--glass-border);
+	border-radius: 10px;
+	background: var(--glass-background);
+	color: var(--glass-text);
+	white-space: nowrap;
+}
+.round-status {
+	display: flex;
+	align-items: center;
+	gap: 7px;
+	padding: 8px 10px;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.03em;
+}
+.round-status::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: #bcdca5;
+}
+.round-status.danger {
+	color: #ffc0a0;
+}
+.round-status.danger::before {
+	background: #ffc0a0;
+}
+.multiplier-readout {
+	padding: 6px 12px;
+}
+.multiplier-readout strong {
+	display: block;
+	min-width: 7ch;
+	font-size: clamp(1.4rem, 2.3vw, 1.9rem);
+	line-height: 1.1;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+.multiplier-readout.pulse {
+	animation: multiplier-pulse calc(0.3s / var(--playback-speed, 1));
+}
+.event-callout,
+.replay-label {
+	position: absolute;
+	z-index: 15;
+	padding: 7px 10px;
+	border: 1px solid var(--glass-border);
+	border-radius: 10px;
+	background: var(--glass-background);
+	color: #ecdfc5;
+	font-size: 0.75rem;
+	font-weight: 600;
+	line-height: 1.3;
+	text-align: center;
+	pointer-events: none;
+}
+.event-callout {
+	right: 14px;
+	bottom: 38px;
+	max-width: min(340px, 60%);
+	animation: callout-in calc(0.18s / var(--playback-speed, 1)) ease-out;
+}
+.replay-label {
+	top: 148px;
+	left: 14px;
+}
+.stage-transition {
+	position: absolute;
+	z-index: 12;
+	top: 33%;
+	left: 50%;
+	display: grid;
+	gap: 6px;
+	width: min(430px, 82%);
+	padding: 16px 18px;
+	border: 1px solid #b5c5cc40;
+	border-radius: 14px;
+	background: var(--glass-background);
+	text-align: center;
+	pointer-events: none;
+	transform: translateX(-50%);
+	animation: stage-arrival calc(1.05s / var(--playback-speed, 1)) ease both;
+}
+.stage-transition span {
+	color: #c5b695;
+	font-size: 0.75rem;
+	letter-spacing: 0.12em;
+}
+.stage-transition strong {
+	color: #ffdfa0;
+	font: 600 clamp(1.1rem, 2.5vw, 1.6rem) / 1.2 var(--font-display);
+}
+.flight-progress {
+	position: absolute;
+	z-index: 10;
+	bottom: 20px;
+	left: 50%;
+	width: min(380px, 70%);
+	height: 3px;
+	border-radius: 3px;
+	background: #08192275;
+	transform: translateX(-50%);
+	pointer-events: none;
+}
+.flight-progress i {
+	display: block;
+	height: 100%;
+	border-radius: inherit;
+	background: #efd39a;
+}
+.flight-progress b {
+	position: absolute;
+	top: 50%;
+}
+.progress-marker {
+	position: absolute;
+	top: 50%;
+	left: 0;
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: #ffedc0;
+	transform: translate(-50%, -50%);
+}
+.gate {
+	position: absolute;
+	z-index: 3;
+	inset-block: 0;
+}
+.floor {
+	position: absolute;
+	z-index: 5;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: #293e36;
+	border-top: 1px solid #637c5c;
+	overflow: hidden;
+}
+.floor::before {
+	content: '';
+	position: absolute;
+	inset: 0 -180px 0 0;
+	background: repeating-linear-gradient(165deg, #293e36 0 22px, #31473e 23px 43px);
+	transform: translate3d(var(--floor-scroll), 0, 0);
+}
+.has-ending .floor {
+	opacity: 0;
+}
+.flight-particle {
+	position: absolute;
+	z-index: 7;
+	border-radius: 50%;
+	background: #e8ddc2;
+	pointer-events: none;
+}
+.flight-speed-lines {
+	position: absolute;
+	z-index: 8;
+	inset: 145px -90px 40px;
+	opacity: 0.06;
+	background: repeating-linear-gradient(
+		0deg,
+		transparent 0 33px,
+		#d7edff 34px 35px,
+		transparent 36px 74px
+	);
+	mask-image: linear-gradient(
+		90deg,
+		transparent,
+		#0002 12%,
+		transparent 25%,
+		transparent 68%,
+		#0008 90%,
+		transparent
+	);
+	pointer-events: none;
+}
+.flight-speed-lines.launching {
+	opacity: 0.16;
+}
+.flight-speed-lines.champion {
+	opacity: 0.025;
+}
+.combo-feedback {
+	position: absolute;
+	z-index: 14;
+	top: 35%;
+	left: 25%;
+	display: grid;
+	gap: 4px;
+	padding: 10px 14px;
+	border-left: 2px solid #bcdca5;
+	border-radius: 8px;
+	background: var(--glass-background);
+	color: #d8e9c9;
+	font-size: 0.75rem;
+	animation: combo-pop calc(0.68s / var(--playback-speed, 1)) ease-out both;
+}
+.control-dock {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(300px, 1.3fr) minmax(235px, 1fr) 100px minmax(185px, 0.8fr);
+	grid-template-areas: 'risk bet customize action' 'bonus details details details';
+	align-items: stretch;
+	gap: 14px 20px;
+	width: 100%;
+	padding: 18px 20px;
+	border: 1px solid #8c79554d;
+	border-radius: 18px;
+	background: #0e1c24;
+	--risk-color: #edc078;
+}
+.control-dock.safe {
+	--risk-color: #a7cea8;
+}
+.control-dock.danger {
+	--risk-color: #e99779;
+}
+.risk-control {
+	grid-area: risk;
+	min-width: 0;
+}
+.bet-control {
+	grid-area: bet;
+	min-width: 0;
+	align-self: center;
+}
+.dock-label {
+	display: block;
+	margin-bottom: 10px;
+	color: #cfc0a1;
+	font-size: 0.75rem;
+	font-weight: 600;
+	letter-spacing: 0.09em;
+}
+.risk-selector {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+.control-dock .risk-selector button {
+	display: grid;
+	justify-items: center;
+	align-content: center;
+	gap: 4px;
+	min-height: 90px;
+	padding: 10px 4px;
+	border-color: #435560;
+	background: #12222b;
+	font-size: 0.875rem;
+}
+.risk-mountains {
+	width: 45px;
+	height: 31px;
+	color: #d2ad6c;
+}
+button[data-risk='safe'] .risk-mountains {
+	color: #a7cea8;
+}
+button[data-risk='danger'] .risk-mountains {
+	color: #e99779;
+}
+.control-dock .risk-selector button.active {
+	border-color: var(--risk-color);
+	background: #25323a;
+	box-shadow: inset 0 0 0 1px var(--risk-color);
+}
+.risk-selector small {
+	color: #b6c1c7;
+	font-size: 0.6875rem;
+	line-height: 1.3;
+}
+.bet-heading {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 8px;
+}
+.bet-heading small {
+	display: none;
+}
+.bet-stepper {
+	display: grid;
+	grid-template-columns: 48px minmax(0, 1fr) 48px;
+	gap: 6px;
+	align-items: center;
+}
+.control-dock .bet-stepper button {
+	display: grid;
+	place-items: center;
+	width: 48px;
+	height: 54px;
+	padding: 0;
+}
+.bet-stepper svg {
+	width: 20px;
+	height: 20px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.8;
+	stroke-linecap: round;
+}
+.bet-input-shell {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	height: 54px;
+	gap: 5px;
+	padding: 0 10px;
+	border: 1px solid #51616a;
+	border-radius: 10px;
+	background: #08151d;
+}
+.bet-input-shell > span {
+	flex: 0 0 auto;
+	color: #e2c891;
+	font-weight: 600;
+}
+.bet-input {
+	width: 100%;
+	min-width: 0;
+	padding: 10px 0;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	color: #f4f0e4;
+	font: 600 1.125rem/1.3 var(--font-ui);
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
+.bet-input-shell:focus-within {
+	border-color: #efd39a;
+	outline: 2px solid #efd39a;
+	outline-offset: 2px;
+}
+.prototype-shell .bet-input:focus-visible {
+	outline: none;
+}
+.bet-input-shell.invalid {
+	border-color: #f1aa98;
+}
+.bet-input-shell.invalid:focus-within {
+	outline-color: #ffc5b8;
+}
+.bet-input-shell.disabled {
+	opacity: 0.48;
+}
+.control-dock .fly-button {
+	grid-area: action;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 115px;
+	padding: 14px;
+	border: 1px solid #ffe5ad;
+	background: #e4bd73;
+	color: #2a2318;
+	font-size: 1.125rem;
+	font-weight: 700;
+	letter-spacing: 0.025em;
+	box-shadow: inset 0 1px #fff0cd60;
+}
+.control-dock .fly-button.launch-ready {
+	font-size: clamp(1.8rem, 3vw, 2.5rem);
+}
+.control-dock .fly-button.repeat-buy {
+	font-size: 1.125rem;
+}
+.control-dock .fly-button:hover:not(:disabled) {
+	background: #f2d498;
+	border-color: #fff0cd;
+}
+.fly-button small {
+	color: #4b3a1e;
+	font-size: 0.9375rem;
+	font-weight: 600;
+	letter-spacing: 0;
+}
+.control-dock .dock-customize {
+	grid-area: customize;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 8px;
+	color: #dfd0b2;
+	font-size: 0.75rem;
+}
+.dock-customize svg {
+	width: 30px;
+	height: 30px;
+	fill: #14232c;
+	stroke: #dfc18c;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+}
+.dock-bonus {
+	grid-area: bonus;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	justify-self: start;
+	padding: 8px 12px;
+	color: #dfc18c;
+	font-size: 0.75rem;
+}
+.dock-bonus span {
+	color: #c1c7c9;
+	font-size: 0.6875rem;
+}
+.bonus-gift,
+.bonus-arrow {
+	width: 18px;
+	height: 18px;
+	fill: none;
+	stroke: currentColor;
+	stroke-width: 1.6;
+}
+.bonus-arrow {
+	margin-left: auto;
+	width: 14px;
+}
+.bet-panel-footer {
+	grid-area: details;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+	color: #aebec5;
+	font-size: 0.75rem;
+	line-height: 1.4;
+}
+.risk-note {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.risk-note i {
+	width: 5px;
+	height: 5px;
+	flex-shrink: 0;
+	border-radius: 50%;
+	background: var(--risk-color);
+}
+.bet-error {
+	color: #ffc5b8;
+}
+.bet-error i {
+	background: currentColor;
+}
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+@keyframes callout-in {
+	from {
+		opacity: 0;
+		transform: translateY(4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+@keyframes stage-arrival {
+	0% {
+		opacity: 0;
+		transform: translate(-50%, 8px);
+	}
+	18%,
+	72% {
+		opacity: 1;
+		transform: translate(-50%, 0);
+	}
+	100% {
+		opacity: 0;
+		transform: translate(-50%, -5px);
+	}
+}
+@keyframes multiplier-pulse {
+	50% {
+		color: #ffdfa0;
+	}
+}
+@keyframes combo-pop {
+	0% {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	24%,
+	72% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+	100% {
+		opacity: 0;
+		transform: translateY(-8px);
+	}
+}
+@media (min-width: 701px) and (max-width: 1050px) {
+	.control-dock {
+		grid-template-columns: minmax(235px, 1fr) 100px minmax(185px, 1fr);
+		grid-template-areas: 'risk risk risk' 'bet customize action' 'bonus details details';
+		gap: 12px;
+		padding: 16px;
+	}
+	.control-dock .risk-selector button {
+		min-height: 84px;
+	}
+	.control-dock .fly-button {
+		min-height: 96px;
+	}
+}
+@media (max-width: 700px) {
+	.prototype-shell {
+		padding: 7px;
+	}
+	.game-layout {
+		flex: 0 0 auto;
+		grid-template-rows: auto auto;
+		gap: 8px;
+	}
+	.world {
+		min-height: 0;
+		height: clamp(400px, 50dvh, 480px);
+		border-radius: 14px;
+	}
+	.world .prototype-header {
+		top: 10px;
+		left: 10px;
+		right: 10px;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 9px;
+	}
+	.flight-title {
+		grid-column: 1 / -1;
+		grid-row: 1;
+		gap: 8px;
+		font-size: 1.5rem;
+		line-height: 1;
+	}
+	.flight-title br {
+		display: none;
+	}
+	.flight-title > span:first-child,
+	.flight-title > span:last-child {
+		width: 24px;
+	}
+	.header-balance {
+		grid-column: 1;
+		grid-row: 2;
+		min-height: 52px;
+		padding: 6px 8px;
+		gap: 7px;
+	}
+	.header-balance span {
+		font-size: 0.6875rem;
+	}
+	.header-balance strong {
+		font-size: 0.9375rem;
+	}
+	.header-balance .currency-medallion {
+		display: none;
+	}
+	.top-icons {
+		grid-column: 2;
+		grid-row: 2;
+		padding: 3px;
+	}
+	.top-icons button {
+		width: 44px;
+		height: 44px;
+		padding: 10px;
+	}
+	.control-tools {
+		width: min(360px, calc(100vw - 36px));
+		padding: 12px;
+	}
+	.flight-hud {
+		top: 116px;
+		left: 10px;
+		right: 10px;
+		gap: 8px;
+	}
+	.flock-hud-group {
+		flex-direction: row;
+		align-items: center;
+		gap: 6px;
+	}
+	.flock-hud-group.champion .round-status {
+		display: none;
+	}
+	.round-status {
+		font-size: 0.6875rem;
+		padding: 6px 8px;
+	}
+	.multiplier-readout {
+		padding: 6px 8px;
+	}
+	.multiplier-readout strong {
+		font-size: 1.3rem;
+		min-width: 6ch;
+	}
+	.replay-label {
+		top: 148px;
+		left: auto;
+		right: 10px;
+		font-size: 0.6875rem;
+	}
+	.event-callout {
+		right: 10px;
+		bottom: 32px;
+		max-width: 57%;
+		font-size: 0.6875rem;
+		padding: 6px 8px;
+	}
+	.stage-transition {
+		top: 44%;
+		padding: 12px;
+	}
+	.flight-progress {
+		bottom: 14px;
+	}
+	.combo-feedback {
+		top: 48%;
+		left: 14%;
+	}
+	.control-dock {
+		grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+		grid-template-areas: 'risk risk' 'bet bet' 'action customize' 'bonus bonus' 'details details';
+		gap: 14px 10px;
+		padding: 14px;
+		border-radius: 14px;
+	}
+	.dock-label {
+		margin-bottom: 8px;
+	}
+	.control-dock .risk-selector button {
+		min-height: 86px;
+		padding: 8px 3px;
+		font-size: 0.8125rem;
+	}
+	.risk-mountains {
+		height: 28px;
+		width: 42px;
+	}
+	.risk-selector small {
+		font-size: 0.6875rem;
+	}
+	.bet-stepper {
+		grid-template-columns: 48px minmax(0, 1fr) 48px;
+		gap: 6px;
+	}
+	.control-dock .bet-stepper button,
+	.bet-input-shell {
+		height: 48px;
+	}
+	.bet-input {
+		font-size: 1.125rem;
+	}
+	.control-dock .fly-button {
+		min-height: 76px;
+		padding: 9px;
+	}
+	.control-dock .fly-button.launch-ready {
+		font-size: 1.75rem;
+	}
+	.control-dock .fly-button.repeat-buy {
+		font-size: 1rem;
+	}
+	.control-dock .dock-customize {
+		gap: 5px;
+		padding: 8px;
+		font-size: 0.6875rem;
+	}
+	.dock-customize svg {
+		width: 24px;
+		height: 24px;
+	}
+	.dock-bonus {
+		width: 100%;
+		justify-self: stretch;
+		font-size: 0.75rem;
+	}
+	.bet-panel-footer {
+		flex-direction: column;
+		align-items: start;
+		gap: 4px;
+	}
+	.bet-panel-footer .risk-note:not(.bet-error) {
+		display: none;
+	}
+	.bet-panel-footer:not(.has-validation):has(> span:last-child:empty) {
+		display: none;
+	}
+}
+@media (max-height: 450px) and (min-width: 701px) {
+	.world {
+		min-height: 320px;
+	}
+}
+@media (max-height: 450px) and (min-width: 500px) and (max-width: 700px) {
+	.world {
+		height: 340px;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.flight-speed-lines {
+		display: none;
+	}
+	.event-callout,
+	.stage-transition,
+	.combo-feedback,
+	.multiplier-readout.pulse {
+		animation: none;
+	}
+	.prototype-shell button {
+		transition: none;
+	}
+}

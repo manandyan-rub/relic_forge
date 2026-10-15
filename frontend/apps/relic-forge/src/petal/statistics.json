@@ -1,0 +1,30 @@
+[
+  {
+    "mode": "BLOOM",
+    "libraryBooks": 5501,
+    "weightSum": 1000000001072,
+    "weightedRtp": 0.95999999908658,
+    "standardDeviationX": 9.605811207043965,
+    "varianceX": 92.27160894537144,
+    "hitFrequency": 0.40240108358862603,
+    "bonusFrequency": 0.00999999998928,
+    "meanFeatureRoundX": 22.79233985,
+    "maxExposureX": 5000.0,
+    "naturalSampleRtp": 0.5163840000000001,
+    "status": "Finite development library, calibrated group weights; not production optimized or certified"
+  },
+  {
+    "mode": "BLIGHT",
+    "libraryBooks": 5501,
+    "weightSum": 1000000001600,
+    "weightedRtp": 0.9600000247632199,
+    "standardDeviationX": 25.76206930835982,
+    "varianceX": 663.684215048735,
+    "hitFrequency": 0.2873543294812331,
+    "bonusFrequency": 0.0010000000883999998,
+    "meanFeatureRoundX": 299.9684632317383,
+    "maxExposureX": 5000.0,
+    "naturalSampleRtp": 0.46084200000000003,
+    "status": "Finite development library, calibrated group weights; not production optimized or certified"
+  }
+]

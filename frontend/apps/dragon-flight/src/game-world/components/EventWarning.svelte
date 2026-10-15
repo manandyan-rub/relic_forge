@@ -22,35 +22,31 @@
 		gap: 6px;
 		width: min(500px, 82%);
 		padding: 12px 18px;
-		border-block: 1px solid #e06d3e;
-		background: linear-gradient(90deg, transparent, rgba(46, 10, 5, 0.94) 18% 82%, transparent);
+		border: 1px solid #b98a6b;
+		border-radius: 12px;
+		background: #221d1bed;
 		color: #ffb278;
 		text-align: center;
-		text-shadow: 0 2px 12px #000;
 		transform: translateX(-50%);
 		pointer-events: none;
 		animation: warning-in calc(0.42s / var(--playback-speed, 1)) ease-out both;
 	}
 	.event-warning span {
-		font:
-			900 0.56rem/1 system-ui,
-			sans-serif;
+		font: 600 0.6875rem/1.2 var(--font-ui);
 		letter-spacing: 0.24em;
 	}
 	.event-warning strong {
-		font:
-			700 clamp(0.95rem, 2.4vw, 1.45rem) / 1 system-ui,
-			sans-serif;
+		font: 700 clamp(0.95rem, 2.4vw, 1.45rem) / 1 var(--font-ui);
 		letter-spacing: 0.13em;
 	}
 	.event-warning.current {
 		border-color: #95b9c8;
-		background: linear-gradient(90deg, transparent, rgba(24, 47, 60, 0.94) 18% 82%, transparent);
+		background: #162630ed;
 		color: #d0e5ee;
 	}
 	.event-warning.reward {
 		border-color: #d8a645;
-		background: linear-gradient(90deg, transparent, rgba(47, 33, 7, 0.94) 18% 82%, transparent);
+		background: #25231ced;
 		color: #ffe099;
 	}
 	@keyframes warning-in {

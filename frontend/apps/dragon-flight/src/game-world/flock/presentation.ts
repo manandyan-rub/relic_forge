@@ -2,13 +2,13 @@ import type { CreatureId, FlightRound, LaunchStyle, PlayerBody, WorldBounds } fr
 import { getCreature } from '../creatures';
 import { clamp, createPlayer } from '../physics';
 import { copyLineup } from './lineup';
-import { BIRD_HEALTH, speciesDrift } from './mobilePresentation';
+import { speciesDrift } from './mobilePresentation';
 import { FLOCK_ORDER, type FlockLineup, type ActiveBird, type EliminationReason } from './types';
 
 function flockTop(bounds: WorldBounds) {
 	return Math.min(
 		bounds.floorY - 80,
-		Math.max(bounds.width <= 700 ? 170 : 214, bounds.height * 0.38),
+		Math.max(bounds.width <= 700 ? 205 : 214, bounds.height * 0.38),
 	);
 }
 
@@ -42,8 +42,6 @@ export function createFlock(
 		age: round ? 0 : 1,
 		frame: 1,
 		rotation: 0,
-		health: BIRD_HEALTH[round && !round.flock ? id : species[index]],
-		maxHealth: BIRD_HEALTH[round && !round.flock ? id : species[index]],
 		hitFlash: 0,
 		targetY: bounds.floorY * 0.5,
 		exiting: false,
@@ -66,7 +64,6 @@ export function eliminateBird(
 			? {
 					...bird,
 					alive: false,
-					health: 0,
 					hitFlash: 0,
 					elimination: { reason, age: 0 },
 					body: { ...bird.body, velocity: { x: -85, y: reason === 'wind' ? -160 : 120 } },
@@ -81,8 +78,6 @@ export function startChampion(birds: ActiveBird[]): ActiveBird[] {
 					...bird,
 					species: bird.id === 'archaeopteryx' ? 'archaeopteryx' : bird.species,
 					frame: bird.id === 'archaeopteryx' ? 1 : bird.frame,
-					health: bird.id === 'archaeopteryx' ? BIRD_HEALTH.archaeopteryx : bird.health,
-					maxHealth: bird.id === 'archaeopteryx' ? BIRD_HEALTH.archaeopteryx : bird.maxHealth,
 					exiting: bird.id !== 'archaeopteryx',
 					finished: false,
 				}
@@ -131,6 +126,7 @@ export function stepFlock(
 	moving: boolean,
 	landing: number,
 	launchStyle: LaunchStyle = 'glide',
+	singleFlight = false,
 ): ActiveBird[] {
 	const dt = Math.max(0, Math.min(delta, 0.1));
 	let count = 0;
@@ -139,8 +135,8 @@ export function stepFlock(
 		if (bird.alive && !bird.exiting) count++;
 		if (bird.exiting) champion = true;
 	}
-	const top = flockTop(bounds);
-	const bottom = Math.max(top + 12, bounds.floorY - 28);
+	const top = singleFlight ? 17 : flockTop(bounds);
+	const bottom = singleFlight ? bounds.floorY - 17 : Math.max(top + 12, bounds.floorY - 28);
 	const spacing = Math.min(54, (bottom - top) / Math.max(1, count - 1));
 	const center = clamp(
 		targetY,
@@ -195,7 +191,7 @@ export function stepFlock(
 		const goalY = clamp(
 			center +
 				(ownSlot - (count - 1) / 2) * spacing +
-				speciesDrift(bird.species ?? bird.id, age, index * 1.7),
+				(singleFlight ? 0 : speciesDrift(bird.species ?? bird.id, age, index * 1.7)),
 			top,
 			bottom,
 		);
@@ -230,11 +226,11 @@ export function stepFlock(
 			};
 		}
 		// Targets re-form over time; positions and velocities are preserved at handoff.
-		const smoothed = bird.targetY + (goalY - bird.targetY) * (1 - Math.exp(-dt * 4));
+		const smoothed = bird.targetY + (goalY - bird.targetY) * (1 - Math.exp(-dt * (singleFlight ? 12 : 4)));
 		const destinationX = landing ? bounds.width * 0.7 + ownSlot * 10 : goalX;
 		const destinationY = landing ? bounds.floorY * 0.75 + ownSlot * 7 : smoothed;
 		const x = damp(bird.body.position.x, bird.body.velocity.x, destinationX, 5, dt);
-		const y = damp(bird.body.position.y, bird.body.velocity.y, destinationY, 5 + index * 0.2, dt);
+		const y = damp(bird.body.position.y, bird.body.velocity.y, destinationY, singleFlight ? 9 : 5 + index * 0.2, dt);
 		const bank = clamp(y.velocity / profile.rotationDivisor + x.velocity * 0.025, -18, 18);
 		return {
 			...bird,

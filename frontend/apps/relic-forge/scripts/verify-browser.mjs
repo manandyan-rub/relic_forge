@@ -1,1403 +1,181 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import WebSocket from 'ws';
-
-const APP_ORIGIN = process.env.APP_ORIGIN ?? 'http://localhost:3006';
-const APP_URL = `${APP_ORIGIN}/?demo=true`;
-const CDP_PORT = 9333;
-const chromeCandidates = [
-	process.env.CHROME_PATH,
-	'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-	'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
-	'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
-	'/usr/bin/google-chrome',
-	'/usr/bin/google-chrome-stable',
-	'/usr/bin/chromium',
-	'/usr/bin/chromium-browser',
-	'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-	'/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-];
-const chromePath = chromeCandidates.filter(Boolean).find(existsSync);
-if (!chromePath) throw new Error('Chrome or Edge was not found.');
-
-const profilePath = join(tmpdir(), `relic-forge-cdp-${process.pid}`);
-mkdirSync(profilePath, { recursive: true });
-const browser = spawn(
-	chromePath,
-	[
-		'--headless=new',
-		`--remote-debugging-port=${CDP_PORT}`,
-		`--user-data-dir=${profilePath}`,
-		'--disable-gpu',
-		'--no-first-run',
-		'--window-size=1536,1024',
-		'about:blank',
-	],
-	{ stdio: 'ignore' },
-);
-
-const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-const waitForCdp = async () => {
-	for (let attempt = 0; attempt < 80; attempt += 1) {
-		try {
-			const response = await fetch(`http://127.0.0.1:${CDP_PORT}/json/list`);
-			if (response.ok) return response.json();
-		} catch {
-			// Chrome has not opened its debugging endpoint yet.
-		}
-		await delay(100);
-	}
-	throw new Error('Chrome DevTools endpoint did not start.');
-};
-
-const targets = await waitForCdp();
-const target = targets.find((candidate) => candidate.type === 'page');
-if (!target) throw new Error('No Chrome page target was available.');
-
-const socket = new WebSocket(target.webSocketDebuggerUrl);
-await new Promise((resolve, reject) => {
-	socket.addEventListener('open', resolve, { once: true });
-	socket.addEventListener('error', reject, { once: true });
-});
-
-let commandId = 0;
-const pending = new Map();
-const listeners = new Map();
-const runtimeErrors = [];
-const networkFailures = [];
-const requestCounts = { authenticate: 0, play: 0, endRound: 0 };
-const playModes = [];
-const playAmounts = [];
-let serveRecoveryRound = false;
-let serveRestrictedSession = false;
-let replayRequests = 0;
-
-socket.addEventListener('message', (message) => {
-	const payload = JSON.parse(message.data);
-	if (payload.id) {
-		const request = pending.get(payload.id);
-		if (!request) return;
-		pending.delete(payload.id);
-		if (payload.error) request.reject(new Error(payload.error.message));
-		else request.resolve(payload.result);
-		return;
-	}
-	for (const listener of listeners.get(payload.method) ?? []) listener(payload.params);
-});
-
-const send = (method, params = {}) =>
-	new Promise((resolve, reject) => {
-		commandId += 1;
-		pending.set(commandId, { resolve, reject });
-		socket.send(JSON.stringify({ id: commandId, method, params }));
-	});
-
-const on = (method, listener) => {
-	const methodListeners = listeners.get(method) ?? [];
-	methodListeners.push(listener);
-	listeners.set(method, methodListeners);
-};
-
-on('Runtime.exceptionThrown', ({ exceptionDetails }) => {
-	runtimeErrors.push(exceptionDetails.exception?.description ?? exceptionDetails.text);
-});
-on('Runtime.consoleAPICalled', ({ type, args }) => {
-	if (type === 'error')
-		runtimeErrors.push(args.map((arg) => arg.value ?? arg.description).join(' '));
-});
-on('Network.loadingFailed', ({ errorText, canceled, blockedReason }) => {
-	if (!canceled) networkFailures.push(blockedReason ?? errorText);
-});
-
-await Promise.all([
-	send('Runtime.enable'),
-	send('Page.enable'),
-	send('Network.enable'),
-	send('Fetch.enable', { patterns: [{ urlPattern: 'https://mock.local/*' }] }),
-]);
-
-const evaluate = async (expression) => {
-	const response = await send('Runtime.evaluate', {
-		expression,
-		awaitPromise: true,
-		returnByValue: true,
-	});
-	if (response.exceptionDetails) {
-		throw new Error(
-			response.exceptionDetails.exception?.description ?? response.exceptionDetails.text,
-		);
-	}
-	return response.result.value;
-};
-
-const waitFor = async (expression, description, timeout = 12_000) => {
-	const startedAt = Date.now();
-	while (Date.now() - startedAt < timeout) {
-		if (await evaluate(expression)) return;
-		await delay(25);
-	}
-	const snapshot = await evaluate(`({
-		button: document.querySelector('.spin-button')?.textContent?.trim(),
-		disabled: document.querySelector('.spin-button')?.disabled,
-		error: document.querySelector('.error-panel')?.textContent?.trim(),
-		reels: [...document.querySelectorAll('.reel')].map((reel) => reel.dataset.state)
-	})`);
-	throw new Error(
-		`Timed out waiting for ${description}. ${JSON.stringify({ snapshot, requestCounts, runtimeErrors })}`,
-	);
-};
-
-const navigate = async (url) => {
-	await send('Page.navigate', { url });
-	await waitFor("document.readyState === 'complete'", 'page load');
-	await waitFor("Boolean(document.querySelector('.spin-button'))", 'game render');
-};
-
-const assertionResults = [];
-const check = (condition, description) => {
-	if (!condition) throw new Error(`FAILED: ${description}`);
-	assertionResults.push(description);
-};
-
-const text = (selector) =>
-	evaluate(`document.querySelector(${JSON.stringify(selector)})?.textContent?.trim() ?? ''`);
-const click = (selector) =>
-	evaluate(
-		`(() => { const element = document.querySelector(${JSON.stringify(selector)}); if (!element) return false; element.click(); return true; })()`,
-	);
-const visibleSymbolsExpression = `[...document.querySelectorAll('.reel')].map((reel) => {
-	const viewport = reel.getBoundingClientRect();
-	return [...reel.querySelectorAll('.symbol-cell')]
-		.filter((cell) => {
-			const bounds = cell.getBoundingClientRect();
-			const center = bounds.top + bounds.height / 2;
-			return center > viewport.top && center < viewport.bottom;
-		})
-		.sort((left, right) => left.getBoundingClientRect().top - right.getBoundingClientRect().top)
-		.map((cell) => cell.dataset.symbol);
-})`;
-const visibleSymbols = () => evaluate(visibleSymbolsExpression);
-const captureScreenshot = async (filename) => {
-	const snapshotDirectory = join(process.cwd(), '..', '..', '..', '.tmp');
-	mkdirSync(snapshotDirectory, { recursive: true });
-	const { data } = await send('Page.captureScreenshot', { format: 'png' });
-	writeFileSync(join(snapshotDirectory, filename), Buffer.from(data, 'base64'));
-};
-const waitForIdle = () =>
-	waitFor(
-		"Boolean(document.querySelector('.spin-button:not([disabled])')) && document.querySelector('.spin-button strong')?.textContent === 'SPIN'",
-		'spin completion',
-		45_000,
-	);
-
-const moneyValue = (value) => Number(value.replace(/[^0-9.-]/g, ''));
-
-await navigate(APP_URL);
-await evaluate("localStorage.setItem('relic-forge-turbo', 'false'); location.reload(); true");
-await waitFor("Boolean(document.querySelector('.spin-button'))", 'mock reload');
-
-check((await evaluate("document.querySelectorAll('.reel').length")) === 5, '5 reels render');
-check(
-	(await evaluate("document.querySelectorAll('.reel .symbol-cell').length")) === 45,
-	'each reel keeps a reusable nine-symbol strip',
-);
-check(
-	await evaluate("document.querySelector('.cell-index') === null"),
-	'reel cells do not display development row and column indexes',
-);
-await waitFor(
-	`${visibleSymbolsExpression}.every((reel) => reel.length === 3)`,
-	'3 visible rows per reel',
-);
-check(true, '3 rows render visibly on each reel');
-check(
-	(await text('.footer-note')).includes('20 PAYLINES'),
-	'20-payline configuration is presented',
-);
-check(
-	(await text('.footer-note')).includes('DEVELOPMENT MOCK MODE'),
-	'mock mode starts without RGS authentication',
-);
-check(
-	await evaluate(`(() => {
-		const glyph = document.querySelector('.symbol-glyph');
-		const bounds = glyph?.getBoundingClientRect();
-		return getComputedStyle(glyph).backgroundImage.includes('/symbols/') && bounds?.height > 0;
-	})()`),
-	'supplied symbol artwork renders in the reel cells',
-);
-check(
-	await evaluate(
-		"getComputedStyle(document.querySelector('.spin-button')).backgroundImage.includes('spin-button.webp')",
-	),
-	'supplied circular Spin button artwork renders',
-);
-check(
-	await evaluate(`['turbo', 'sound', 'paytable'].every((name) =>
-		getComputedStyle(document.querySelector('.' + name + '-control')).backgroundImage.includes('/controls/' + name + '.webp')
-	)`),
-	'supplied Turbo, Sound, and Paytable button artwork renders',
-);
-check(
-	(await evaluate("document.querySelectorAll('.side-action-rail button').length")) === 5,
-	'Bonus Buy and the four option buttons render in the left rail',
-);
-check(
-	await evaluate(`(() => {
-		const buttons = [...document.querySelectorAll('.side-action-rail button')];
-		const centers = buttons.map((button) => {
-			const bounds = button.getBoundingClientRect();
-			return { x: bounds.left + bounds.width / 2, top: bounds.top };
-		});
-		return centers.every((center) => Math.abs(center.x - centers[0].x) < 2) &&
-			centers.every((center, index) => index === 0 || center.top > centers[index - 1].top);
-	})()`),
-	'left-side options form one vertical column beneath Bonus Buy',
-);
-check(
-	await evaluate("document.querySelector('.bonus-buy-control:not([disabled])') !== null"),
-	'mock Bonus Buy is available',
-);
-check(
-	await evaluate(
-		"getComputedStyle(document.querySelector('.bonus-buy-control'), '::before').backgroundImage.includes('bonus-buy-button-v4.webp')",
-	),
-	'supplied Bonus Buy plaque artwork renders',
-);
-await click('.bonus-buy-control');
-await waitFor("Boolean(document.querySelector('.mode-selection-screen'))", 'mode selection open');
-check(
-	(await evaluate("document.querySelectorAll('.mode-card').length")) === 6,
-	'mode selection renders all six cards',
-);
-check(
-	await evaluate(`(() => {
-		const expected = {
-			normal: 'normal.webp',
-			forgeBoost: 'forge-boost.webp',
-			dragonBoost: 'dragon-boost.webp',
-			standard: 'bonus-standard.webp',
-			super: 'bonus-super.webp',
-			mythic: 'bonus-mythic.webp'
-		};
-		return Object.entries(expected).every(([id, asset]) => {
-			const card = document.querySelector('.mode-card[data-mode-id="' + id + '"]');
-			return card && getComputedStyle(card).backgroundImage.includes(asset);
-		});
-	})()`),
-	'all six supplied mode images render from project-local paths',
-);
-check(
-	await evaluate(`Promise.all([...document.querySelectorAll('.mode-card')]
-		.map((card) => getComputedStyle(card).backgroundImage.match(/url\\(["']?([^"')]+)["']?\\)/)?.[1])
-		.filter(Boolean)
-		.map((asset) => fetch(new URL(asset, document.baseURI)).then((response) => response.ok)))
-		.then((results) => results.length === 6 && results.every(Boolean))`),
-	'all six mode assets load without broken paths',
-);
-check(
-	await evaluate(`[...document.querySelectorAll('.mode-card')].every((card) => {
-		const bounds = card.getBoundingClientRect();
-		return bounds.width > 0 && bounds.height > 0 && Math.abs(bounds.width / bounds.height - 1.5) < 0.04;
-	})`),
-	'mode cards preserve their configured landscape aspect ratio',
-);
-check(
-	await evaluate(
-		"document.querySelector('.mode-selection-footer')?.getBoundingClientRect().bottom <= innerHeight",
-	),
-	'desktop mode selection fits in the initial viewport',
-);
-check(
-	(await evaluate("document.querySelectorAll('.mode-card:not([disabled])').length")) === 6,
-	'all six deterministic mock mode demonstrations are available',
-);
-check(
-	await evaluate(
-		"document.querySelector('.mode-card[data-mode-id=normal]')?.getAttribute('aria-pressed') === 'true'",
-	),
-	'Normal is selected by default',
-);
-check(
-	(await text('.mode-card[data-mode-id=normal] .selected-mark')).includes('CURRENT MODE'),
-	'the selected mode card has a prominent current-mode marker',
-);
-await click(".mode-card[data-mode-id='forgeBoost']");
-check(
-	await evaluate(`document.querySelectorAll('.mode-card[data-mode-kind="play"][aria-pressed="true"]').length === 1 &&
-		document.querySelector('.mode-card[data-mode-id="forgeBoost"]')?.getAttribute('aria-pressed') === 'true'`),
-	'Forge Boost selection works and remains exclusive',
-);
-await click(".mode-card[data-mode-id='dragonBoost']");
-check(
-	await evaluate(`document.querySelectorAll('.mode-card[data-mode-kind="play"][aria-pressed="true"]').length === 1 &&
-		document.querySelector('.mode-card[data-mode-id="dragonBoost"]')?.getAttribute('aria-pressed') === 'true'`),
-	'Dragon Boost selection works and remains exclusive',
-);
-await click(".mode-card[data-mode-id='normal']");
-
-for (const [id, multiplier] of [
-	['standard', 80],
-	['super', 250],
-	['mythic', 500],
-]) {
-	await click(`.mode-card[data-mode-id='${id}']`);
-	await waitFor(
-		"Boolean(document.querySelector('.bonus-confirm-modal'))",
-		`${id} confirmation open`,
-	);
-	check(
-		moneyValue(await text('.bonus-confirm-modal .total dd b')) === multiplier,
-		`${id} Bonus Buy confirmation calculates its configured total`,
-	);
-	await click('.bonus-confirm-actions .cancel');
-}
-await captureScreenshot('relic-forge-mode-selection-final.png');
-
-await send('Emulation.setDeviceMetricsOverride', {
-	width: 390,
-	height: 844,
-	deviceScaleFactor: 1,
-	mobile: true,
-});
-await waitFor(
-	"document.querySelector('.mode-selection-screen')?.getBoundingClientRect().width <= innerWidth",
-	'mobile mode selection layout',
-);
-check(
-	await evaluate(`(() => {
-		const cards = [...document.querySelectorAll('.mode-card')].map((card) => card.getBoundingClientRect());
-		return document.documentElement.scrollWidth <= innerWidth &&
-			cards.every((card) => card.left >= 0 && card.right <= innerWidth) &&
-			cards.every((card, index) => index === 0 || card.top > cards[index - 1].top);
-	})()`),
-	'mobile mode selection uses one card per row without horizontal overflow',
-);
-await captureScreenshot('relic-forge-mode-selection-mobile-final.png');
-await send('Emulation.clearDeviceMetricsOverride');
-await click('.mode-start');
-check(
-	!(await evaluate("Boolean(document.querySelector('.mode-selection-screen'))")),
-	'Start Game applies Normal and closes mode selection',
-);
-check(
-	await evaluate(`document.querySelector('.active-mode-indicator')?.dataset.activeMode === 'normal' &&
-		document.querySelector('.active-mode-indicator strong')?.textContent?.trim() === 'NORMAL'`),
-	'the active mode remains clearly visible in the main game',
-);
-check(
-	await evaluate(
-		"getComputedStyle(document.querySelector('.active-mode-indicator')).backgroundImage.includes('active-mode-panel.webp')",
-	),
-	'the active mode uses the supplied blue-gold panel artwork',
-);
-check(
-	await evaluate(`['vault-balance.webp', 'vault-stake.webp'].every((asset, index) =>
-		getComputedStyle(document.querySelectorAll('.control-left .stat-block, .control-left .bet-control')[index]).backgroundImage.includes(asset)
-	)`),
-	'supplied Balance and Stake panel artwork renders',
-);
-check(
-	await evaluate(
-		"getComputedStyle(document.querySelector('.control-right .win-readout'), '::before').backgroundImage.includes('current-win-panel-v3.webp')",
-	),
-	'supplied Current Win panel artwork renders',
-);
-check(
-	await evaluate("document.querySelector('audio') === null && !document.querySelector('.forge-shell')?.hasAttribute('data-spin-audio')"),
-	'spin audio uses the CSP-safe Web Audio path without a media element',
-);
-check(
-	!(await evaluate("Boolean(document.querySelector('.reel-sheen'))")),
-	'horizontal sheen is removed',
-);
-await captureScreenshot('relic-forge-controls-final.png');
-await click("button[aria-label='Open paytable']");
-await waitFor("Boolean(document.querySelector('.modal-panel'))", 'paytable open');
-check(
-	(await evaluate("document.querySelectorAll('.pay-row').length")) === 8,
-	'paytable renders all eight paying relics',
-);
-check(
-	await evaluate(`(() => {
-		const symbols = [...document.querySelectorAll('.pay-symbol')];
-		return symbols.length === 8 && symbols.every((symbol) => getComputedStyle(symbol).backgroundImage.includes('/symbols/'));
-	})()`),
-	'paytable uses the supplied relic artwork',
-);
-await captureScreenshot('relic-forge-paytable-final.png');
-await click('.modal-close');
-check(
-	!(await evaluate(
-		"document.querySelector('.quick-controls button')?.classList.contains('active')",
-	)),
-	'normal spin profile is the default',
-);
-
-const initialBet = await text('.bet-row strong');
-const demoBetLevels = [0.2, 0.5, 1, 2, 5, 10, 20, 50];
-for (let index = 0; index < demoBetLevels.length + 2; index += 1)
-	await click("button[aria-label='Decrease bet']");
-check(moneyValue(await text('.bet-row strong')) === 0.2, 'demo bet stops at the 0.20 minimum');
-for (const expected of demoBetLevels.slice(1)) {
-	await click("button[aria-label='Increase bet']");
-	check(
-		moneyValue(await text('.bet-row strong')) === expected,
-		`demo bet advances to the exact ${expected} level`,
-	);
-}
-await click("button[aria-label='Increase bet']");
-check(moneyValue(await text('.bet-row strong')) === 50, 'demo bet stops at the 50.00 maximum');
-for (
-	let index = 0;
-	index < demoBetLevels.length + 2 && (await text('.bet-row strong')) !== initialBet;
-	index += 1
-)
-	await click("button[aria-label='Decrease bet']");
-check((await text('.bet-row strong')) === initialBet, 'demo bet restores the starting level');
-await click("button[aria-label='Increase bet']");
-check((await text('.bet-row strong')) !== initialBet, 'bet increase works');
-const increasedBet = moneyValue(await text('.bet-row strong'));
-await click('.bonus-buy-control');
-await waitFor(
-	"Boolean(document.querySelector('.mode-selection-screen'))",
-	'repriced mode selection',
-);
-check(
-	moneyValue(await text(".mode-card[data-mode-id='forgeBoost'] .mode-cost b")) ===
-		increasedBet * 2 &&
-		moneyValue(await text(".mode-card[data-mode-id='standard'] .mode-cost small")) ===
-			increasedBet * 80,
-	'mode and Bonus Buy prices react to the current base bet',
-);
-await click('.mode-start');
-await click("button[aria-label='Decrease bet']");
-check((await text('.bet-row strong')) === initialBet, 'bet decrease works');
-
-const openingBalance = moneyValue(await text('.stat-block strong'));
-await evaluate(`(() => {
-	window.__relicForgeStops = [];
-	document.querySelectorAll('.reel').forEach((reel, index) => {
-		new MutationObserver(() => {
-			if (reel.dataset.state === 'stopped') window.__relicForgeStops.push({ index, at: performance.now() });
-		}).observe(reel, { attributes: true, attributeFilter: ['data-state'] });
-	});
-	return true;
-})()`);
-const normalSpinStartedAt = Date.now();
-await evaluate(
-	"(() => { const button = document.querySelector('.spin-button'); button.click(); button.click(); button.click(); return button.disabled; })()",
-);
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'spin lock');
-check(
-	await evaluate("document.querySelector('.spin-button')?.disabled === true"),
-	'rapid clicks lock the spin control',
-);
-await waitFor(
-	"[...document.querySelectorAll('.reel')].every((reel) => ['accelerating','spinning','decelerating','settling'].includes(reel.dataset.state))",
-	'quick-result reels in motion',
-);
-check(true, 'a quickly returned mock result still lands through reel motion');
-await waitForIdle();
-const normalSpinDuration = Date.now() - normalSpinStartedAt;
-const normalStops = (await evaluate('window.__relicForgeStops ?? []')) ?? [];
-check(
-	normalStops.length === 5 && normalStops.every((stop, index) => stop.index === index),
-	`normal reels stop sequentially from left to right (${JSON.stringify(normalStops)})`,
-);
-check(
-	moneyValue(await text('.stat-block strong')) === openingBalance - 1,
-	'rapid clicks create exactly one mock wager',
-);
-check(moneyValue(await text('.win-readout strong')) === 0, 'losing result displays zero win');
-
-await click('.quick-controls button');
-check(
-	await evaluate("document.querySelector('.quick-controls button')?.classList.contains('active')"),
-	'turbo preference works',
-);
-
-const turboSpinStartedAt = Date.now();
-await click('.spin-button');
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'normal win spin start');
-await waitFor(
-	`JSON.stringify(${visibleSymbolsExpression}) === JSON.stringify([
-		['crown','ruby','sapphire'], ['crown','emerald','amber'], ['wild','ruby','shield'],
-		['crown','dragon','sword'], ['crown','amber','shield']
-	])`,
-	'Wild reveal',
-);
-await waitForIdle();
-const turboSpinDuration = Date.now() - turboSpinStartedAt;
-check(turboSpinDuration < normalSpinDuration, 'Turbo uses a shorter version of the same reel flow');
-const normalWinText = await text('.win-readout strong');
-check(
-	moneyValue(normalWinText) === 8,
-	`normal winning result displays (received ${normalWinText})`,
-);
-check((await visibleSymbols()).flat().includes('wild'), 'Wild presentation renders');
-check(
-	JSON.stringify(await visibleSymbols()) ===
-		JSON.stringify([
-			['crown', 'ruby', 'sapphire'],
-			['crown', 'emerald', 'amber'],
-			['wild', 'ruby', 'shield'],
-			['crown', 'dragon', 'sword'],
-			['crown', 'amber', 'shield'],
-		]),
-	'authoritative symbols remain unchanged after reel settling',
-);
-
-await click('.spin-button');
-await waitForIdle();
-check(
-	moneyValue(await text('.win-readout strong')) === 0,
-	'mock loss is interleaved before Free Spins',
-);
-
-await evaluate(`(() => {
-	window.__relicWildAudit = {
-		multipliers: [],
-		combineMultipliers: [],
-		combineLines: [],
-		maxSticky: 0,
-		lockedDuringSpin: false,
-		variants: [],
-	};
-	const sample = () => {
-		const cells = [...document.querySelectorAll('.relic-wild-cell')];
-		const audit = window.__relicWildAudit;
-		audit.maxSticky = Math.max(audit.maxSticky, cells.length);
-		for (const cell of cells) {
-			const value = Number(cell.dataset.multiplier);
-			if (!audit.multipliers.includes(value)) audit.multipliers.push(value);
-		}
-		const overlay = document.querySelector('.relic-wild-overlay');
-		for (const variant of ['standard', 'super', 'mythic']) {
-			if (overlay?.classList.contains('variant-' + variant) && !audit.variants.includes(variant)) {
-				audit.variants.push(variant);
-			}
-		}
-		const reelsMoving = [...document.querySelectorAll('.reel')].some((reel) =>
-			['accelerating', 'spinning', 'decelerating', 'settling'].includes(reel.dataset.state)
-		);
-		if (reelsMoving && cells.length) audit.lockedDuringSpin = true;
-		const combine = document.querySelector('.multiplier-combine');
-		if (combine) {
-			const value = Number(combine.dataset.relicCombine);
-			if (!audit.combineMultipliers.includes(value)) audit.combineMultipliers.push(value);
-			const lineKey = value + ':' + combine.dataset.relicLine;
-			if (!audit.combineLines.includes(lineKey)) audit.combineLines.push(lineKey);
-		}
-	};
-	window.__relicWildAuditTimer = setInterval(sample, 15);
-	new MutationObserver(sample).observe(document.body, { childList: true, subtree: true, attributes: true });
-	sample();
-	return true;
-})()`);
-
-await click('.spin-button');
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'feature spin start');
-await waitFor(
-	"document.querySelectorAll('.reel')[4]?.dataset.state === 'anticipating'",
-	'authoritative anticipation state',
-);
-check(true, 'anticipation only extends the reel identified by the reveal event');
-await waitFor(
-	`${visibleSymbolsExpression}.flat().filter((symbol) => symbol === 'scatter').length === 3`,
-	'Scatter reveal',
-);
-check(true, 'Scatter presentation renders');
-check(
-	await evaluate(`(() => {
-		const scatterRows = ${visibleSymbolsExpression}.flatMap((reel) =>
-			reel.map((symbol, row) => symbol === 'scatter' ? row : -1).filter((row) => row >= 0)
-		);
-		return scatterRows.length === 3 && new Set(scatterRows).size > 1;
-	})()`),
-	'mock Scatter trigger is not locked to one horizontal row',
-);
-await waitFor("Boolean(document.querySelector('.feature-banner'))", 'Free Spins entry');
-check(true, 'Free Spins are entered');
-await waitFor(
-	"document.querySelector('.feature-count')?.textContent?.trim() === '7' && document.querySelectorAll('.relic-wild-cell').length === 0",
-	'Standard first spin without a Relic Wild',
-);
-check(true, 'Standard supports a Free Spin with no Relic Wild');
-await waitFor(
-	`document.querySelector(".relic-wild-cell[data-multiplier='2']") !== null`,
-	'Standard x2 Relic Wild',
-);
-const firstStandardWildPosition = await evaluate(
-	"document.querySelector(\".variant-standard .relic-wild-cell[data-multiplier='2']\")?.dataset.relicWild ?? ''",
-);
-check(true, 'Standard x2 Relic Wild lands from its authoritative event');
-await waitFor(
-	`document.querySelector(".relic-wild-cell[data-multiplier='3']") !== null`,
-	'Standard x3 Relic Wild',
-);
-check(true, 'Standard x3 Relic Wild lands and both positions remain sticky');
-check(
-	!(await evaluate("Boolean(document.querySelector('.multiplier-combine'))")),
-	'a sticky Relic Wild that is not in a winning payline adds no multiplier presentation',
-);
-await waitFor(
-	`document.querySelector(".multiplier-combine[data-relic-combine='5']") !== null`,
-	'additive x2 plus x3 presentation',
-);
-check(true, 'authoritative x2 + x3 additive multiplier presentation renders');
-await waitForIdle();
-const standardRelicAudit = await evaluate('window.__relicWildAudit');
-check(
-	standardRelicAudit.maxSticky >= 2,
-	'Standard accumulates two persistent Relic Wild positions',
-);
-check(
-	standardRelicAudit.combineMultipliers.includes(2) &&
-		standardRelicAudit.combineMultipliers.includes(5),
-	'one-Wild and two-Wild line-win presentations both execute',
-);
-check(
-	standardRelicAudit.combineLines.includes('2:2') &&
-		standardRelicAudit.combineLines.includes('2:10'),
-	'one Relic Wild can participate in several authoritative paylines',
-);
-check(standardRelicAudit.lockedDuringSpin, 'locked Relic Wild remains rendered while reels spin');
-check(
-	!(await evaluate("Boolean(document.querySelector('.relic-wild-cell'))")),
-	'last Free Spin clears all sticky Relic Wild presentation state',
-);
-
-await send('Emulation.setDeviceMetricsOverride', {
-	width: 390,
-	height: 844,
-	deviceScaleFactor: 1,
-	mobile: true,
-});
-await waitFor(
-	`${visibleSymbolsExpression}.every((reel) => reel.length === 3)`,
-	'mobile reel alignment',
-);
-check(true, '5x3 reel alignment survives a mobile resize while idle');
-const mobileLayout = await evaluate(`(() => {
-	const frame = document.querySelector('.reel-frame').getBoundingClientRect();
-	const controls = document.querySelector('.control-deck').getBoundingClientRect();
-	return {
-		viewport: innerWidth,
-		scrollWidth: document.documentElement.scrollWidth,
-		frameLeft: frame.left,
-		frameRight: frame.right,
-		controlsLeft: controls.left,
-		controlsRight: controls.right,
-	};
-})()`);
-check(
-	mobileLayout.scrollWidth <= mobileLayout.viewport &&
-		mobileLayout.frameLeft >= 0 &&
-		mobileLayout.frameRight <= mobileLayout.viewport &&
-		mobileLayout.controlsLeft >= 0 &&
-		mobileLayout.controlsRight <= mobileLayout.viewport,
-	`mobile reels and controls fit without horizontal overflow (${JSON.stringify(mobileLayout)})`,
-);
-const mobileActionLayout = await evaluate(`(() => {
-	const rail = document.querySelector('.side-action-rail')?.getBoundingClientRect();
-	const stage = document.querySelector('.game-stage')?.getBoundingClientRect();
-	const controls = [...document.querySelectorAll('.side-action-rail .bonus-buy-control, .side-action-rail .quick-controls button')]
-		.map((button) => button.getBoundingClientRect());
-	const spin = document.querySelector('.spin-button')?.getBoundingClientRect();
-	const footer = document.querySelector('.footer-note')?.getBoundingClientRect();
-	return {
-		count: controls.length,
-		trailedByStage: Boolean(rail && stage && rail.top >= stage.bottom - 2),
-		sameRow: controls.length === 5 && controls.every((bounds) => Math.abs(bounds.top - controls[0].top) < 4),
-		withinViewport: controls.every((bounds) => bounds.left >= 0 && bounds.right <= innerWidth),
-		spinVisible: Boolean(spin && spin.top >= 0 && spin.bottom <= innerHeight),
-		footerVisible: Boolean(footer && footer.bottom <= innerHeight),
-	};
-})()`);
-check(
-	mobileActionLayout.count === 5 &&
-	mobileActionLayout.trailedByStage &&
-	mobileActionLayout.sameRow &&
-	mobileActionLayout.withinViewport &&
-	mobileActionLayout.spinVisible &&
-	mobileActionLayout.footerVisible,
-	`portrait mobile action bar and Spin fit in one viewport (${JSON.stringify(mobileActionLayout)})`,
-);
-await captureScreenshot('relic-forge-mobile-controls-final.png');
-await send('Emulation.clearDeviceMetricsOverride');
-check(
-	!(await evaluate("Boolean(document.querySelector('.feature-banner'))")),
-	'Free Spins complete in the same mock round',
-);
-
-await click('.spin-button');
-await waitForIdle();
-check(
-	moneyValue(await text('.win-readout strong')) === 0,
-	'mock loss is interleaved before Big Win',
-);
-
-await click('.spin-button');
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'Big Win spin start');
-await waitFor(
-	"document.querySelector('.big-win-overlay strong')?.textContent === 'BIG WIN'",
-	'Big Win overlay',
-);
-check(true, 'Big Win presentation renders');
-await waitForIdle();
-
-await click('.spin-button');
-await waitForIdle();
-check(
-	moneyValue(await text('.win-readout strong')) === 0,
-	'mock loss is interleaved before Mega Win',
-);
-
-await click('.spin-button');
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'Mega Win spin start');
-await waitFor(
-	"document.querySelector('.big-win-overlay strong')?.textContent === 'MEGA WIN'",
-	'Mega Win overlay',
-);
-check(true, 'Mega Win presentation renders');
-await waitForIdle();
-
-const preBonusBalance = moneyValue(await text('.stat-block strong'));
-await click('.bonus-buy-control');
-await waitFor(
-	"Boolean(document.querySelector('.mode-selection-screen'))",
-	'Bonus Buy mode selection',
-);
-await click(".mode-card[data-mode-id='standard']");
-await waitFor("Boolean(document.querySelector('.bonus-confirm-modal'))", 'Standard confirmation');
-check(
-	moneyValue(await text('.bonus-confirm-modal .total dd b')) === 80,
-	'Standard mock confirmation displays its centralized 80x total cost',
-);
-check(
-	await evaluate(`(() => {
-		const modal = document.querySelector('.bonus-confirm-modal')?.getBoundingClientRect();
-		const actions = document.querySelector('.bonus-confirm-actions')?.getBoundingClientRect();
-		return Boolean(modal && actions && actions.left >= modal.left && actions.right <= modal.right);
-	})()`),
-	'Bonus Buy actions remain inside the confirmation artwork',
-);
-await captureScreenshot('relic-forge-bonus-buy-final.png');
-await click('.bonus-confirm-actions .buy');
-check(
-	moneyValue(await text('.win-readout strong')) === 0,
-	'Bonus Buy clears the previous Current Win immediately',
-);
-await waitFor("Boolean(document.querySelector('.feature-banner'))", 'purchased Free Spins entry');
-check(true, 'mock Bonus Buy enters Free Spins through the event contract');
-check(
-	moneyValue(await text('.win-readout strong')) === 0 && (await text('.feature-count')) === '8',
-	'Bonus Buy starts with an authoritative zero Current Win and eight Free Spins',
-);
-await waitFor(
-	"document.querySelector('.feature-count')?.textContent?.trim() === '7'",
-	'first purchased Free Spin resolves',
-);
-check(
-	moneyValue(await text('.win-readout strong')) === 0,
-	'the first purchased Free Spin applies its authoritative zero win immediately',
-);
-await waitFor(
-	`document.querySelector(".variant-standard .relic-wild-cell[data-multiplier='2']") !== null`,
-	'purchased Standard receives its first Relic Wild',
-);
-const purchasedStandardWildPosition = await evaluate(
-	"document.querySelector(\".variant-standard .relic-wild-cell[data-multiplier='2']\")?.dataset.relicWild ?? ''",
-);
-check(
-	Boolean(firstStandardWildPosition) &&
-		Boolean(purchasedStandardWildPosition) &&
-		firstStandardWildPosition !== purchasedStandardWildPosition,
-	'mock bonuses generate a fresh Relic Wild position for each new bonus round',
-);
-await waitFor(
-	"document.querySelector('.feature-count')?.textContent?.trim() === '5' && Number(document.querySelector('.win-readout strong')?.textContent?.replace(/[^0-9.-]/g, '')) === 3",
-	'first nonzero purchased Free Spin win presentation',
-);
-check(
-	moneyValue(await text('.win-readout strong')) === 3,
-	'the first nonzero purchased Free Spin updates Current Win immediately',
-);
-await waitForIdle();
-check(
-	moneyValue(await text('.stat-block strong')) === preBonusBalance - 80 + 33,
-	'mock Bonus Buy applies fixture cost and authoritative fixture payout',
-);
-
-await click('.bonus-buy-control');
-await waitFor("Boolean(document.querySelector('.mode-selection-screen'))", 'second Standard mode selection');
-await click(".mode-card[data-mode-id='standard']");
-await waitFor("Boolean(document.querySelector('.bonus-confirm-modal'))", 'second Standard confirmation');
-await click('.bonus-confirm-actions .buy');
-await waitFor(
-	"document.querySelector('.feature-count')?.textContent?.trim() === '7' && document.querySelector('.variant-standard .relic-wild-cell') !== null",
-	'second Standard Free Spins entry',
-);
-const secondPurchasedStandardWildPosition = await evaluate(
-	"document.querySelector(\".variant-standard .relic-wild-cell[data-multiplier='2']\")?.dataset.relicWild ?? ''",
-);
-check(
-	Boolean(secondPurchasedStandardWildPosition) && secondPurchasedStandardWildPosition !== purchasedStandardWildPosition,
-	'separate purchased bonuses receive a fresh Standard Relic Wild position',
-);
-await waitForIdle();
-
-await evaluate(`(() => {
-	Object.assign(window.__relicWildAudit, {
-		multipliers: [], combineMultipliers: [], combineLines: [], maxSticky: 0, lockedDuringSpin: false, variants: []
-	});
-	return true;
-})()`);
-const preSuperBalance = moneyValue(await text('.stat-block strong'));
-await click('.bonus-buy-control');
-await waitFor("Boolean(document.querySelector('.mode-selection-screen'))", 'Super mode selection');
-await click(".mode-card[data-mode-id='super']");
-await waitFor("Boolean(document.querySelector('.bonus-confirm-modal'))", 'Super confirmation');
-await click('.bonus-confirm-actions .buy');
-await waitFor(
-	"document.querySelector('.feature-count')?.textContent?.trim() === '7' && document.querySelector('.variant-super .relic-wild-cell') !== null",
-	'Super guaranteed first Relic Wild',
-);
-check(true, 'Super guaranteed first Relic Wild is supplied by the feature event book');
-check(
-	await evaluate(`document.querySelector('.active-mode-indicator')?.dataset.activeMode === 'super' &&
-		document.querySelector('.active-mode-indicator strong')?.textContent?.trim() === 'SUPER FREE SPINS'`),
-	'the persistent mode indicator identifies Super Free Spins',
-);
-await waitFor(
-	`document.querySelector(".variant-super .relic-wild-cell[data-multiplier='5']") !== null`,
-	'Super x5 Relic Wild',
-);
-check(true, 'Super supports its configured x5 Relic Wild');
-await waitFor(
-	`document.querySelector(".multiplier-combine[data-relic-combine='8']") !== null`,
-	'Super additive multiplier presentation',
-);
-await waitForIdle();
-const superRelicAudit = await evaluate('window.__relicWildAudit');
-check(
-	superRelicAudit.variants.includes('super') && superRelicAudit.multipliers.includes(5),
-	'Super uses the reusable purple variant and stronger multiplier fixture',
-);
-check(
-	moneyValue(await text('.stat-block strong')) === preSuperBalance - 250 + 48,
-	'Super fixture applies its configured cost and authoritative payout',
-);
-
-await evaluate(`(() => {
-	Object.assign(window.__relicWildAudit, {
-		multipliers: [], combineMultipliers: [], combineLines: [], maxSticky: 0, lockedDuringSpin: false, variants: []
-	});
-	return true;
-})()`);
-const preMythicBalance = moneyValue(await text('.stat-block strong'));
-await click('.bonus-buy-control');
-await waitFor("Boolean(document.querySelector('.mode-selection-screen'))", 'Mythic mode selection');
-await click(".mode-card[data-mode-id='mythic']");
-await waitFor("Boolean(document.querySelector('.bonus-confirm-modal'))", 'Mythic confirmation');
-await click('.bonus-confirm-actions .buy');
-await waitFor(
-	`document.querySelector('.feature-count')?.textContent?.trim() === '7' && document.querySelector(".variant-mythic .relic-wild-cell[data-multiplier='10']") !== null`,
-	'Mythic guaranteed x10 Relic Wild',
-);
-check(true, 'Mythic guaranteed first x10 Relic Wild is supplied by the event book');
-check(
-	await evaluate(`document.querySelector('.active-mode-indicator')?.dataset.activeMode === 'mythic' &&
-		document.querySelector('.active-mode-indicator strong')?.textContent?.trim() === 'MYTHIC FREE SPINS'`),
-	'the persistent mode indicator identifies Mythic Free Spins',
-);
-await waitFor(
-	`document.querySelector(".variant-mythic .relic-wild-cell[data-multiplier='20']") !== null`,
-	'Mythic x20 Relic Wild',
-);
-check(true, 'Mythic supports its configured x20 Relic Wild');
-await waitFor(
-	"document.querySelectorAll('.variant-mythic .relic-wild-cell').length >= 3",
-	'three simultaneous Mythic Relic Wilds',
-);
-await waitFor(
-	`document.querySelector(".multiplier-combine[data-relic-combine='35']") !== null`,
-	'Mythic three-Wild additive multiplier presentation',
-);
-await waitForIdle();
-const mythicRelicAudit = await evaluate('window.__relicWildAudit');
-check(
-	mythicRelicAudit.maxSticky >= 3 &&
-		mythicRelicAudit.multipliers.includes(10) &&
-		mythicRelicAudit.multipliers.includes(20) &&
-		mythicRelicAudit.combineMultipliers.includes(35),
-	'Mythic accumulates three Wilds and displays the authoritative x35 combination',
-);
-check(
-	moneyValue(await text('.stat-block strong')) === preMythicBalance - 500 + 210,
-	'Mythic fixture applies its configured cost and authoritative payout',
-);
-check(
-	!(await evaluate("Boolean(document.querySelector('.relic-wild-cell'))")),
-	'Mythic final-spin cleanup removes all sticky overlays',
-);
-
-await navigate(APP_URL);
-await evaluate("localStorage.setItem('relic-forge-turbo', 'false'); location.reload(); true");
-await waitFor("Boolean(document.querySelector('.spin-button'))", 'base mode audit reload');
-for (const modeId of ['normal', 'forgeBoost', 'dragonBoost']) {
-	if (modeId !== 'normal') {
-		await click('.active-mode-indicator');
-		await waitFor("Boolean(document.querySelector('.mode-selection-screen'))", `${modeId} mode audit selection`);
-		await click(`.mode-card[data-mode-id='${modeId}']`);
-		await click('.mode-start');
-	}
-	check(
-		await evaluate(`document.querySelector('.active-mode-indicator')?.dataset.activeMode === ${JSON.stringify(modeId)}`),
-		`${modeId} is visibly active before a base spin`,
-	);
-	await click('.spin-button');
-	await waitForIdle();
-	check(!(await evaluate("Boolean(document.querySelector('.error-panel'))")), `${modeId} demo spin completes without an error`);
-}
-await evaluate("document.querySelector('.spin-button')?.focus(); true");
-await send('Input.dispatchKeyEvent', {
-	type: 'keyDown',
-	key: ' ',
-	code: 'Space',
-	windowsVirtualKeyCode: 32,
-	nativeVirtualKeyCode: 32,
-});
-await send('Input.dispatchKeyEvent', {
-	type: 'keyUp',
-	key: ' ',
-	code: 'Space',
-	windowsVirtualKeyCode: 32,
-	nativeVirtualKeyCode: 32,
-});
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'Spacebar spin start');
-await waitForIdle();
-check(true, 'Spacebar starts one demo spin through the shared hotkey helper');
-
-const jurisdiction = {
-	socialCasino: false,
-	disabledFullscreen: false,
-	disabledTurbo: false,
-	disabledSuperTurbo: false,
-	disabledAutoplay: true,
-	disabledSlamstop: false,
-	disabledSpacebar: false,
-	disabledBuyFeature: false,
-	displayNetPosition: false,
-	displayRTP: false,
-	displaySessionTimer: false,
-	minimumRoundDuration: 0,
-};
-
-on('Fetch.requestPaused', ({ requestId, request }) => {
-	let payload;
-	let responseDelay = 0;
-	if (request.method === 'OPTIONS') {
-		void send('Fetch.fulfillRequest', {
-			requestId,
-			responseCode: 204,
-			responseHeaders: [
-				{ name: 'Access-Control-Allow-Origin', value: APP_ORIGIN },
-				{ name: 'Access-Control-Allow-Headers', value: 'Content-Type' },
-				{ name: 'Access-Control-Allow-Methods', value: 'POST, OPTIONS' },
-			],
-		});
-		return;
-	} else if (request.url.endsWith('/wallet/authenticate')) {
-		requestCounts.authenticate += 1;
-		payload = {
-			balance: { amount: 1_000_000_000, currency: 'USD' },
-			config: {
-				minBet: 200_000,
-				maxBet: 50_000_000,
-				stepBet: 100_000,
-				defaultBetLevel: 1_000_000,
-				betLevels: [1_000_000],
-				betModes: {
-					BASE: { mode: 'BASE', cost: 1, feature: false },
-					BONUS: { mode: 'BONUS', cost: 100, feature: false, buyBonus: true },
-				},
-				jurisdiction: serveRestrictedSession
-					? {
-							...jurisdiction,
-							socialCasino: true,
-							disabledTurbo: true,
-							disabledSpacebar: true,
-							disabledBuyFeature: true,
-							minimumRoundDuration: 3000,
-						}
-					: jurisdiction,
-			},
-			...(serveRecoveryRound
-				? {
-						round: {
-							roundID: 779,
-							amount: 1_000_000,
-							payout: 0,
-							payoutMultiplier: 0,
-							active: true,
-							mode: 'BONUS',
-							state: [
-								{
-									index: 0,
-									type: 'reveal',
-									board: [
-										['scatter', 'dragon', 'sapphire'],
-										['scatter', 'emerald', 'amber'],
-										['scatter', 'sword', 'shield'],
-										['ruby', 'dragon', 'crown'],
-										['sapphire', 'amber', 'wild'],
-									],
-								},
-								{ index: 1, type: 'freeSpinTrigger', totalFs: 8 },
-								{ index: 2, type: 'updateFreeSpin', amount: 3, total: 8 },
-								{
-									index: 3,
-									type: 'reveal',
-									board: [
-										['dragon', 'ruby', 'sapphire'],
-										['crown', { name: 'wild', wild: true, multiplier: 5 }, 'amber'],
-										['sword', 'ruby', 'shield'],
-										['emerald', 'dragon', 'crown'],
-										['sapphire', 'amber', 'shield'],
-									],
-								},
-								{
-									index: 4,
-									type: 'newRelicWilds',
-									variant: 'super',
-									wilds: [{ reel: 1, row: 1, multiplier: 5 }],
-								},
-								{
-									index: 5,
-									type: 'relicWildState',
-									variant: 'super',
-									remainingFreeSpins: 4,
-									featureWin: 250,
-									stickyRelicWilds: [{ reel: 1, row: 1, multiplier: 5 }],
-									cleared: false,
-								},
-								{ index: 6, type: 'updateFreeSpin', amount: 4, total: 8 },
-								{
-									index: 7,
-									type: 'reveal',
-									board: [
-										['dragon', 'ruby', 'sapphire'],
-										['crown', { name: 'wild', wild: true, multiplier: 5 }, 'amber'],
-										['sword', 'ruby', 'shield'],
-										['emerald', 'dragon', 'crown'],
-										['sapphire', 'amber', 'shield'],
-									],
-								},
-								{
-									index: 8,
-									type: 'relicWildState',
-									variant: 'super',
-									remainingFreeSpins: 3,
-									featureWin: 250,
-									stickyRelicWilds: [{ reel: 1, row: 1, multiplier: 5 }],
-									cleared: false,
-								},
-								{
-									index: 9,
-									type: 'relicWildState',
-									variant: 'super',
-									remainingFreeSpins: 0,
-									featureWin: 250,
-									stickyRelicWilds: [],
-									cleared: true,
-								},
-								{ index: 10, type: 'freeSpinEnd', amount: 250 },
-								{ index: 11, type: 'finalWin', amount: 250 },
-							],
-						},
-					}
-				: {}),
-		};
-	} else if (request.url.endsWith('/wallet/play')) {
-		requestCounts.play += 1;
-		const playRequest = request.postData ? JSON.parse(request.postData) : {};
-		const mode = playRequest.mode;
-		playModes.push(mode);
-		playAmounts.push(playRequest.amount);
-		responseDelay = 400;
-		payload =
-			mode === 'BONUS'
-				? {
-						balance: { amount: 899_000_000, currency: 'USD' },
-						round: {
-							roundID: 778,
-							amount: 1_000_000,
-							payout: 0,
-							payoutMultiplier: 0,
-							active: true,
-							mode,
-							state: [
-								{
-									index: 0,
-									type: 'reveal',
-									board: [
-										['scatter', 'dragon', 'sapphire'],
-										['scatter', 'emerald', 'amber'],
-										['scatter', 'sword', 'shield'],
-										['ruby', 'dragon', 'crown'],
-										['sapphire', 'amber', 'wild'],
-									],
-								},
-								{ index: 1, type: 'freeSpinTrigger', totalFs: 8 },
-								{ index: 2, type: 'updateFreeSpin', amount: 0, total: 0 },
-								{ index: 3, type: 'freeSpinEnd', amount: 0 },
-								{ index: 4, type: 'finalWin', amount: 0 },
-							],
-						},
-					}
-				: {
-						balance: { amount: 999_000_000, currency: 'USD' },
-						round: {
-							roundID: 777,
-							amount: 1_000_000,
-							payout: 0,
-							payoutMultiplier: 0,
-							active: true,
-							mode: 'BASE',
-							state: [
-								{
-									index: 0,
-									type: 'reveal',
-									board: [
-										['dragon', 'ruby', 'sapphire'],
-										['crown', 'emerald', 'amber'],
-										['sword', 'ruby', 'shield'],
-										['emerald', 'dragon', 'crown'],
-										['sapphire', 'amber', 'wild'],
-									],
-								},
-								{ index: 1, type: 'finalWin', amount: 0 },
-							],
-						},
-					};
-	} else if (request.url.includes('/bet/replay/')) {
-		replayRequests += 1;
-		payload = {
-			roundID: 991,
-			amount: 1_000_000,
-			payout: 0,
-			payoutMultiplier: 0,
-			active: false,
-			state: [
-				{ index: 0, type: 'reveal', board: [
-					['dragon', 'ruby', 'sapphire'],
-					['crown', 'emerald', 'amber'],
-					['sword', 'ruby', 'shield'],
-					['emerald', 'dragon', 'crown'],
-					['sapphire', 'amber', 'amber'],
-				] },
-				{ index: 1, type: 'finalWin', amount: 0 },
-			],
-		};
-	} else if (request.url.endsWith('/wallet/end-round')) {
-		requestCounts.endRound += 1;
-		payload = { balance: { amount: 999_000_000, currency: 'USD' } };
-	} else {
-		void send('Fetch.continueRequest', { requestId });
-		return;
-	}
-
-	const fulfill = () =>
-		void send('Fetch.fulfillRequest', {
-			requestId,
-			responseCode: 200,
-			responseHeaders: [
-				{ name: 'Content-Type', value: 'application/json' },
-				{ name: 'Access-Control-Allow-Origin', value: APP_ORIGIN },
-			],
-			body: Buffer.from(JSON.stringify(payload)).toString('base64'),
-		});
-	if (responseDelay > 0) setTimeout(fulfill, responseDelay);
-	else fulfill();
-});
-
-await navigate(`${APP_ORIGIN}/?sessionID=browser-test&rgs_url=mock.local`);
-await waitFor(
-	"document.querySelector('.footer-note')?.textContent?.includes('STAKE ENGINE SESSION')",
-	'RGS session render',
-);
-check(requestCounts.authenticate === 1, 'RGS authentication path executes once');
-await evaluate(
-	"(() => { const button = document.querySelector('.spin-button'); button.click(); button.click(); button.click(); return true; })()",
-);
-await waitFor(
-	"[...document.querySelectorAll('.reel')].some((reel) => ['accelerating','spinning'].includes(reel.dataset.state))",
-	'reels waiting for delayed RGS result',
-);
-check(true, 'reels keep moving while an authoritative RGS result is delayed');
-await waitForIdle();
-check(requestCounts.play === 1, 'rapid clicks create one RGS play request');
-check(playAmounts[0] === 1_000_000, 'RGS play sends the authenticated bet in API units');
-check(requestCounts.endRound === 0, 'zero-win base rounds close without end-round');
-check(moneyValue(await text('.stat-block strong')) === 999, 'RGS play response updates the authenticated balance');
-
-await click('.spin-button');
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'second RGS spin start');
-await waitForIdle();
-check(requestCounts.play === 2, 'a later round can start normally');
-check(requestCounts.endRound === 0, 'zero-win base rounds remain closed exactly once');
-
-check(
-	await evaluate("document.querySelector('.bonus-buy-control:not([disabled])') !== null"),
-	'RGS Bonus Buy is enabled from authenticated buyBonus configuration',
-);
-await click('.bonus-buy-control');
-await waitFor("Boolean(document.querySelector('.mode-selection-screen'))", 'RGS mode selection');
-check(
-	await evaluate(`(() => {
-		const enabled = [...document.querySelectorAll('.mode-card:not([disabled])')].map((card) => card.dataset.modeId);
-		return JSON.stringify(enabled) === JSON.stringify(['normal', 'standard']);
-	})()`),
-	'RGS enables only BASE and authenticated BONUS while unavailable modes stay disabled',
-);
-await click(".mode-card[data-mode-id='standard']");
-await waitFor(
-	"Boolean(document.querySelector('.bonus-confirm-modal'))",
-	'RGS Bonus Buy confirmation',
-);
-check(
-	moneyValue(await text('.bonus-confirm-modal .total dd b')) === 100,
-	'RGS Bonus Buy confirmation uses the authenticated 100x multiplier',
-);
-await click('.bonus-confirm-actions .buy');
-await waitFor(
-	"document.querySelector('.spin-button')?.disabled === true",
-	'RGS Bonus Buy request start',
-);
-await waitForIdle();
-check(requestCounts.play === 3, 'Bonus Buy creates one RGS play request');
-check(playModes.at(-1) === 'BONUS', 'Bonus Buy sends the authenticated BONUS mode');
-check(requestCounts.endRound === 1, 'purchased feature completes its RGS round once');
-check(moneyValue(await text('.stat-block strong')) === 999, 'RGS end-round response updates the final balance');
-
-serveRecoveryRound = true;
-await navigate(`${APP_ORIGIN}/?sessionID=recovery-test&rgs_url=mock.local`);
-await waitFor(
-	`document.querySelector(".variant-super .relic-wild-cell[data-multiplier='5']") !== null`,
-	'recovered sticky Relic Wild',
-);
-await waitFor(
-	"document.querySelector('.feature-count')?.textContent?.trim() === '4'",
-	'recovered remaining-spin snapshot',
-);
-check(
-	moneyValue(await text('.feature-banner small')) === 2.5,
-	'recovery restores remaining spins, accumulated win, position, and multiplier',
-);
-await waitFor(
-	"[...document.querySelectorAll('.reel')].some((reel) => ['accelerating','spinning','decelerating','settling'].includes(reel.dataset.state)) && Boolean(document.querySelector('.relic-wild-cell'))",
-	'recovered Wild held through resumed reel motion',
-);
-check(true, 'recovered sticky Relic Wild remains visible through the next reel spin');
-await waitForIdle();
-check(
-	requestCounts.authenticate === 2,
-	'refresh recovery authenticates and receives active round state',
-);
-check(requestCounts.play === 3, 'recovery does not place a replacement wager');
-check(requestCounts.endRound === 2, 'recovered round is completed exactly once');
-check(
-	!(await evaluate("Boolean(document.querySelector('.relic-wild-cell'))")),
-	'recovered feature cleanup removes sticky state',
-);
-
-serveRecoveryRound = false;
-serveRestrictedSession = true;
-await navigate(`${APP_ORIGIN}/?sessionID=restricted-test&rgs_url=mock.local`);
-await waitFor(
-	"document.querySelector('.footer-note')?.textContent?.includes('SOCIAL CASINO')",
-	'restricted social-casino session render',
-);
-check(
-	await evaluate("document.querySelector('.turbo-control')?.disabled === true"),
-	'restricted jurisdiction disables Turbo',
-);
-check(
-	await evaluate("document.querySelector('.bonus-buy-control')?.disabled === true"),
-	'restricted jurisdiction disables Bonus Buy',
-);
-const restrictedPlayCount = requestCounts.play;
-await evaluate(`(() => {
-	window.__restrictedRoundStartedAt = performance.now();
-	window.__restrictedRoundStoppedAt = 0;
-	const markStopped = () => {
-		if (!window.__restrictedRoundStoppedAt && [...document.querySelectorAll('.reel')].every((reel) => reel.dataset.state === 'stopped'))
-			window.__restrictedRoundStoppedAt = performance.now();
-	};
-	window.__restrictedRoundObserver = new MutationObserver(markStopped);
-	window.__restrictedRoundObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['data-state'] });
-	document.querySelector('.spin-button')?.click();
-	return true;
-})()`);
-await waitFor("window.__restrictedRoundStoppedAt > 0", 'minimum round duration result presentation', 20_000);
-const restrictedRoundDuration = await evaluate('window.__restrictedRoundStoppedAt - window.__restrictedRoundStartedAt');
-check(
-		restrictedRoundDuration >= 2900,
-	`minimumRoundDuration delays result presentation (${Math.round(restrictedRoundDuration)}ms)`,
-);
-await waitForIdle();
-await evaluate("document.querySelector('.spin-button')?.focus(); true");
-await send('Input.dispatchKeyEvent', {
-	type: 'keyDown',
-	key: ' ',
-	code: 'Space',
-	windowsVirtualKeyCode: 32,
-	nativeVirtualKeyCode: 32,
-});
-await send('Input.dispatchKeyEvent', {
-	type: 'keyUp',
-	key: ' ',
-	code: 'Space',
-	windowsVirtualKeyCode: 32,
-	nativeVirtualKeyCode: 32,
-});
-await delay(250);
-check(requestCounts.play === restrictedPlayCount + 1, 'restricted jurisdiction blocks Spacebar wagering');
-
-serveRestrictedSession = false;
-const beforeReplayRequests = { ...requestCounts };
-await navigate(
-	`${APP_ORIGIN}/?replay=true&rgs_url=mock.local&game=relic-forge&version=1&mode=BASE&event=0&amount=1000000`,
-);
-await waitFor("document.querySelector('.footer-note')?.textContent?.includes('REPLAY')", 'replay render');
-await waitFor("document.querySelector('.spin-button')?.disabled === true", 'replay completion lock');
-check(replayRequests === 1, 'replay loads one authoritative replay response');
-check(
-	await evaluate("document.querySelector('.bonus-buy-control')?.disabled === true && document.querySelector('.active-mode-indicator')?.disabled === true"),
-	'replay disables Bonus Buy and mode changes',
-);
-await click('.spin-button');
-await delay(100);
-check(
-	requestCounts.play === beforeReplayRequests.play && requestCounts.endRound === beforeReplayRequests.endRound,
-	'replay does not wager or complete a wallet round',
-);
-
-check(
-	runtimeErrors.length === 0,
-	`browser runtime has no console errors: ${runtimeErrors.join(' | ')}`,
-);
-check(
-	networkFailures.length === 0,
-	`browser runtime has no network failures: ${networkFailures.join(' | ')}`,
-);
-
-console.log(JSON.stringify({ passed: assertionResults, requestCounts, playModes }, null, 2));
-
-socket.close();
-browser.kill();
+const origin=process.env.APP_ORIGIN??'http://localhost:3006';
+const output=process.env.QA_OUTPUT??join(process.cwd(),'art','qa');mkdirSync(output,{recursive:true});
+const chrome=['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
+if(!chrome)throw Error('No installed browser');
+const port=9335;
+const browser=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,`--user-data-dir=${join(tmpdir(),`petal-qa-${process.pid}`)}`,'--no-first-run','--disable-gpu','about:blank'],{stdio:'ignore',windowsHide:true});
+const delay=ms=>new Promise(r=>setTimeout(r,ms));
+let socket;
+const results=[],errors=[];
+const counts={authenticate:0,play:0,event:0,end:0,replay:0};
+let modes=[],restricted=false,recovery=false,bad=false,recoveryMode='BLIGHT',historicPrice=null;
+const fixtures=JSON.parse(readFileSync('src/petal/fixtures.json','utf8'));
+const bonusFixtures=JSON.parse(readFileSync('src/petal/bonus-fixtures.json','utf8'));
+const bonusConfig=JSON.parse(readFileSync('src/petal/bonus-config.json','utf8'));
+try{
+ let targets;for(let i=0;i<100;i++){try{targets=await(await fetch(`http://localhost:${port}/json/list`)).json();break;}catch{await delay(100);}}
+ socket=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);
+ await new Promise(r=>socket.once('open',r));
+ let id=0;const pending=new Map(),handlers=new Map();
+ socket.on('message',data=>{const m=JSON.parse(data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(m.error)p.reject(Error(m.error.message));else p.resolve(m.result);}else for(const fn of handlers.get(m.method)??[])void fn(m.params);});
+ const send=(method,params={})=>new Promise((resolve,reject)=>{pending.set(++id,{resolve,reject});socket.send(JSON.stringify({id,method,params}));});
+ const on=(event,fn)=>handlers.set(event,[...(handlers.get(event)??[]),fn]);
+ const ev=async expression=>{const r=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description??r.exceptionDetails.text);return r.result.value;};
+ const check=(v,label)=>{if(!v)throw Error('FAIL '+label);results.push(label);};
+ const wait=async(expression,label,timeout=20000)=>{const t=Date.now();while(Date.now()-t<timeout){if(await ev(expression))return;await delay(35);}throw Error(`Timeout ${label}: ${await ev('document.body.innerText')}`);};
+ const click=selector=>ev(`document.querySelector(${JSON.stringify(selector)})?.click()`);
+ const navigate=async url=>{await send('Page.navigate',{url});await wait("document.querySelector('.petal-world') || document.querySelector('.session-error')",'render');await delay(100);};
+ const idle=()=>wait("document.querySelector('.petal-world')?.dataset.busy === 'false'",'round idle',60000);
+ const shot=async name=>{const {data}=await send('Page.captureScreenshot',{format:'png'});writeFileSync(join(output,name+'.png'),Buffer.from(data,'base64'));};
+ const media=reduce=>send('Emulation.setEmulatedMedia',{features:reduce?[{name:'prefers-reduced-motion',value:'reduce'}]:[]});
+ const viewport=(width,height)=>send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<900});
+ on('Runtime.exceptionThrown',p=>errors.push(p.exceptionDetails.exception?.description??p.exceptionDetails.text));
+ await Promise.all([send('Page.enable'),send('Runtime.enable'),send('Network.enable'),send('Fetch.enable',{patterns:[{urlPattern:'https://mock.local/*'}]})]);
+ const makeRound=(mode='BLOOM',i=2)=>{
+  const b=structuredClone(bonusFixtures[mode]?bonusFixtures[mode][0]:fixtures[mode][i]);
+  if(historicPrice&&bonusFixtures[mode])b.events[0].purchaseCostMultiplier=historicPrice;
+  if(bad)b.events[0].contract='old-forge';
+  return{roundID:500+counts.play,amount:1000000,payout:b.payoutMultiplier*10000,payoutMultiplier:b.payoutMultiplier/100,mode,state:b.events,active:true,event:recovery?Math.floor(b.events.length/2):null};
+ };
+ on('Fetch.requestPaused',async p=>{
+  const url=p.request.url,input=JSON.parse(p.request.postData??'{}');let body={};
+  if(p.request.method==='OPTIONS')body={};
+  else if(url.includes('authenticate')){
+   counts.authenticate++;
+   body={balance:{amount:1000000000,currency:'USD'},config:{minBet:200000,maxBet:50000000,stepBet:100000,defaultBetLevel:1000000,betLevels:[200000,500000,1000000,2000000],betModes:{BLOOM:{costMultiplier:1},BLIGHT:{costMultiplier:1},...Object.fromEntries(Object.entries(bonusConfig).map(([mode,c])=>[mode,{costMultiplier:c.costMultiplier,buyBonus:true}]))},jurisdiction:{disabledTurbo:restricted,disabledAutoplay:restricted,disabledSpacebar:restricted,disabledBuyFeature:restricted,minimumRoundDuration:0}},...(recovery?{round:makeRound(recoveryMode,4)}:{})};
+  }else if(url.includes('/wallet/play')){counts.play++;modes.push(input.mode);body={balance:{amount:999000000,currency:'USD'},round:makeRound(input.mode)};}
+  else if(url.includes('/bet/event')){counts.event++;body={event:String(input.event)};}
+  else if(url.includes('end-round')){counts.end++;body={balance:{amount:1000200000,currency:'USD'}};}
+  else if(url.includes('replay')){counts.replay++;const mode=url.split('/').at(-2);const b=bonusFixtures[mode]?bonusFixtures[mode][0]:fixtures.BLIGHT[2];body={...b,state:b.events,payoutMultiplier:b.payoutMultiplier/100};}
+  await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:'application/json'},{name:'Access-Control-Allow-Origin',value:'*'},{name:'Access-Control-Allow-Methods',value:'GET, POST, OPTIONS'},{name:'Access-Control-Allow-Headers',value:'Content-Type, Accept'}],body:Buffer.from(JSON.stringify(body)).toString('base64')});
+ });
+ await navigate(origin+'/?demo=true');await idle();
+ check(await ev("document.querySelectorAll('.reel-cell').length===25"),'5 by 5 board');
+ check(await ev("document.title==='The Last Petal'"),'new branding');
+ for(const [w,h,name] of [[1536,960,'bloom-desktop'],[768,1024,'bloom-tablet'],[390,844,'bloom-mobile'],[844,390,'bloom-landscape']]){
+  await viewport(w,h);await delay(150);await wait("[...document.images].every(i=>i.complete)",'images loaded');
+  check(await ev("[...document.images].filter(i=>i.closest('.petal-world')).every(i=>i.naturalWidth>0)"),name+' artwork loads');
+  check(await ev('document.documentElement.scrollWidth<=innerWidth'),name+' no horizontal overflow');
+  check(await ev("(()=>{const b=document.querySelector('.reel-window').getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.width>=300})()"),name+' readable board');
+  if(w>1000)check(await ev("document.querySelector('.bet-controls').getBoundingClientRect().bottom<=innerHeight"),name+' all controls visible');
+  await shot(name);
+ }
+ // Character videos match each world; only big wins show amounts above the head.
+ await viewport(2322,1267);await media(false);await navigate(origin+'/?demo=true');await idle();
+ check(await ev("document.querySelector('.reel-window').getBoundingClientRect().width>=850"),'large desktop reels use available space');
+ await shot('bloom-wide');
+ for(const world of ['BLOOM','BLIGHT']){
+  await navigate(origin+'/?demo=true');await idle();if(world==='BLIGHT')await click('.world-choice:nth-child(2)');
+  await click('.spin-button');await delay(120);
+  await wait("document.querySelector('.motion-active video[data-phase=spin]')?.readyState>=2",world+' spin restored');
+  check(await ev(`document.querySelector('video').src.includes('${world==='BLOOM'?'bloom-traveler':'blight-keeper'}-spin')`),world+' correct character video');
+  await idle();await click('.spin-button');await idle();
+  check(await ev("!document.querySelector('.character-winnings')"),world+' small win stays below reels');
+  await click('.spin-button');await wait("document.querySelector('.motion-active video.cinematic')?.readyState>=2",world+' full-screen big win');
+  const fullscreen=await ev("(()=>{const v=document.querySelector('video.cinematic'),b=v.getBoundingClientRect();return {w:b.width,h:b.height,vw:document.body.getBoundingClientRect().width,vh:innerHeight,style:getComputedStyle(v).cssText}})()");check(Math.abs(fullscreen.w-fullscreen.vw)<1&&Math.abs(fullscreen.h-fullscreen.vh)<1,world+' big win covers viewport '+JSON.stringify(fullscreen));
+  check(await ev("document.querySelector('.cinematic-win strong').textContent===document.querySelector('.win-presentation strong').textContent"),world+' big amount above head matches win');
+  await shot(world.toLowerCase()+'-fullscreen-big-win');await click('[aria-label="Close big win animation"]');await idle();
+ }
+ // A Blight bonus keeps one video/audio pair through every free spin and pause.
+ await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
+ await click('.world-choice:nth-child(2)');await click('[aria-label="Toggle turbo"]');
+ await click('[aria-label="Open Bonus Buy"]');await click('[aria-label="Select STANDARD bonus"]');
+ const confirm=await ev("(()=>{const b=document.querySelector('[aria-label=\"Confirm bonus purchase\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
+ await send('Input.dispatchMouseEvent',{type:'mousePressed',...confirm,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...confirm,button:'left',clickCount:1});
+ await wait("document.querySelector('.free-spins-banner')&&document.querySelector('video')?.readyState>=2&&!document.querySelector('audio')?.paused",'Blight continuous feature media');
+ await ev(`(()=>{const video=document.querySelector('video'),audio=document.querySelector('audio');window.__featureMedia={samples:0,changes:0,paused:0,between:0,counts:[]};const sample=()=>{const b=document.querySelector('.free-spins-banner'),m=window.__featureMedia;if(b){m.samples++;if(document.querySelector('video')!==video||document.querySelector('audio')!==audio)m.changes++;if(video.paused||audio.paused)m.paused++;if(!document.querySelector('.reel-spin-track'))m.between++;const count=b.querySelector('strong').textContent;if(!m.counts.includes(count))m.counts.push(count);}window.__featureMediaRaf=requestAnimationFrame(sample)};sample()})()`);
+ await idle();
+ const continuous=await ev("(()=>{cancelAnimationFrame(window.__featureMediaRaf);return window.__featureMedia})()");
+ check(continuous.samples>30&&continuous.between>0&&continuous.counts.length>=10,'Blight media observed across all ten free spins and pauses');
+ check(continuous.changes===0&&continuous.paused===0,'Blight keeps the same playing video and soundtrack throughout the feature');
+ check(await ev("!document.querySelector('audio')&&!document.querySelector('video')"),'Blight feature media stops after completion');
+ // Observe layout throughout real motion, wins and a purchased sticky feature.
+ for(const [w,h] of [[1536,960],[768,1024],[390,844],[844,390]]){
+  await viewport(w,h);await media(false);await navigate(origin+'/?demo=true');await idle();
+  await wait("[...document.images].every(i=>i.complete&&i.naturalWidth>0)",'motion-test artwork');
+  await click('[aria-label="Toggle turbo"]');
+  await ev(`(()=>{scrollTo(0,Math.min(80,document.documentElement.scrollHeight-innerHeight));window.__layoutSamples=[];const sample=()=>{const b=document.querySelector('.reel-cabinet').getBoundingClientRect(),c=document.querySelector('.bet-controls').getBoundingClientRect();window.__layoutSamples.push([b.top+scrollY,b.height,c.top+scrollY,c.height,document.documentElement.scrollHeight,scrollY]);window.__layoutRaf=requestAnimationFrame(sample)};sample()})()`);
+  for(let i=0;i<3;i++){await click('.spin-button');await idle();}
+  await click('[aria-label="Open Bonus Buy"]');await click('[aria-label="Select STANDARD bonus"]');await click('[aria-label="Confirm bonus purchase"]');await idle();
+  const geometry=await ev(`(()=>{cancelAnimationFrame(window.__layoutRaf);const a=window.__layoutSamples;return {samples:a.length,ranges:a[0].map((_,i)=>Math.max(...a.map(s=>s[i]))-Math.min(...a.map(s=>s[i]))),error:document.querySelector('.round-error')?.textContent}})()`);
+  check(!geometry.error&&geometry.samples>20,`${w}x${h} samples wins, expansion and purchased feature`);
+  check(geometry.ranges.every(n=>n<=1),`${w}x${h} board, controls, document height and scroll stay fixed`);
+ }
+ // Compare the seam immediately before and after one exact strip cycle.
+ await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
+ await click('.spin-button');await wait("Boolean(document.querySelector('.reel-spin-track'))",'continuous strip');
+ const seam=await ev(`(()=>{const t=document.querySelector('.reel-spin-track'),v=t.parentElement,a=t.getAnimations()[0];a.pause();const frame=ms=>{a.currentTime=ms;const box=v.getBoundingClientRect();return [...t.children].map(c=>{const b=c.getBoundingClientRect();return {label:c.querySelector('.symbol').getAttribute('aria-label'),y:(b.top+b.bottom)/2-box.top}}).filter(c=>c.y>0&&c.y<box.height)};const before=frame(479.99),after=frame(.01);a.play();return {before,after}})()`);
+ check(seam.before.length===5&&seam.after.length===5&&seam.before.every((s,i)=>s.label===seam.after[i].label&&Math.abs(s.y-seam.after[i].y)<.1),'reel wrap has matching symbols and subpixel-continuous positions');
+ await idle();
+ await viewport(1536,960);await media(true);
+ for(const world of ['BLOOM','BLIGHT']){
+  await navigate(origin+'/?demo=true');await idle();if(world==='BLIGHT')await click('.world-choice:nth-child(2)');
+  for(let i=0;i<7;i++){await click('.spin-button');await idle();check(!(await ev("Boolean(document.querySelector('.round-error'))")),world+` base fixture ${i+1} reconciles`);if(i===2)check(await ev("document.querySelectorAll('.expanded-wild').length===1"),world+' expanding reel');if(i===3)check(await ev("document.querySelectorAll('.expanded-wild').length===2"),world+' multiple expanded reels');}
+  check(await ev("document.querySelector('.win-presentation strong').textContent.includes('5,000')"),world+' cap displayed');
+ }
+ await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Start 10 autoplay spins"]');await wait("document.querySelector('[aria-label=\"Stop autoplay\"]')",'auto starts');await click('[aria-label="Stop autoplay"]');await idle();check(await ev("Boolean(document.querySelector('[aria-label=\"Start 10 autoplay spins\"]'))"),'autoplay stops');
+ await click('[aria-label="Open game rules"]');check(await ev("document.querySelectorAll('tbody tr').length===8"),'paytable remains available');await click('[aria-label="Close dialog"]');
+ // Every purchase starts from a fresh deterministic wallet and the minimum base bet.
+ for(const [mode,c] of Object.entries(bonusConfig)){
+  await navigate(origin+'/?demo=true');await idle();if(c.world==='BLIGHT')await click('.world-choice:nth-child(2)');
+  await click('[aria-label="Open Bonus Buy"]');
+  check(await ev("document.querySelectorAll('.bonus-card').length===3"),mode+' three offers');
+  check(await ev(`document.querySelector('.bonus-panel').dataset.bonusWorld===${JSON.stringify(c.world)}`),mode+' world theme');
+  if(c.costMultiplier>1000)check(await ev(`document.querySelector('[data-bonus-mode="${mode}"] .bonus-select').disabled`),mode+' insufficient funds lock');
+  await click('[aria-label="Close Bonus Buy"]');await click('[aria-label="Decrease bet"]');await click('[aria-label="Decrease bet"]');
+  await click('[aria-label="Open Bonus Buy"]');const expectedCost=.2*c.costMultiplier;
+  const beforeBalance=await ev("document.querySelector('.wallet strong').textContent");
+  await click(`[aria-label="Select ${c.variant} bonus"]`);
+  check(await ev("Boolean(document.querySelector('.purchase-confirmation'))"),mode+' explicit confirmation');
+  check(await ev(`document.querySelector('.purchase-total dd').textContent.replace(/[^0-9.]/g,'')===${JSON.stringify(expectedCost.toFixed(2))}`),mode+' full cost');
+  check((await ev("document.querySelector('.wallet strong').textContent"))===beforeBalance,mode+' selection does not charge');
+  await click('[aria-label="Close Bonus Buy"]');check((await ev("document.querySelector('.wallet strong').textContent"))===beforeBalance,mode+' cancel does not charge');
+  await click('[aria-label="Open Bonus Buy"]');await wait("[...document.querySelectorAll('.bonus-card img')].every(i=>i.complete&&i.naturalWidth>0)",'bonus artwork');
+  if(c.variant==='STANDARD')await shot(c.world.toLowerCase()+'-bonus-desktop');
+  await click(`[aria-label="Select ${c.variant} bonus"]`);
+  await ev("(()=>{const b=document.querySelector('[aria-label=\"Confirm bonus purchase\"]');b.click();b.click();})()");await idle();
+  check(!(await ev("Boolean(document.querySelector('.round-error'))")),mode+' feature reconciles');
+  const expectedBalance=1000-expectedCost+.2*bonusFixtures[mode][0].payoutMultiplier/100;
+  const balance=await ev("Number(document.querySelector('.wallet strong').textContent.replace(/[^0-9.]/g,''))");
+  check(Math.abs(balance-expectedBalance)<.011,mode+' one debit and one payout after double click');
+  check(await ev(`document.querySelector('.purchase-receipt').textContent.includes(${JSON.stringify(c.world)})&&document.querySelector('.purchase-receipt').textContent.includes(${JSON.stringify(c.costMultiplier+'×')})`),mode+' original price receipt');
+ }
+ await navigate(origin+'/?demo=true');await idle();await viewport(390,844);await click('[aria-label="Open Bonus Buy"]');
+ check(await ev("document.documentElement.scrollWidth<=innerWidth&&document.querySelector('.bonus-panel').getBoundingClientRect().right<=innerWidth"),'mobile Bonus Buy fits');await shot('bloom-bonus-mobile');await click('[aria-label="Close Bonus Buy"]');await viewport(1536,960);
+ await navigate(origin+'/');check(await ev("Boolean(document.querySelector('.session-error'))"),'explicit demo required');
+ await navigate(origin+'/?demo=true&sessionID=partial');check(await ev("Boolean(document.querySelector('.session-error'))"),'partial credentials cannot enter demo');
+ const live=origin+'/?sessionID=test-session&rgs_url=mock.local';
+ await navigate(live);await idle();await click('.world-choice:nth-child(2)');await click('.spin-button');await idle();
+ check(modes.at(-1)==='BLIGHT','base mode sent unchanged');check(counts.play===1&&counts.end===1&&counts.event>0,'base play and settlement once');
+ check(await ev("document.querySelector('.wallet strong').textContent.includes('1,000.20')"),'authoritative settled balance');
+ recovery=true;const before=counts.play;await navigate(live);await idle();check(counts.play===before,'base recovery never wagers');check(!(await ev("Boolean(document.querySelector('.round-error'))")),'base feature recovery succeeds');
+ recoveryMode='BLOOM_MYTHIC_BONUS';historicPrice=611;const beforePurchaseRecovery={...counts};await navigate(live);await idle();
+ check(counts.play===beforePurchaseRecovery.play&&counts.end===beforePurchaseRecovery.end+1,'purchased recovery settles without buying again');
+ check(await ev("document.querySelector('.purchase-receipt')?.textContent.includes('Mythic Bonus')&&!document.querySelector('.round-error')"),'purchase recovery restores variant and full cost');
+ check(await ev("document.querySelector('.purchase-receipt').textContent.includes('611×')"),'recovery uses original book price rather than current catalog');
+ recovery=false;historicPrice=null;recoveryMode='BLIGHT';await navigate(live);await idle();await click('[aria-label="Open Bonus Buy"]');
+ check(await ev("[...document.querySelectorAll('.bonus-select')].every(b=>b.disabled)"),'connected purchase buttons locked despite advertised modes');
+ const beforeBlocked=counts.play;
+ const blocked=await ev("(async()=>{const {play}=await import('/src/petal/rgs.ts');try{await play('BLOOM_STANDARD_BONUS',1,999);return false}catch{return true}})()");
+ check(blocked&&counts.play===beforeBlocked,'transport rejects unapproved connected purchase');await click('[aria-label="Close Bonus Buy"]');
+ restricted=true;await navigate(live);await idle();
+ check(await ev("document.querySelector('[aria-label=\"Toggle turbo\"]').disabled&&document.querySelector('[aria-label=\"Start 10 autoplay spins\"]').disabled&&document.querySelector('[aria-label=\"Open Bonus Buy\"]').disabled"),'jurisdiction blocks Turbo, autoplay and Bonus Buy');
+ const beforeSpace=counts.play;await send('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32});await delay(100);check(counts.play===beforeSpace,'jurisdiction blocks Space');restricted=false;
+ bad=true;await navigate(live);await idle();await click('.spin-button');await idle();check(await ev("Boolean(document.querySelector('.round-error'))&&document.querySelector('.spin-button').disabled"),'unsupported live book locks wagering');const afterBad=counts.play;await click('.spin-button');check(counts.play===afterBad,'invalid book never falls back to demo');bad=false;
+ for(const mode of ['BLIGHT','BLIGHT_SUPER_BONUS']){
+  const snapshot={...counts};await navigate(origin+`/?replay=true&rgs_url=mock.local&game=relic_forge&version=1&mode=${mode}&event=0&amount=200000`);await idle();
+  check(counts.play===snapshot.play&&counts.event===snapshot.event&&counts.end===snapshot.end&&counts.replay===snapshot.replay+1,mode+' replay has no wallet writes');
+  check(await ev("document.querySelector('.spin-button').disabled&&document.querySelector('[aria-label=\"Open Bonus Buy\"]').disabled"),mode+' replay disables purchases');
+  if(mode.includes('BONUS'))check(await ev("document.querySelector('.purchase-receipt')?.textContent.includes('Super Bonus')"),'bonus replay preserves full price and variant');
+ }
+ check(await ev("document.querySelector('main').classList.contains('reduced')"),'reduced motion honored');
+ const decoded=await ev(`(async()=>{const {decodeRound}=await import('/src/petal/MathEventAdapter.ts');const base=(await import('/src/petal/fixtures.json')).default;const bonus=(await import('/src/petal/bonus-fixtures.json')).default;let passed=0;for(const [mode,books] of Object.entries({...base,...bonus}))for(const b of books){decodeRound({mode,state:b.events,payoutMultiplier:b.payoutMultiplier/100});passed++;}let rejected=0;for(const mode of ['BLOOM_SUPER_BONUS','BLOOM_MYTHIC_BONUS']){const b=structuredClone(bonus[mode][0]);b.events.find(e=>e.type==='expandWilds').wilds=[];try{decodeRound({mode,state:b.events})}catch{rejected++}}return{passed,rejected}})()`);
+ check(decoded.passed===32&&decoded.rejected===2,'32 Python fixtures decode; missing purchase guarantees reject');
+ check(errors.length===0,'no browser runtime exceptions');
+ const report={passed:results,counts,modes,errors};console.log(JSON.stringify(report,null,2));writeFileSync(join(output,'browser-results.json'),JSON.stringify(report,null,2));
+}catch(e){writeFileSync(join(output,'browser-failure.txt'),String(e));throw e;}finally{socket?.close();browser.kill();}

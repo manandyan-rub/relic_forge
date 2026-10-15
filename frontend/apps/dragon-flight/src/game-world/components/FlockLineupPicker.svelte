@@ -2,7 +2,6 @@
 	import { CREATURES, getCreature } from '../creatures';
 	import { FLOCK_ORDER, type FlockLineup } from '../flock/types';
 	import type { CreatureId } from '../types';
-	import { BIRD_HEALTH } from '../flock/mobilePresentation';
 	let {
 		lineup,
 		disabled = false,
@@ -35,7 +34,6 @@
 			<label class="slot" style={`--bird-color:${colors[species]};`}>
 				<span>Bird {slot + 1}</span>
 				<div class="portrait"><img src={bird.assets?.portrait} alt="" draggable="false" /></div>
-				<small>{BIRD_HEALTH[species]} HP</small>
 				<select
 					aria-label={`Bird ${slot + 1} species`}
 					value={species}
@@ -65,15 +63,16 @@
 		border: 0;
 		min-width: 0;
 		color: #edf3ef;
+		font-family: var(--font-ui);
 	}
 	legend {
-		font-size: 0.8rem;
-		font-weight: 800;
+		font-size: 0.86rem;
+		font-weight: 700;
 		color: #f4cd78;
 		letter-spacing: 0.06em;
 	}
 	p {
-		font-size: 0.75rem;
+		font-size: 0.82rem;
 		color: #b9c6cc;
 		line-height: 1.4;
 		margin: 8px 0 12px;
@@ -96,7 +95,7 @@
 	}
 	.slot span {
 		grid-column: 1/-1;
-		font-size: 0.7rem;
+		font-size: 0.8rem;
 		color: var(--bird-color);
 		font-weight: 700;
 	}
@@ -121,10 +120,11 @@
 		border: 1px solid #61717b;
 		border-radius: 6px;
 		color: #edf3ef;
-		min-height: 38px;
+		min-height: 44px;
 		font: inherit;
-		font-size: 0.7rem;
-		padding: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		padding: 7px;
 	}
 	.counts {
 		color: #f4cd78;
@@ -138,18 +138,24 @@
 	}
 	small {
 		color: #b9c6cc;
-		font-size: 0.65rem;
+		font-size: 0.76rem;
 		line-height: 1.4;
 	}
 	button {
 		flex-shrink: 0;
+		min-height: 44px;
 		background: #15242c;
 		color: #f4cd78;
 		border: 1px solid #a58347;
 		border-radius: 8px;
 		padding: 8px;
-		font-size: 0.7rem;
+		font-size: 0.8rem;
 		cursor: pointer;
+	}
+	select:focus-visible,
+	button:focus-visible {
+		outline: 2px solid #f0d58c;
+		outline-offset: 3px;
 	}
 	@media (max-width: 360px) {
 		.slot {

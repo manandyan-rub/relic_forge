@@ -25,11 +25,12 @@
 		align-items: center;
 		gap: 5px;
 		padding: 7px 10px;
-		border-radius: 12px;
+		border: 1px solid var(--glass-border);
+		border-radius: 10px;
 		background: var(--glass-background);
-		backdrop-filter: blur(8px);
 		color: #dfbd7c;
-		font-size: 0.6rem;
+		font-size: 0.6875rem;
+		font-variant-numeric: tabular-nums;
 		white-space: nowrap;
 		min-width: 76px;
 	}
@@ -49,5 +50,17 @@
 	}
 	b {
 		margin-left: 3px;
+	}
+	@media (max-width: 360px) {
+		.flock-status {
+			min-width: 0;
+			padding: 7px 8px;
+		}
+		i {
+			display: none;
+		}
+		b {
+			margin: 0;
+		}
 	}
 </style>

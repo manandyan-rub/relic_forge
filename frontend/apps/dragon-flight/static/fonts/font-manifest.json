@@ -1,0 +1,65 @@
+{
+	"retrieved": "2026-10-14",
+	"stylesheet": "https://fonts.googleapis.com/css2?family=Cinzel:wght@400..700&family=Google+Sans:wght@400..700&display=swap",
+	"userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+	"weights": "400-700",
+	"files": [
+		{
+			"file": "cinzel-latin-ext.woff2",
+			"family": "Cinzel",
+			"subset": "latin-ext",
+			"source": "https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt7-GT7LEc.woff2",
+			"bytes": 14540,
+			"sha256": "8fc2606f8ae6c569f444e138dba052d9a6e3f0657f9031796503bbb94eced600"
+		},
+		{
+			"file": "cinzel-latin.woff2",
+			"family": "Cinzel",
+			"subset": "latin",
+			"source": "https://fonts.gstatic.com/s/cinzel/v26/8vIJ7ww63mVu7gt79mT7.woff2",
+			"bytes": 25904,
+			"sha256": "09941fb1c169c38fd414536b37690057fc01b3117a5c63dd6571186540c8f370"
+		},
+		{
+			"file": "google-sans-cyrillic.woff2",
+			"family": "Google Sans",
+			"subset": "cyrillic",
+			"source": "https://fonts.gstatic.com/s/googlesans/v71/4UasrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RPjYUvaYr.woff2",
+			"bytes": 15964,
+			"sha256": "5f178150d24e16e4ea66244c35d1f438fe9cd8646c64c89f8bde249b174cce31"
+		},
+		{
+			"file": "google-sans-devanagari.woff2",
+			"family": "Google Sans",
+			"subset": "devanagari",
+			"source": "https://fonts.gstatic.com/s/googlesans/v71/4UasrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RPjMUvaYr.woff2",
+			"bytes": 50100,
+			"sha256": "d89da14318289b9615e956a99039c4c0506eb87af540af65477a8244815b6a5d"
+		},
+		{
+			"file": "google-sans-vietnamese.woff2",
+			"family": "Google Sans",
+			"subset": "vietnamese",
+			"source": "https://fonts.gstatic.com/s/googlesans/v71/4UasrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RPj0UvaYr.woff2",
+			"bytes": 8552,
+			"sha256": "be35f711674d32eca0ca28e415d25d05c6ac19a1e95f942c53758e35c2465951"
+		},
+		{
+			"file": "google-sans-latin-ext.woff2",
+			"family": "Google Sans",
+			"subset": "latin-ext",
+			"source": "https://fonts.gstatic.com/s/googlesans/v71/4UasrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RPjwUvaYr.woff2",
+			"bytes": 21548,
+			"sha256": "2507802626a6cb16e4a7410bbb809380b957333582156a3907431b4fe57afab4"
+		},
+		{
+			"file": "google-sans-latin.woff2",
+			"family": "Google Sans",
+			"subset": "latin",
+			"source": "https://fonts.gstatic.com/s/googlesans/v71/4UasrENHsxJlGDuGo1OIlJfC6l_24rlCK1Yo_Iqcsih3SAyH6cAwhX9RPjIUvQ.woff2",
+			"bytes": 35968,
+			"sha256": "3f43e613a4176decfb0ab2e4cf68bfcfbebe9eee1a3de080c4115426258fa32f"
+		}
+	],
+	"note": "Official unmodified WOFF2 font files, hosted locally. Unsupported writing systems use installed fallback fonts."
+}

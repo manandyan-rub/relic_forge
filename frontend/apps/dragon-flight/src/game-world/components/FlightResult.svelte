@@ -41,26 +41,29 @@
 </script>
 
 <section class="flight-result" aria-label="Flight result" aria-live="polite">
-	<header>
-		<h2>{title}</h2>
-		<span>{round.flock ? `${round.flock.survivors}/4 SURVIVED` : creature.name}</span>
-	</header>
-	<div class="result-stats">
-		<div><span>ENTRY COST</span><strong>{entryCost}</strong></div>
-		<div><span>MULTIPLIER</span><strong>×{multiplier.toFixed(2)}</strong></div>
-		<div><span>PAYOUT</span><strong>{payout}</strong></div>
-		<div><span>NET RESULT</span><strong class:negative={netLoss}>{netResult}</strong></div>
+	<!-- svelte-ignore a11y_no_noninteractive_tabindex (Scrollable details need keyboard focus for native Arrow and Page key navigation.) -->
+	<div class="result-summary" role="region" aria-label="Round details" tabindex="0">
+		<header>
+			<h2>{title}</h2>
+			<span>{round.flock ? `${round.flock.survivors}/4 SURVIVED` : creature.name}</span>
+		</header>
+		<div class="result-stats">
+			<div class="payout"><span>PAYOUT</span><strong>{payout}</strong></div>
+			<div><span>ENTRY COST</span><strong>{entryCost}</strong></div>
+			<div><span>MULTIPLIER</span><strong>×{multiplier.toFixed(2)}</strong></div>
+			<div><span>NET RESULT</span><strong class:negative={netLoss}>{netResult}</strong></div>
+		</div>
+		{#if round.flock?.bonusTriggered}<p class="details bonus-breakdown">
+				BASE ×{round.flock.baseMultiplier.toFixed(2)} · BONUS +×{round.flock.bonus!.multiplier.toFixed(
+					2,
+				)}
+			</p>{/if}
+		<p class="details">
+			{round.route === 'tube-flight' ? 'FLUPPY FLIGHT · ' : ''}{weatherName} · {timeName}<span
+				>{replay ? 'REPLAY — NO BET PLACED' : live ? 'SERVER RESULT' : 'DEMO — NO REAL MONEY'}</span
+			>
+		</p>
 	</div>
-	{#if round.flock?.bonusTriggered}<p class="details">
-			BASE ×{round.flock.baseMultiplier.toFixed(2)} · BONUS +×{round.flock.bonus!.multiplier.toFixed(
-				2,
-			)}
-		</p>{/if}
-	<p class="details">
-		{round.route === 'tube-flight' ? 'FLUPPY FLIGHT · ' : ''}{weatherName} · {timeName}<span
-			>{replay ? 'REPLAY — NO BET PLACED' : live ? 'SERVER RESULT' : 'DEMO — NO REAL MONEY'}</span
-		>
-	</p>
 	<div class="result-actions">
 		{#if tubeAmount}<button
 				class="fluppy-button"
@@ -68,7 +71,7 @@
 				onclick={onTubeFlight}>PLAY FLUPPY FLIGHT · {tubeAmount}</button
 			>{/if}
 		<button class="settings-button" disabled={settingsDisabled} onclick={onSettings}
-			>{round.route === 'tube-flight' ? 'RETURN TO HUNTER GAME' : 'CHANGE SETTINGS'}</button
+			>{round.route === 'tube-flight' ? 'RETURN TO LUCKY FLIGHT' : 'CHANGE SETTINGS'}</button
 		>
 	</div>
 	{#if tubeAmount}<p class="offer-note">
@@ -78,40 +81,50 @@
 
 <style>
 	.flight-result {
+		display: flex;
+		flex-direction: column;
 		position: absolute;
 		z-index: 100;
-		left: 50%;
 		top: 50%;
-		transform: translate(-50%, -40%);
-		width: min(620px, calc(100% - 28px));
-		max-height: calc(100% - 100px);
+		left: 50%;
+		transform: translate(-50%, -35%);
+		width: min(650px, calc(100% - 32px));
+		max-height: calc(100% - 110px);
+		overflow: hidden;
+		scrollbar-width: thin;
+		padding: 20px;
+		border: 1px solid #bda16c80;
+		border-radius: 14px;
+		background: #0c1a24f5;
+		color: #f2eee3;
+		font-family: var(--font-ui);
+		box-shadow: 0 12px 30px #07121d55;
+	}
+	.result-summary {
+		min-height: 0;
 		overflow: auto;
-		padding: 18px;
-		border: 1px solid #d0aa6099;
-		border-radius: 18px;
-		background: #09151eef;
-		color: #f1f0e9;
-		box-shadow: 0 12px 35px #0007;
+		scrollbar-width: thin;
 	}
 	header {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		margin-bottom: 12px;
+		margin-bottom: 16px;
 	}
 	h2 {
 		margin: 0;
-		color: #f4cd78;
-		font:
-			700 clamp(1rem, 2.4vw, 1.6rem) Georgia,
-			serif;
+		color: #f0d49b;
+		font: 600 clamp(1rem, 2vw, 1.35rem) / 1.35 var(--font-display);
 	}
 	header span {
-		color: #f4cd78;
-		font-size: 0.8rem;
-		font-weight: 700;
-		white-space: nowrap;
+		flex-shrink: 0;
+		padding: 6px 8px;
+		border-radius: 7px;
+		background: #25333b;
+		color: #e9d7b3;
+		font-size: 0.75rem;
+		font-weight: 600;
 	}
 	.result-stats {
 		display: grid;
@@ -120,107 +133,126 @@
 	}
 	.result-stats div {
 		display: grid;
-		gap: 6px;
-		justify-items: center;
-		padding: 10px 4px;
-		background: #080f1699;
-		border: 1px solid #a68e6244;
-		border-radius: 10px;
+		gap: 7px;
+		padding: 13px 8px;
+		border: 1px solid #43525a;
+		border-radius: 9px;
+		background: #10212a;
+	}
+	.result-stats .payout {
+		border-color: #d4b37480;
+		background: #283239;
 	}
 	.result-stats span {
-		font-size: 0.55rem;
-		color: #d0ad73;
-		font-weight: 700;
+		color: #bfbdaf;
+		font-size: 0.6875rem;
+		font-weight: 600;
 	}
 	strong {
+		color: #fff0d0;
+		font-size: 1.125rem;
+		font-weight: 600;
 		font-variant-numeric: tabular-nums;
-		font-size: 1.2rem;
 		overflow-wrap: anywhere;
 	}
 	.negative {
-		color: #f44b47;
+		color: #ffc0aa;
 	}
 	.details {
 		display: flex;
+		flex-wrap: wrap;
 		justify-content: space-between;
-		gap: 8px;
-		color: #b5bcc2;
-		font-size: 0.65rem;
-		margin: 10px 0;
+		gap: 5px 8px;
+		margin: 12px 0;
+		color: #bdc8ce;
+		font-size: 0.75rem;
+		line-height: 1.45;
 	}
 	.details span {
-		font-size: 0.55rem;
-		color: #819096;
+		color: #a0b2bb;
+		font-size: 0.6875rem;
+	}
+	.bonus-breakdown {
+		padding: 10px;
+		border-left: 2px solid #dfc18c;
+		background: #172b34;
+		color: #f0d49b;
 	}
 	.result-actions {
 		display: flex;
+		flex-shrink: 0;
+		margin-top: 12px;
 		gap: 10px;
 	}
 	button {
 		flex: 1;
-		min-height: 42px;
-		padding: 8px;
-		border: 1px solid #d0aa60;
-		border-radius: 10px;
-		background: #0e1a22;
-		color: #d0ad73;
+		min-height: 46px;
+		padding: 10px;
+		border: 1px solid #64727a;
+		border-radius: 9px;
+		background: #152832;
+		color: #f0d49b;
 		cursor: pointer;
-		font-weight: 700;
-		font-size: 0.75rem;
+		font: 600 0.8125rem/1.3 var(--font-ui);
 	}
 	.fluppy-button {
-		color: #332008;
-		background: linear-gradient(145deg, #ffdc7c, #e9a832 65%, #ba741a);
+		border-color: #f1d49b;
+		background: #e4bd73;
+		color: #2a2318;
+	}
+	button:hover:not(:disabled) {
+		background: #233d48;
+	}
+	.fluppy-button:hover:not(:disabled) {
+		background: #f2d498;
 	}
 	button:disabled {
-		opacity: 0.5;
+		opacity: 0.48;
 		cursor: not-allowed;
 	}
 	.offer-note {
-		margin: 7px 0 0;
+		flex-shrink: 0;
+		margin: 10px 0 0;
+		color: #bdc8ce;
+		font-size: 0.6875rem;
+		line-height: 1.4;
 		text-align: center;
-		font-size: 0.6rem;
-		color: #a9b3b8;
 	}
-	@media (max-width: 600px) {
+	@media (max-width: 700px) {
 		.flight-result {
-			padding: 10px;
-			max-height: calc(100% - 86px);
+			top: 112px;
+			bottom: 12px;
+			transform: translateX(-50%);
+			width: calc(100% - 24px);
+			max-height: none;
+			padding: 12px;
 			border-radius: 12px;
 		}
 		header {
-			margin-bottom: 7px;
-			gap: 5px;
+			gap: 8px;
+			margin-bottom: 12px;
+		}
+		h2 {
+			font-size: 0.95rem;
 		}
 		header span {
-			font-size: 0.65rem;
+			font-size: 0.6875rem;
+			padding: 5px 6px;
 		}
 		.result-stats {
-			gap: 4px;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 7px;
 		}
 		.result-stats div {
-			padding: 7px 2px;
-			gap: 3px;
-		}
-		.result-stats span {
-			font-size: 0.43rem;
+			padding: 10px;
+			gap: 4px;
 		}
 		strong {
-			font-size: 0.9rem;
-		}
-		.details {
-			margin: 7px 0;
-			font-size: 0.55rem;
-		}
-		.details span {
-			font-size: 0.45rem;
-		}
-		button {
-			min-height: 36px;
-			font-size: 0.6rem;
+			font-size: 1rem;
 		}
 		.result-actions {
-			gap: 6px;
+			flex-direction: column;
+			gap: 8px;
 		}
 	}
 </style>

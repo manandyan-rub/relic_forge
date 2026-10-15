@@ -1,6 +1,5 @@
 import type { FlightEvent, FlightRound } from '../types';
 import { HUNTER_IMPACT, planHunterAttack } from './mobilePresentation';
-import { FLOCK_ORDER } from './types';
 export type PresentationKind =
 	| 'launch'
 	| 'terrain'
@@ -34,8 +33,7 @@ export function presentationKind(event: FlightEvent): PresentationKind {
 export function buildFlockTimeline(round: FlightRound) {
 	const eliminationDuration = (event: FlightEvent) =>
 		event.type === 'elimination' && event.reason === 'hunter'
-			? planHunterAttack(round.lineup?.[FLOCK_ORDER.indexOf(event.bird)] ?? event.bird, round.risk)
-					.duration
+			? planHunterAttack(round.risk).duration
 			: 720;
 	const championIndex = round.events.findIndex((e) => e.type === 'championFlight');
 	const baseEvents = round.events.filter(

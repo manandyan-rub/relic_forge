@@ -3,6 +3,7 @@
 </script>
 
 <svelte:head>
-	<title>Relic Forge</title>
-	<meta name="description" content="A dark-fantasy slot prototype for Stake Engine." />
+	<title>The Last Petal</title>
+	<meta name="description" content="Two illustrated worlds. One last petal. A Stake Engine development game." />
 </svelte:head>
+

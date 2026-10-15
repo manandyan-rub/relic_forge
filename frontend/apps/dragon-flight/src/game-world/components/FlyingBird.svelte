@@ -42,7 +42,7 @@
 		position: absolute;
 		top: 0;
 		left: 0;
-		width: clamp(105px, 12vw, 190px);
+		width: var(--bird-width, clamp(105px, 12vw, 190px));
 		aspect-ratio: 1.5;
 		z-index: 20;
 		pointer-events: none;
@@ -62,7 +62,7 @@
 	}
 	@media (max-width: 700px) {
 		.flying-bird {
-			width: clamp(72px, 23vw, 115px);
+			width: var(--bird-width, clamp(72px, 23vw, 115px));
 		}
 	}
 </style>

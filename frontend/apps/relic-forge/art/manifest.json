@@ -1,0 +1,691 @@
+[
+  {
+    "id": "bloom-keeper",
+    "source": "C:\\Users\\user\\Downloads\\Untitled91_0004-35-53.png",
+    "preservedSource": "art/sources/Untitled91_0004-35-53.png",
+    "sha256": "529a3cd511ec378ef7b250414fa8443cbfefa82ab3ef0eda1424a3daee8ead1c",
+    "role": "Bloom gnome / premium keeper",
+    "url": "/art/bloom-keeper.webp",
+    "dimensions": [
+      860,
+      1000
+    ],
+    "bytes": 113758
+  },
+  {
+    "id": "bloom-traveler",
+    "source": "C:\\Users\\user\\Downloads\\Untitled90 (2).png",
+    "preservedSource": "art/sources/Untitled90 (2).png",
+    "sha256": "0b64589da94c644453ac77427aa26fd7c62ca3cf42d989d7c5d00dc578c0e4da",
+    "role": "Bloom traveler premium",
+    "url": "/art/bloom-traveler.webp",
+    "dimensions": [
+      387,
+      650
+    ],
+    "bytes": 62190
+  },
+  {
+    "id": "bloom-traveler-stage",
+    "source": "C:\\Users\\user\\Downloads\\Untitled90 (2).png",
+    "preservedSource": "art/sources/Untitled90 (2).png",
+    "sha256": "0b64589da94c644453ac77427aa26fd7c62ca3cf42d989d7c5d00dc578c0e4da",
+    "role": "Main Bloom character beside the reels",
+    "url": "/art/bloom-traveler-stage.webp",
+    "dimensions": [
+      715,
+      1200
+    ],
+    "bytes": 138164
+  },
+  {
+    "id": "bloom-guardian",
+    "source": "C:\\Users\\user\\Downloads\\Ռիմա2_20260607152304.png",
+    "preservedSource": "art/sources/Ռիմա2_20260607152304.png",
+    "sha256": "9bf8b9e673579277c3bac6f5197e91821f44136046e2abd4a54ef89bc8ccc987",
+    "role": "Bloom guardian premium",
+    "url": "/art/bloom-guardian.webp",
+    "dimensions": [
+      453,
+      650
+    ],
+    "bytes": 49328
+  },
+  {
+    "id": "blight-keeper",
+    "source": "C:\\Users\\user\\Downloads\\Untitled94 (1).png",
+    "preservedSource": "art/sources/Untitled94 (1).png",
+    "sha256": "c6567ddcbb53b3d91875bfd850bf868ff658c3e73dca2a527ef9f2a112341e6f",
+    "role": "Blight hooded creature / premium keeper",
+    "url": "/art/blight-keeper.webp",
+    "dimensions": [
+      569,
+      1000
+    ],
+    "bytes": 138900
+  },
+  {
+    "id": "blight-traveler",
+    "source": "C:\\Users\\user\\Downloads\\Untitled92 (2).png",
+    "preservedSource": "art/sources/Untitled92 (2).png",
+    "sha256": "b434a67b0140708ac00fe421ee37473cfaee394021a4b253f5d1ea0af35a7420",
+    "role": "Blight skull gnome premium",
+    "url": "/art/blight-traveler.webp",
+    "dimensions": [
+      438,
+      650
+    ],
+    "bytes": 63090
+  },
+  {
+    "id": "blight-guardian",
+    "source": "C:\\Users\\user\\Downloads\\Untitled108 (1).png",
+    "preservedSource": "art/sources/Untitled108 (1).png",
+    "sha256": "afdcec03a1fb02772869a3e9e0fc54cc1bcc1801f3ca0e7955bbe1518eac74b3",
+    "role": "Blight brute premium",
+    "url": "/art/blight-guardian.webp",
+    "dimensions": [
+      501,
+      650
+    ],
+    "bytes": 79974
+  },
+  {
+    "id": "bloom-room",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored2.jpg",
+    "preservedSource": "art/sources/Untitled97_Restored2.jpg",
+    "sha256": "bd1dcc523535cb928b4061bd4f1f39b5fce0a65eae64919fa9fb4b7c3c2ae51c",
+    "role": "Bloom environment",
+    "url": "/art/bloom-room.webp",
+    "dimensions": [
+      2400,
+      1697
+    ],
+    "bytes": 648608
+  },
+  {
+    "id": "bloom-bedroom",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored3.jpg",
+    "preservedSource": "art/sources/Untitled97_Restored3.jpg",
+    "sha256": "cc689356743f169f0cad8cae8f3b6b40c78dc089eda151e1076d2e4efcb90173",
+    "role": "Additional Bloom scene",
+    "url": "/art/bloom-bedroom.webp",
+    "dimensions": [
+      2000,
+      1414
+    ],
+    "bytes": 420990
+  },
+  {
+    "id": "blight-room",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored_20260607113127.jpg",
+    "preservedSource": "art/sources/Untitled97_Restored_20260607113127.jpg",
+    "sha256": "1854be3932fb425afa8084ea2e52671b79d08119522fa0c47e20c4be844a7b19",
+    "role": "Blight environment, no character",
+    "url": "/art/blight-room.webp",
+    "dimensions": [
+      2400,
+      1697
+    ],
+    "bytes": 313576
+  },
+  {
+    "id": "blight-composite",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97_Restored_20260607113326.jpg",
+    "preservedSource": "art/sources/Untitled97_Restored_20260607113326.jpg",
+    "sha256": "cbc73c48012095c13fbdcc5f79f1ac530a1fdbd2ad376ff23d27dbb9d296356c",
+    "role": "Reference composite, not used behind independent character",
+    "url": "/art/blight-composite.webp",
+    "dimensions": [
+      1600,
+      1131
+    ],
+    "bytes": 195964
+  },
+  {
+    "id": "logo",
+    "source": "C:\\Users\\user\\Downloads\\Untitled122.png",
+    "preservedSource": "art/sources/Untitled122.png",
+    "sha256": "b85bcabc05f8b457b6b876442d84760ccceaa6c5497484d9c28ca48f50ebf532",
+    "role": "The Last Petal logo",
+    "url": "/art/logo.webp",
+    "dimensions": [
+      650,
+      650
+    ],
+    "bytes": 72336
+  },
+  {
+    "id": "bloom-keeper-alternate",
+    "source": "C:\\Users\\user\\Downloads\\Untitled91_0004-35-53 (1).png",
+    "preservedSource": "art/sources/Untitled91_0004-35-53 (1).png",
+    "sha256": "529a3cd511ec378ef7b250414fa8443cbfefa82ab3ef0eda1424a3daee8ead1c",
+    "role": "Alternate supplied gnome reference",
+    "url": "/art/bloom-keeper-alternate.webp",
+    "dimensions": [
+      559,
+      650
+    ],
+    "bytes": 64582
+  },
+  {
+    "id": "bloom-keeper-symbol",
+    "source": "C:\\Users\\user\\Downloads\\Untitled91_0004-35-53.png",
+    "preservedSource": "art/sources/Untitled91_0004-35-53.png",
+    "sha256": "529a3cd511ec378ef7b250414fa8443cbfefa82ab3ef0eda1424a3daee8ead1c",
+    "role": "Keeper reel thumbnail",
+    "url": "/art/bloom-keeper-symbol.webp",
+    "dimensions": [
+      206,
+      240
+    ],
+    "bytes": 16896
+  },
+  {
+    "id": "blight-keeper-symbol",
+    "source": "C:\\Users\\user\\Downloads\\Untitled94 (1).png",
+    "preservedSource": "art/sources/Untitled94 (1).png",
+    "sha256": "c6567ddcbb53b3d91875bfd850bf868ff658c3e73dca2a527ef9f2a112341e6f",
+    "role": "Keeper reel thumbnail",
+    "url": "/art/blight-keeper-symbol.webp",
+    "dimensions": [
+      137,
+      240
+    ],
+    "bytes": 17136
+  },
+  {
+    "id": "bloom-tools-sheet",
+    "source": "C:\\Users\\user\\Downloads\\Untitled93.png",
+    "preservedSource": "art/sources/Untitled93.png",
+    "sha256": "bf1a603287db8d95e47eaec7ba8ce40e3997ee59843c12adb07a7a3aa74aaff6",
+    "role": "Separated Bloom props source sheet",
+    "url": "/art/bloom-tools-sheet.webp",
+    "dimensions": [
+      861,
+      1000
+    ],
+    "bytes": 69954
+  },
+  {
+    "id": "traveler-tools-sheet",
+    "source": "C:\\Users\\user\\Downloads\\Untitled95.png",
+    "preservedSource": "art/sources/Untitled95.png",
+    "sha256": "184f30d57913acdd89b320a66ddde80f0a6c96eb4c5648a988bb79a269538e33",
+    "role": "Separated traveler props source sheet",
+    "url": "/art/traveler-tools-sheet.webp",
+    "dimensions": [
+      536,
+      1000
+    ],
+    "bytes": 62310
+  },
+  {
+    "id": "traveler-hammer",
+    "source": "C:\\Users\\user\\Downloads\\Untitled91 (1).png",
+    "preservedSource": "art/sources/Untitled91 (1).png",
+    "sha256": "0964d4d7bfa6cd624a8abafc80485d013859c95423fe898c61c610f5bb0539e6",
+    "role": "Traveler hammer",
+    "url": "/art/traveler-hammer.webp",
+    "dimensions": [
+      320,
+      268
+    ],
+    "bytes": 11528
+  },
+  {
+    "id": "blight-tools-sheet",
+    "source": "C:\\Users\\user\\Downloads\\Untitled110.png",
+    "preservedSource": "art/sources/Untitled110.png",
+    "sha256": "bc204902589735fd8297aeedd8cbc139be4c28c6e9b2638082ca4768076f6b57",
+    "role": "Hooded keeper props source sheet",
+    "url": "/art/blight-tools-sheet.webp",
+    "dimensions": [
+      556,
+      1000
+    ],
+    "bytes": 31372
+  },
+  {
+    "id": "skull-tools-sheet",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97.png",
+    "preservedSource": "art/sources/Untitled97.png",
+    "sha256": "fa073f7484f8a5872215c1abbfc65b8f8954b8c18df35d96f98bafdc6c0be8a1",
+    "role": "Skull gnome props source sheet",
+    "url": "/art/skull-tools-sheet.webp",
+    "dimensions": [
+      711,
+      1000
+    ],
+    "bytes": 86598
+  },
+  {
+    "id": "brute-tools-sheet",
+    "source": "C:\\Users\\user\\Downloads\\Untitled118.png",
+    "preservedSource": "art/sources/Untitled118.png",
+    "sha256": "7fb5bfcb40793311b2f6285509c73b71a0a9e55332229dd8307e3785ed885467",
+    "role": "Corrupted brute props source sheet",
+    "url": "/art/brute-tools-sheet.webp",
+    "dimensions": [
+      747,
+      1000
+    ],
+    "bytes": 102312
+  },
+  {
+    "id": "guardian-charms-sheet",
+    "source": "C:\\Users\\user\\Downloads\\Ռիմա3.png",
+    "preservedSource": "art/sources/Ռիմա3.png",
+    "sha256": "392069308964c1575f01275810a087cdcd60026f841e21a145277671ab9d64f2",
+    "role": "Guardian scarf, brooch and pendant source sheet",
+    "url": "/art/guardian-charms-sheet.webp",
+    "dimensions": [
+      698,
+      800
+    ],
+    "bytes": 12570
+  },
+  {
+    "id": "bloom-flower",
+    "source": "C:\\Users\\user\\Downloads\\Untitled93.png",
+    "preservedSource": "art/sources/Untitled93.png",
+    "sha256": "bf1a603287db8d95e47eaec7ba8ce40e3997ee59843c12adb07a7a3aa74aaff6",
+    "role": "Flowerpot reel symbol",
+    "sourceRegion": [
+      0.14,
+      0.25,
+      0.35,
+      0.39
+    ],
+    "sourcePolygon": null,
+    "url": "/art/bloom-flower.webp",
+    "dimensions": [
+      240,
+      235
+    ],
+    "bytes": 16384
+  },
+  {
+    "id": "bloom-lantern",
+    "source": "C:\\Users\\user\\Downloads\\Untitled95.png",
+    "preservedSource": "art/sources/Untitled95.png",
+    "sha256": "184f30d57913acdd89b320a66ddde80f0a6c96eb4c5648a988bb79a269538e33",
+    "role": "Lantern reel symbol",
+    "sourceRegion": [
+      0.145,
+      0.16,
+      0.25,
+      0.295
+    ],
+    "sourcePolygon": null,
+    "url": "/art/bloom-lantern.webp",
+    "dimensions": [
+      130,
+      240
+    ],
+    "bytes": 11634
+  },
+  {
+    "id": "bloom-key",
+    "source": "C:\\Users\\user\\Downloads\\Ռիմա3.png",
+    "preservedSource": "art/sources/Ռիմա3.png",
+    "sha256": "392069308964c1575f01275810a087cdcd60026f841e21a145277671ab9d64f2",
+    "role": "Guardian brooch reel symbol",
+    "sourceRegion": [
+      0.31,
+      0.32,
+      0.38,
+      0.37
+    ],
+    "sourcePolygon": null,
+    "url": "/art/bloom-key.webp",
+    "dimensions": [
+      151,
+      127
+    ],
+    "bytes": 4002
+  },
+  {
+    "id": "bloom-book",
+    "source": "C:\\Users\\user\\Downloads\\Untitled91 (1).png",
+    "preservedSource": "art/sources/Untitled91 (1).png",
+    "sha256": "0964d4d7bfa6cd624a8abafc80485d013859c95423fe898c61c610f5bb0539e6",
+    "role": "Traveler hammer reel symbol",
+    "sourceRegion": [
+      0.59,
+      0.53,
+      0.81,
+      0.665
+    ],
+    "sourcePolygon": null,
+    "url": "/art/bloom-book.webp",
+    "dimensions": [
+      240,
+      201
+    ],
+    "bytes": 8750
+  },
+  {
+    "id": "bloom-mushroom",
+    "source": "C:\\Users\\user\\Downloads\\Untitled95.png",
+    "preservedSource": "art/sources/Untitled95.png",
+    "sha256": "184f30d57913acdd89b320a66ddde80f0a6c96eb4c5648a988bb79a269538e33",
+    "role": "Traveler hat reel symbol",
+    "sourceRegion": [
+      0.325,
+      0.072,
+      0.79,
+      0.32
+    ],
+    "sourcePolygon": null,
+    "url": "/art/bloom-mushroom.webp",
+    "dimensions": [
+      240,
+      189
+    ],
+    "bytes": 10220
+  },
+  {
+    "id": "blight-flower",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97.png",
+    "preservedSource": "art/sources/Untitled97.png",
+    "sha256": "fa073f7484f8a5872215c1abbfc65b8f8954b8c18df35d96f98bafdc6c0be8a1",
+    "role": "Stone reel symbol",
+    "sourceRegion": [
+      0.15,
+      0.4,
+      0.34,
+      0.5
+    ],
+    "sourcePolygon": null,
+    "url": "/art/blight-flower.webp",
+    "dimensions": [
+      240,
+      172
+    ],
+    "bytes": 5992
+  },
+  {
+    "id": "blight-lantern",
+    "source": "C:\\Users\\user\\Downloads\\Untitled110.png",
+    "preservedSource": "art/sources/Untitled110.png",
+    "sha256": "bc204902589735fd8297aeedd8cbc139be4c28c6e9b2638082ca4768076f6b57",
+    "role": "Chained flail reel symbol",
+    "sourceRegion": [
+      0.19,
+      0.27,
+      0.34,
+      0.53
+    ],
+    "sourcePolygon": null,
+    "url": "/art/blight-lantern.webp",
+    "dimensions": [
+      95,
+      240
+    ],
+    "bytes": 7424
+  },
+  {
+    "id": "blight-key",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97.png",
+    "preservedSource": "art/sources/Untitled97.png",
+    "sha256": "fa073f7484f8a5872215c1abbfc65b8f8954b8c18df35d96f98bafdc6c0be8a1",
+    "role": "Belt pouch reel symbol",
+    "sourceRegion": [
+      0.56,
+      0.535,
+      0.72,
+      0.635
+    ],
+    "sourcePolygon": [
+      [
+        552,
+        695
+      ],
+      [
+        583,
+        688
+      ],
+      [
+        610,
+        692
+      ],
+      [
+        620,
+        679
+      ],
+      [
+        638,
+        692
+      ],
+      [
+        638,
+        721
+      ],
+      [
+        623,
+        731
+      ],
+      [
+        622,
+        758
+      ],
+      [
+        610,
+        784
+      ],
+      [
+        599,
+        789
+      ],
+      [
+        603,
+        800
+      ],
+      [
+        585,
+        804
+      ],
+      [
+        575,
+        791
+      ],
+      [
+        556,
+        791
+      ],
+      [
+        530,
+        783
+      ],
+      [
+        516,
+        769
+      ],
+      [
+        505,
+        745
+      ],
+      [
+        509,
+        729
+      ],
+      [
+        526,
+        724
+      ],
+      [
+        543,
+        716
+      ]
+    ],
+    "url": "/art/blight-key.webp",
+    "dimensions": [
+      240,
+      216
+    ],
+    "bytes": 11072
+  },
+  {
+    "id": "blight-book",
+    "source": "C:\\Users\\user\\Downloads\\Untitled97.png",
+    "preservedSource": "art/sources/Untitled97.png",
+    "sha256": "fa073f7484f8a5872215c1abbfc65b8f8954b8c18df35d96f98bafdc6c0be8a1",
+    "role": "Shears reel symbol",
+    "sourceRegion": [
+      0.54,
+      0.53,
+      0.87,
+      0.78
+    ],
+    "sourcePolygon": [
+      [
+        492,
+        947
+      ],
+      [
+        606,
+        812
+      ],
+      [
+        614,
+        796
+      ],
+      [
+        631,
+        779
+      ],
+      [
+        650,
+        778
+      ],
+      [
+        748,
+        688
+      ],
+      [
+        773,
+        682
+      ],
+      [
+        779,
+        700
+      ],
+      [
+        674,
+        817
+      ],
+      [
+        645,
+        894
+      ],
+      [
+        593,
+        979
+      ],
+      [
+        572,
+        981
+      ],
+      [
+        586,
+        937
+      ],
+      [
+        608,
+        873
+      ],
+      [
+        540,
+        934
+      ]
+    ],
+    "url": "/art/blight-book.webp",
+    "dimensions": [
+      222,
+      240
+    ],
+    "bytes": 7714
+  },
+  {
+    "id": "blight-mushroom",
+    "source": "C:\\Users\\user\\Downloads\\Untitled118.png",
+    "preservedSource": "art/sources/Untitled118.png",
+    "sha256": "7fb5bfcb40793311b2f6285509c73b71a0a9e55332229dd8307e3785ed885467",
+    "role": "Spiked club reel symbol",
+    "sourceRegion": [
+      0.48,
+      0.56,
+      0.81,
+      0.77
+    ],
+    "sourcePolygon": [
+      [
+        435,
+        935
+      ],
+      [
+        477,
+        877
+      ],
+      [
+        535,
+        829
+      ],
+      [
+        595,
+        783
+      ],
+      [
+        660,
+        732
+      ],
+      [
+        682,
+        699
+      ],
+      [
+        715,
+        700
+      ],
+      [
+        726,
+        728
+      ],
+      [
+        684,
+        789
+      ],
+      [
+        655,
+        837
+      ],
+      [
+        617,
+        889
+      ],
+      [
+        565,
+        950
+      ],
+      [
+        530,
+        986
+      ],
+      [
+        485,
+        987
+      ],
+      [
+        445,
+        974
+      ]
+    ],
+    "url": "/art/blight-mushroom.webp",
+    "dimensions": [
+      231,
+      240
+    ],
+    "bytes": 13388
+  }
+]

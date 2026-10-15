@@ -1,94 +1,147 @@
-"""Generate, optimize and verify Relic Forge math outputs."""
-
-import argparse
+"""Build measured finite development libraries. Never uploads or exports production."""
+import argparse, csv, json, math
 from pathlib import Path
+import zstandard
+from model import RULES, MODES, BONUS_MODES, BONUS_RULES, REELS, generate, attach_purchase_cost
+ROOT=Path(__file__).resolve().parent
+FRONT=ROOT.parents[2]/'frontend'/'apps'/'relic-forge'
 
-from game_config import GameConfig
-from gamestate import GameState
-from src.state.run_sims import create_books
-from src.write_data.write_configs import generate_configs
-from utils.rgs_verification import execute_all_tests
-from game_optimization import MODES, OptimizationSetup
-from optimization_diagnostics import diagnose_mode
-from optimization_program.run_script import OptimizationExecution
+def build(mode, count):
+    books=[generate(mode,i) for i in range(count)]
+    # Stratified feature sample and explicit maximum exposure make the finite
+    # development distribution inspectable, including its rare-event ceiling.
+    books += [generate(mode,100000+i,'bonus') for i in range(max(200,count//10))]
+    books += [generate(mode,900000,'cap')]
+    groups={'loss':[], 'win':[], 'feature':[], 'cap':[]}
+    for b in books:
+        group='cap' if b['id']==900000 else 'feature' if b['criteria']=='feature' else 'win' if b['payoutMultiplier'] else 'loss'
+        groups[group].append(b)
+    avg=lambda g:sum(b['payoutMultiplier']/100 for b in groups[g])/len(groups[g])
+    pcap=1e-8
+    pfeature=RULES['modes'][mode]['bonusProbability']-pcap
+    pwin=(.96-pfeature*avg('feature')-pcap*5000)/avg('win')
+    probs={'feature':pfeature,'cap':pcap,'win':pwin,'loss':1-pfeature-pcap-pwin}
+    if any(p<=0 for p in probs.values()):
+        raise RuntimeError(f'Infeasible development weights: {mode} {probs}')
+    rows=[]
+    for group,items in groups.items():
+        weight=max(1,round(probs[group]*10**12/len(items)))
+        rows += [(b,weight) for b in items]
+    total=sum(w for _,w in rows)
+    mean=sum(b['payoutMultiplier']/100*w for b,w in rows)/total
+    variance=sum((b['payoutMultiplier']/100-mean)**2*w for b,w in rows)/total
+    report=dict(mode=mode,libraryBooks=len(rows),weightSum=total,weightedRtp=mean,
+        standardDeviationX=math.sqrt(variance),varianceX=variance,
+        hitFrequency=sum(w for b,w in rows if b['payoutMultiplier']>0)/total,
+        bonusFrequency=sum(w for b,w in rows if b['criteria']=='feature')/total,
+        meanFeatureRoundX=sum(b['payoutMultiplier']/100*w for b,w in rows if b['criteria']=='feature')/sum(w for b,w in rows if b['criteria']=='feature'),
+        maxExposureX=max(b['payoutMultiplier'] for b,_ in rows)/100,
+        naturalSampleRtp=sum(b['payoutMultiplier'] for b in books[:count])/100/count,
+        status='Finite development library, calibrated group weights; not production optimized or certified')
+    return rows,report
 
+def build_bonus(mode,count):
+    """Price from the independent finite feature population, then calibrate
+    positive integer weights to the rounded purchase cost. Never reuse old prices.
+    """
+    offset=1000000+BONUS_MODES.index(mode)*100000
+    books=[generate(mode,offset+i) for i in range(count)]
+    natural_mean=sum(b['payoutMultiplier'] for b in books)/100/len(books)
+    cost=max(1,round(natural_mean/.96))
+    low=[b for b in books if b['payoutMultiplier']/100<=natural_mean]
+    high=[b for b in books if b['payoutMultiplier']/100>natural_mean]
+    avg=lambda group:sum(b['payoutMultiplier'] for b in group)/100/len(group)
+    pcap=1e-8
+    target=(.96*cost-pcap*5000)/(1-pcap)
+    phigh=(target-avg(low))/(avg(high)-avg(low))
+    if not 0<phigh<1: raise RuntimeError(f'Infeasible bonus pricing: {mode}')
+    rows=[]
+    for group,p in ((low,(1-pcap)*(1-phigh)),(high,(1-pcap)*phigh)):
+        weight=max(1,round(p*10**12/len(group)))
+        rows.extend((b,weight) for b in group)
+    rows.append((generate(mode,offset+90000,'cap'),round(pcap*10**12)))
+    for book,_ in rows: attach_purchase_cost(book,cost)
+    total=sum(w for _,w in rows)
+    mean=sum(b['payoutMultiplier']/100*w for b,w in rows)/total
+    variance=sum((b['payoutMultiplier']/100-mean)**2*w for b,w in rows)/total
+    report=dict(mode=mode,world=BONUS_RULES[mode]['world'],variant=BONUS_RULES[mode]['variant'],
+        costMultiplier=cost,libraryBooks=len(rows),weightSum=total,weightedRtp=mean/cost,
+        meanPayoutBaseBetX=mean,standardDeviationBaseBetX=math.sqrt(variance),
+        standardDeviationPurchaseX=math.sqrt(variance)/cost,varianceBaseBetX=variance,
+        hitFrequency=sum(w for b,w in rows if b['payoutMultiplier']>0)/total,
+        maxPayoutBaseBetX=max(b['payoutMultiplier'] for b,_ in rows)/100,
+        maxPayoutPurchaseX=5000/cost,naturalMeanPayoutBaseBetX=natural_mean,
+        status='Locally validated finite development books; connected purchase release is locked')
+    return rows,report
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--command", choices=("smoke", "production", "optimize", "optimize-source", "config", "verify-strict"), default="smoke")
-    parser.add_argument("--sims", type=int, default=None)
-    parser.add_argument("--threads", type=int, default=1)
-    parser.add_argument("--mode", choices=MODES, default=None)
-    parser.add_argument(
-        "--artifact-root",
-        type=Path,
-        default=None,
-        help="Override the library directory; smoke defaults to library/smoke.",
-    )
-    args = parser.parse_args()
-    production = args.command == "production"
-    default_library = Path(__file__).resolve().parent / "library"
-    artifact_root = args.artifact_root
-    if artifact_root is None and args.command == "smoke":
-        artifact_root = default_library / "smoke"
-    config = GameConfig(
-        production=production,
-        artifact_root=str(artifact_root.resolve()) if artifact_root is not None else None,
-    )
-    gamestate = GameState(config)
-    OptimizationSetup(config)
-    if args.command == "optimize-source":
-        mode = args.mode or "BASE"
-        sims = args.sims or 20_000
-        create_books(
-            gamestate,
-            config,
-            {mode: sims},
-            batch_size=1000,
-            threads=1,
-            compress=True,
-            profiling=False,
-        )
-        generate_configs(gamestate)
-        print(f"Generated {sims} optimization-source books for {mode}.")
-        return
-    if args.command == "optimize":
-        # The optimizer consumes the generated math_config plus the books and
-        # base lookup tables. Generate the config here so a fresh checkout
-        # cannot accidentally optimize against a stale or empty file.
-        generate_configs(gamestate)
-        modes = [args.mode] if args.mode else [mode.get_name() for mode in config.bet_modes]
-        for mode in modes:
-            # Stop at the first invalid mode. This is intentionally
-            # sequential: later modes must not appear optimized when BASE
-            # (or another earlier mode) has not passed its preflight.
-            diagnose_mode(config, mode)
-            OptimizationExecution.run_opt_single_mode(config, mode, args.threads)
-        return
-    if args.command == "config":
-        generate_configs(gamestate)
-        return
-    if args.command == "verify-strict":
-        execute_all_tests(config, strict=True)
-        return
-    num_sim_args = {
-        mode.get_name(): args.sims or (100_000 if production else 1_000)
-        for mode in config.bet_modes
-    }
-    create_books(
-        gamestate,
-        config,
-        num_sim_args,
-        batch_size=1000,
-        threads=1,
-        compress=True,
-        profiling=False,
-    )
-    # Optimization metadata must describe the exact six-mode game that was
-    # just simulated before backend/config files are emitted.
-    generate_configs(gamestate)
-    execute_all_tests(config, strict=production)
-
-
-if __name__ == "__main__":
-    main()
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--sims',type=int,default=5000)
+    parser.add_argument('--command',choices=['smoke','config','verify-strict','production'],default='smoke')
+    args=parser.parse_args()
+    if args.command=='production': raise RuntimeError('Production export is disabled pending independent validation.')
+    if args.command=='verify-strict':
+        import subprocess,sys
+        raise SystemExit(subprocess.call([sys.executable,'-m','pytest',str(ROOT/'test_relic_wild.py'),'-q']))
+    if args.sims<1000: raise ValueError('At least 1000 development samples per world are required.')
+    dest=ROOT/'library'/'last_petal_dev'
+    dest.mkdir(parents=True,exist_ok=True)
+    reports=[]
+    index={'modes':[]}
+    fixtures={}
+    for mode in MODES:
+        rows,report=build(mode,args.sims)
+        reports.append(report)
+        with (dest/f'books_{mode}.jsonl.zst').open('wb') as f:
+            with zstandard.ZstdCompressor().stream_writer(f) as stream:
+                for book,_ in rows:
+                    stream.write((json.dumps(book,separators=(',',':'))+'\n').encode())
+        with (dest/f'lookUpTable_{mode}.csv').open('w',newline='') as f:
+            writer=csv.writer(f)
+            writer.writerows((b['id'],w,b['payoutMultiplier']) for b,w in rows)
+        index['modes'].append(dict(name=mode,cost=1,events=f'books_{mode}.jsonl.zst',weights=f'lookUpTable_{mode}.csv'))
+        fixtures[mode]=[generate(mode,777+i,scenario) for i,scenario in enumerate(['loss','small','expanding','multiple','bonus','lines','cap'])]
+    bonus_reports=[]
+    bonus_fixtures={}
+    bonus_config={}
+    for mode in BONUS_MODES:
+        rows,report=build_bonus(mode,max(1000,args.sims//2))
+        bonus_reports.append(report)
+        with (dest/f'books_{mode}.jsonl.zst').open('wb') as f:
+            with zstandard.ZstdCompressor().stream_writer(f) as stream:
+                for book,_ in rows: stream.write((json.dumps(book,separators=(',',':'))+'\n').encode())
+        with (dest/f'lookUpTable_{mode}.csv').open('w',newline='') as f:
+            csv.writer(f).writerows((b['id'],w,b['payoutMultiplier']) for b,w in rows)
+        cost=report['costMultiplier']
+        index['modes'].append(dict(name=mode,cost=cost,events=f'books_{mode}.jsonl.zst',weights=f'lookUpTable_{mode}.csv'))
+        bonus_config[mode]=dict(BONUS_RULES[mode],costMultiplier=cost,buyBonus=True,freeSpins=10,connectedApproved=False)
+        bonus_fixtures[mode]=[attach_purchase_cost(generate(mode,7000000+BONUS_MODES.index(mode)*100+i),cost) for i in range(3)]
+    (dest/'bonus_config.json').write_text(json.dumps(bonus_config,indent=2))
+    (ROOT/'bonus_pricing.json').write_text(json.dumps(bonus_config,indent=2))
+    from game_config import GameConfig
+    from src.write_data.write_configs import pass_fe_betmode
+    sdk_config=GameConfig(artifact_root=str(dest))
+    stake_modes={'developmentOnly':True,'gameModes':[
+        dict(mode=m.get_name(),**pass_fe_betmode(m)[m.get_name()]) for m in sdk_config.bet_modes]}
+    (dest/'stake-mode-config.json').write_text(json.dumps(stake_modes,indent=2))
+    (dest/'bonus_statistics.json').write_text(json.dumps(bonus_reports,indent=2))
+    (dest/'index.json').write_text(json.dumps(index,indent=2))
+    (dest/'statistics.json').write_text(json.dumps(reports,indent=2))
+    (dest/'rules.json').write_text(json.dumps(RULES,indent=2))
+    with (dest/'reels.csv').open('w',newline='') as f: csv.writer(f).writerows(zip(*REELS))
+    target=FRONT/'src'/'petal'
+    target.mkdir(parents=True,exist_ok=True)
+    (target/'rules.json').write_text(json.dumps(RULES,indent=2))
+    (target/'fixtures.json').write_text(json.dumps(fixtures,separators=(',',':')))
+    (target/'statistics.json').write_text(json.dumps(reports,indent=2))
+    (target/'bonus-config.json').write_text(json.dumps(bonus_config,indent=2))
+    (target/'bonus-fixtures.json').write_text(json.dumps(bonus_fixtures,separators=(',',':')))
+    (target/'bonus-statistics.json').write_text(json.dumps(bonus_reports,indent=2))
+    # Hash exact book/config/weight artifacts for independent staging review.
+    import hashlib
+    artifact_names={'index.json','statistics.json','bonus_statistics.json','bonus_config.json','stake-mode-config.json','rules.json','reels.csv'}
+    for item in index['modes']: artifact_names.update((item['events'],item['weights']))
+    integrity={name:hashlib.sha256((dest/name).read_bytes()).hexdigest() for name in sorted(artifact_names)}
+    (dest/'integrity.json').write_text(json.dumps(integrity,indent=2))
+    print(json.dumps(reports+bonus_reports,indent=2))
+if __name__=='__main__': main()

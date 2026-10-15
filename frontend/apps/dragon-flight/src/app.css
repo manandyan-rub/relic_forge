@@ -1,5 +1,10 @@
 :root {
-	font-family: 'Google Sans', sans-serif;
+	--font-ui: 'Google Sans', 'Segoe UI', Arial, sans-serif;
+	--font-display: 'Cinzel', 'Google Sans', Georgia, serif;
+	font-family: var(--font-ui);
+	font-size: 16px;
+	line-height: 1.45;
+	font-optical-sizing: auto;
 	color-scheme: dark;
 	background: #0d1a21;
 }
@@ -13,37 +18,17 @@ body {
 }
 
 body {
-	overflow: hidden;
+	overflow-x: hidden;
 }
 
-/* Apply the same typography and flat surfaces to game controls and every dialog. */
-body *,
-body *::before,
-body *::after {
-	font-family: 'Google Sans', sans-serif !important;
-}
-
-/* Preserve the new framed game controls while keeping dialog surfaces flat. */
-body
-	*:not(
-		:where(
-			.control-dock,
-			.control-dock *,
-			.prototype-header,
-			.prototype-header *,
-			.flight-result,
-			.flight-result *,
-			.champion-announcement,
-			.stage-transition,
-			.stage-transition *
-		)
-	) {
-	border-style: none !important;
-	box-shadow: none !important;
-	text-shadow: none !important;
+button,
+input,
+select,
+textarea {
+	font: inherit;
 }
 
 body :focus-visible {
-	outline: 2px solid #9dc5ad !important;
+	outline: 2px solid #e8c16d;
 	outline-offset: 3px;
 }

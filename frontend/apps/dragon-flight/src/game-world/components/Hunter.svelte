@@ -98,9 +98,7 @@
 		background: #09151ec9;
 		border-radius: 6px;
 		padding: 3px;
-		font:
-			700 10px/1.2 system-ui,
-			sans-serif;
+		font: 600 11px/1.3 var(--font-ui);
 		white-space: nowrap;
 	}
 	.bullet {

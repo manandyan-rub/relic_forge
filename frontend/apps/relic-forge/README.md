@@ -1,47 +1,65 @@
-# Relic Forge
+# The Last Petal
 
-Relic Forge is a dark-fantasy 5x3, 20-payline slot frontend built as a separate app in the Stake Web SDK workspace. It uses Svelte 5, the shared Stake RGS request helpers, project-local fantasy artwork, and an authoritative event-driven presentation flow.
+A local development rebuild of the existing Relic Forge app. Work stays in this repository on `last-petal-rebuild`; no upload or push is performed.
 
-## Development
+From `frontend/apps/relic-forge`:
 
-From `frontend/`:
-
-```sh
-volta run --node 22.16.0 pnpm install
-volta run --node 22.16.0 pnpm --filter relic-forge dev
-volta run --node 22.16.0 pnpm --filter relic-forge build
-volta run --node 22.16.0 pnpm --filter relic-forge lint
-volta run --node 22.16.0 pnpm --filter relic-forge exec svelte-check --tsconfig ./tsconfig.json
-volta run --node 22.16.0 pnpm --filter relic-forge verify:browser
+```powershell
+pnpm dev
+# Open http://localhost:3006/?demo=true
+pnpm lint
+pnpm exec svelte-check --tsconfig ./tsconfig.json
+pnpm build
+pnpm verify:browser
 ```
 
-Open `http://localhost:3006/?demo=true` for explicit deterministic development fixture mode. Mock mode is development-only and must never be inferred from missing live-session parameters. The mode selector exposes Normal (1x), Forge Boost (2x), Dragon Boost (5x), and Standard/Super/Mythic Bonus Buy demonstrations (80x/250x/500x). These mock choices replay fixed Stake-style event books so the UI can be reviewed; they do not select symbols, multipliers, winning lines, or payouts at render time. A Stake Engine session URL (`sessionID`, `rgs_url`, and the other standard parameters) switches the adapter to `/wallet/play`, `/bet/event`, and `/wallet/end-round` through the official shared SDK helpers.
+The explicit development demo cycles seven Python-authored showcase books per world: loss, small win, expansion, multiple expansion, feature, multiple paylines, and cap. It is **not a probability simulation**. Demo requires a development build, `demo=true`, and no complete or partial live credentials. Production builds require authentication or replay.
 
-## Architecture
+The active app is `src/petal/SlotGame.svelte`, loaded by the existing SvelteKit layout and SessionGate. The former `src/components/Game.svelte`, old symbol images and old game helpers remain historical source only; none are imported by the new game. Forge and Dragon boosts are retired. Bonus Buy is a permanent feature with Standard, Super and Mythic variants in both worlds; it is playable in explicit local development and remains locked for connected purchases pending production validation. Local SessionAuthenticate preserves the shared SDK authentication implementation while adapting branding and original-stake replay recovery without changing shared packages.
 
-- `src/game/config.ts` owns symbol metadata, payline geometry, bet levels, and visual tokens used by the prototype.
-- `src/game/modes.ts` owns display metadata and maps UI cards to authenticated RGS modes. Mock multipliers are presentation-fixture inputs only.
-- `src/game/adapter.ts` is the RGS boundary. It never calculates a wager outcome in the browser; mock rounds are fixed fixtures for development only.
-- `src/game/types.ts` defines the normalized round/event vocabulary consumed by the renderer.
-- `src/components/Game.svelte` owns the explicit presentation phases, deterministic event playback, responsive UI, modal controls, and session recovery handoff.
-- `src/components/RelicWildOverlay.svelte` presents authoritative sticky positions without letting locked cells visually spin away; `MultiplierCombine.svelte` presents the server-provided per-line base win, additive multiplier, and final win.
-- `src/components/ModeSelection.svelte`, `ModeCard.svelte`, and `BonusConfirmModal.svelte` implement the reusable responsive mode and purchase-confirmation interface.
-- `src/app.css` contains the replaceable dark-fantasy visual system. No runtime external fonts, image CDNs, or remote CSS are used.
+## Active responsibilities
 
-## RGS / recovery
+- `WorldSelection`: authenticated BLOOM/BLIGHT eligibility; controls lock throughout rounds/features/autoplay.
+- `ReelGrid`, `ReelSymbol`: 25 cells and actual supplied character/prop art.
+- `CharacterStage`: restrained idle, spin, anticipation, win, expansion, feature intro, big win and ending states.
+- `ExpandingWild`: full-reel expansion and persistent feature Wild presentation.
+- `FreeSpinsPresentation`, `WinPresentation`: server counters, separate feature/round winnings, line breakdown.
+- `BonusBuy`: world-themed selection, full-price confirmation, affordability, duplicate protection and permanent connected-release gate.
+- `BetControls`, `GameSettings`: validated stake, balance, finite autoplay, Turbo, sound, reduced motion, rules, paytable and focus-managed dialogs.
+- `MathEventAdapter`: fail-closed version/geometry/mode/event/payout validation, independent best-line reconciliation; never chooses an outcome.
+- `rgs.ts`: shared SDK wallet calls, original stake, progress recording and one-attempt settlement; replay never writes to a wallet.
 
-Authentication is provided by the workspace `Authenticate` component. It populates balance, bet levels, jurisdiction, replay data, and unfinished-round state. Relic Forge consumes the resumed state without placing a second wager and calls end-round only after the presentation sequence.
+See `LAST_PETAL_CONTRACT.md` for units, events, math and readiness limits. See `art/manifest.json` for source filenames, SHA-256, output URLs, explicit crop regions and individual prop contours. Supplied originals are preserved in `art/sources` (~142 MB); optimized assets total ~2.9 MB. Missing source files: none.
 
-Play boosts and Bonus Buy cards are enabled in an RGS session only when authentication advertises their mapped modes with valid cost multipliers. Bonus modes accept the authenticated `buyBonus` contract (and legacy `feature` where supplied), while `disabledBuyFeature` is always honored. Replay URLs are read-only: they do not wager, buy features, record events, or complete rounds.
+The lower-value IDs are stable math identifiers, with world-specific labels: `flower` is flowerpot/stone, `lantern` is lantern/flail, `key` is brooch/pouch, `book` is hammer/shears, and `mushroom` is traveler hat/spiked club. These identifiers do not imply new generated images. Wild and Scatter are simple temporary SVG flowers pending dedicated hand-drawn special symbols.
 
-## Math
+## Generate and measure math
 
-`math/games/relic_forge` is now an executable Stake Engine development game with reel strips, 20-line evaluation, Wild substitution, Scatter-triggered Free Spins, server-selected sticky Relic Wild multipliers, additive per-payline multiplier evaluation, six bet modes, event generation, deterministic simulation tooling, and a server-side 5000x cap. Its current reels, weights, costs, and distribution quotas are development inputs and are not production-certified; RTP/volatility optimization and approval remain required before deployment.
+From `math` (keep this directory on PYTHONPATH):
 
-The adapter normalizes Stake API and book denominations for display but never derives a casino outcome. Live, mock, and recovered rounds all pass through the same normalized event consumer. Custom events are limited to Relic Wild state and presentation breakdowns; official `reveal`, `winInfo`, `setWin`, `setTotalWin`, Free Spin, `wincap`, and `finalWin` events remain authoritative.
+```powershell
+$env:PYTHONPATH=(Get-Location).Path
+& env/Scripts/python.exe games/relic_forge/run.py --sims 5000
+& env/Scripts/python.exe games/relic_forge/run.py --command verify-strict
+& env/Scripts/python.exe games/relic_forge/simulate.py --sims 10000
+```
 
-From `math/`, use `env\\Scripts\\python.exe games\\relic_forge\\simulate.py --sims 10000` for a six-mode development report. Use `env\\Scripts\\python.exe games\\relic_forge\\run.py --command smoke` for deterministic book generation, `--command config` for configuration generation, `--command verify-strict` for verification, and `--command optimize` to invoke the official Rust optimizer after its prerequisites are installed. `--command production` requests 100,000 books per mode and requires real Stake provider name/number environment variables; it was not run as part of frontend QA.
+`run.py` writes local zstd JSONL books, integer-weight CSV lookups, an index, explicit cyclic strips, canonical rules and weighted statistics to `math/games/relic_forge/library/last_petal_dev`. It also regenerates the frontend rule mirror and deterministic fixtures. This local library is ignored by the repository's existing library ignore rule; retain/regenerate it using the commands above.
 
-## Visual QA
+Measured weighted RTP is approximately 96% in both finite development libraries. **Natural unweighted sampling is not 96%**. Its separate report is intentional; do not deploy natural-simulation lookup weights while citing the calibrated report. Production export is explicitly blocked. The old six-mode Rust optimizer setup is retired; new production-scale optimization remains pending.
 
-Check desktop landscape, tablet, mobile landscape, and mobile portrait. The reel frame is responsive rather than a single scaled bitmap, and reduced-motion preferences shorten the presentation to a static reveal.
+Browser QA uses installed headless Chrome/Edge through CDP and local intercepted RGS fixtures. It is not Playwright and does not prove real Stake staging integration. `art/qa/browser-results.json` records actual checks and screenshots. Do not use the old generated Relic Forge libraries for this frontend.
+
+
+
+## Bonus Buy
+
+See `BONUS_BUY.md` for all six prices, measured RTP/volatility/max exposure and release requirements. The new modes are `BLOOM_STANDARD_BONUS`, `BLOOM_SUPER_BONUS`, `BLOOM_MYTHIC_BONUS`, `BLIGHT_STANDARD_BONUS`, `BLIGHT_SUPER_BONUS`, and `BLIGHT_MYTHIC_BONUS`.
+
+`bonus_rules.json` defines independent server profiles. The exporter derives rounded integer prices from each profile's source population, then calibrates positive book weights and recomputes purchase-normalized statistics. It writes `bonus_pricing.json`, six book/weight pairs, `bonus_statistics.json`, `stake-mode-config.json` using the SDK's `pass_fe_betmode`, an integrity manifest, and generated frontend config/fixtures. All six `connectedApproved` fields stay false.
+
+The wallet request sends the original base bet with the exact purchase mode; the mode cost multiplier determines the full debit. Book payouts remain multiples of the base bet. The `bonusStart` event carries the original price for recovery/replay receipts, so later catalog changes cannot silently rewrite historical purchase costs. No synthetic base spin or Scatter win is inserted into purchased features.
+
+
+
+Current character presentation: both worlds use their supplied transparent videos and original audio. Bloom spin uses 21:18:08 seconds 1–2; Bloom big win uses 21:23:21 seconds 0–5. Blight spin uses 21:29:23 seconds 3–4; Blight big win uses seconds 0–5. Both bonus features keep the spin video/audio running across all ten free spins and pauses. Big wins (20× or more) fill the screen with the world background and winnings above the character. The side character never shows a win label. Regular and feature totals appear below the reels; only the full-screen big-win display shows the large prize. Reduced motion restores still art; Sound effects controls original audio.

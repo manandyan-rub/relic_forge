@@ -106,21 +106,22 @@
 				<ol>
 					<li>Set your bet.</li>
 					<li>Choose Safe, Balanced or Danger.</li>
-					<li>Choose your lineup, hunter, time and launch in Customize.</li>
+					<li>Choose your bird lineup, time and launch in Customize.</li>
 					<li>
 						Press <strong>FLY</strong> to launch the flight. The local demo uses four birds; connected
 						play follows the server book, which may use one bird. Space also starts a flight when permitted
 						and no menu or control has focus.
 					</li>
-					<li>See your result, then choose Fly Again or Change Settings.</li>
+					<li>
+						See your result. Press Fly for another round, or Change Settings to adjust your setup.
+					</li>
 				</ol>
 				<p>
-					Watch the survivor count and health bars as the flock dodges hunter shots and rides
-					currents. Health is visual feedback for the authored incident, not a separate survival
-					chance. Safe uses a Glock 17, Balanced a Trail Rifle, and Danger an AK-47. A scheduled
-					hunter elimination is shown as a short volley ending in a feather burst. If all four reach
-					the destination, Archaeopteryx continues alone in Champion Flight within the same paid
-					round. No extra bet is charged. A Champion crash keeps the normal flight payout. Existing
+					Watch the survivor icons as the flock passes hazards and rides currents. Each incident
+					shows the recorded round outcome; there is no aiming or action that changes the payout. An
+					eliminated bird fades out and its survivor icon becomes inactive. If all four reach the
+					destination, Archaeopteryx continues alone in Champion Flight within the same paid round.
+					No extra bet is charged. A Champion crash keeps the normal flight payout. Existing
 					feature-buy routes and older server books can present a single bird.
 				</p>
 			</section>
@@ -135,11 +136,10 @@
 					{/each}
 				</div>
 				<p class="note">
-					Customize lets you choose four birds, including duplicates, and a Forest Hunter or
-					Mountain Ranger. Woodpecker starts with 50 visual HP, Azure Swift 60, Eagle 85 and
-					Archaeopteryx 100. Lineup, health, hunter appearance, movement, weather, time and launch
-					style only change presentation. Outcomes are determined before the animation; connected
-					play uses the server result.
+					Customize lets you choose any four birds, including duplicates. Bird choices, flight
+					movement, weather, time and launch style only change appearance. They do not change the
+					odds or payouts. Outcomes are determined before the animation; connected play uses the
+					server result.
 				</p>
 			</section>
 
@@ -166,9 +166,9 @@
 				</div>
 				<div class="formula">Final win = bet × final multiplier</div>
 				<p class="note">
-					An empty flock pays x0. Surviving birds receive the round's multiplier, which is
-					independent of the survivor count. Final multiplier = base + Champion bonus. Setup stays
-					locked until you choose Change Settings.
+					An empty flock pays ×0. The payout uses the recorded round multiplier, independently of
+					how many birds survive. Final multiplier = base + Champion bonus. Setup stays locked until
+					you choose Change Settings.
 				</p>
 			</section>
 
@@ -210,9 +210,9 @@
 				<h3 id="help-customize">CUSTOMIZE</h3>
 				<p>
 					Risk sets the weather: Safe uses Clear and Day, Balanced uses Rain, and Danger uses Storm.
-					Customize changes the birds, hunter appearance, time (outside Safe) and launch animation.
-					These choices do not change odds or payouts. Reset defaults restores the original lineup,
-					Forest Hunter, Day and Glide while keeping the selected risk.
+					Customize changes the birds, time (outside Safe) and launch animation. These choices do
+					not change odds or payouts. Reset defaults restores the original lineup, Day and Glide
+					while keeping the selected risk.
 				</p>
 				<div class="guide-grid three-grid">
 					{#each TIME_OF_DAY_OPTIONS as option (option.id)}
@@ -302,15 +302,16 @@
 <style>
 	.payout-reference {
 		margin-bottom: 10px;
-		padding: 10px;
+		padding: 12px;
 		border: 1px solid #627e81;
 		border-radius: 8px;
-		font:
-			0.8rem/1.5 system-ui,
-			sans-serif;
+		font: 0.9rem/1.55 var(--font-ui);
 	}
 	.payout-reference summary {
 		cursor: pointer;
+		min-height: 44px;
+		display: flex;
+		align-items: center;
 	}
 	.payout-reference p {
 		margin-top: 10px;
@@ -324,6 +325,7 @@
 		border: 1px solid #627e81;
 		background: transparent;
 		color: #dfe9e4;
+		font-family: var(--font-ui);
 		box-shadow:
 			0 24px 80px rgba(0, 0, 0, 0.72),
 			0 0 34px rgba(210, 148, 49, 0.18);
@@ -360,31 +362,25 @@
 	.help-kicker {
 		margin: 0 0 5px;
 		color: #62e7a9;
-		font:
-			800 0.62rem/1.2 system-ui,
-			sans-serif;
+		font: 700 0.8rem/1.3 var(--font-ui);
 		letter-spacing: 0.2em;
 	}
 	.help-header h2 {
 		margin: 0;
 		color: #e4e9df;
-		font:
-			700 clamp(1.35rem, 3vw, 2rem) / 1.05 system-ui,
-			sans-serif;
+		font: 600 clamp(1.25rem, 3vw, 1.8rem) / 1.25 var(--font-display);
 		letter-spacing: 0.07em;
 		text-transform: uppercase;
 	}
 	.help-header p:last-child {
 		margin: 8px 0 0;
 		color: #aeb7a6;
-		font:
-			0.72rem/1.35 system-ui,
-			sans-serif;
+		font: 0.85rem/1.45 var(--font-ui);
 	}
 	.close-button {
 		display: grid;
-		width: 42px;
-		min-height: 42px;
+		width: 44px;
+		min-height: 44px;
 		flex: 0 0 auto;
 		place-items: center;
 		padding: 0;
@@ -392,7 +388,12 @@
 		border: 1px solid #b6812f;
 		border-radius: 50%;
 		background: rgba(4, 19, 13, 0.85);
+		cursor: pointer;
 		color: #e4e9df;
+	}
+	.close-button:focus-visible {
+		outline: 2px solid #f0d58c;
+		outline-offset: 3px;
 	}
 	.close-button svg {
 		display: block;
@@ -430,17 +431,13 @@
 	.help-content h3 {
 		margin: 0 0 10px;
 		color: #f0c466;
-		font:
-			800 0.75rem/1.2 system-ui,
-			sans-serif;
-		letter-spacing: 0.18em;
+		font: 700 0.88rem/1.3 var(--font-ui);
+		letter-spacing: 0.08em;
 	}
 	.help-content p,
 	.help-content li {
 		color: #d3d7c8;
-		font:
-			0.8rem/1.55 system-ui,
-			sans-serif;
+		font: 0.92rem/1.6 var(--font-ui);
 	}
 	.help-content p {
 		margin: 0 0 9px;
@@ -479,21 +476,17 @@
 		display: block;
 	}
 	.guide-card strong {
-		font:
-			800 0.67rem/1.2 system-ui,
-			sans-serif;
+		font: 700 0.85rem/1.35 var(--font-ui);
 		letter-spacing: 0.08em;
 	}
 	.guide-card span {
 		margin-top: 5px;
 		color: #abb9a9;
-		font:
-			0.68rem/1.35 system-ui,
-			sans-serif;
+		font: 0.82rem/1.5 var(--font-ui);
 	}
 	.note {
-		color: #93aa9a !important;
-		font-size: 0.68rem !important;
+		color: #a9bdc7;
+		font-size: 0.82rem;
 	}
 	.formula {
 		display: inline-block;
@@ -502,9 +495,7 @@
 		border: 1px solid rgba(63, 216, 143, 0.5);
 		background: rgba(8, 64, 40, 0.48);
 		color: #70efb0;
-		font:
-			700 0.76rem/1.2 system-ui,
-			sans-serif;
+		font: 600 0.9rem/1.4 var(--font-ui);
 	}
 	.event-groups {
 		display: grid;
@@ -522,17 +513,13 @@
 	}
 	.event-groups strong {
 		color: #f4ce79;
-		font:
-			800 0.62rem/1.2 system-ui,
-			sans-serif;
+		font: 700 0.8rem/1.3 var(--font-ui);
 		letter-spacing: 0.1em;
 	}
 	.event-groups span {
 		margin-top: 5px;
 		color: #b4c0ad;
-		font:
-			0.68rem/1.4 system-ui,
-			sans-serif;
+		font: 0.82rem/1.5 var(--font-ui);
 	}
 
 	@media (max-width: 620px) {

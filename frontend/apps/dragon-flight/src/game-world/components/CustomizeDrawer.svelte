@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { base } from '$app/paths';
 	import { getWeather } from '../weather';
 	import { getTimeOfDay, TIME_OF_DAY_OPTIONS } from '../timeOfDay';
 	import { LAUNCH_OPTIONS } from '../config';
@@ -9,13 +8,7 @@
 	import { FLOCK_ORDER, type FlockLineup } from '../flock/types';
 	import type { CreatureId } from '../types';
 	import type { FlightRisk } from '../types';
-	import {
-		HUNTERS,
-		RISK_WEAPONS,
-		hunterImage,
-		weaponImage,
-		type HunterAppearance,
-	} from '../flock/mobilePresentation';
+	import type { HunterAppearance } from '../flock/mobilePresentation';
 
 	type Props = {
 		open: boolean;
@@ -42,9 +35,6 @@
 		launchStyle,
 		timeLocked = false,
 		lineup,
-		hunter,
-		risk,
-		onHunterSelect,
 		onLineupSelect,
 		onTimeSelect,
 		onLaunchSelect,
@@ -54,7 +44,6 @@
 	const defaultSettingsSelected = $derived(
 		timeOfDay === 'day' &&
 			launchStyle === 'glide' &&
-			hunter === 'forest' &&
 			lineup.every((id, index) => id === FLOCK_ORDER[index]),
 	);
 	const launchCaptions: Record<LaunchStyle, string> = {
@@ -77,7 +66,6 @@
 	function resetDefaults() {
 		if (disabled) return;
 		FLOCK_ORDER.forEach((id, index) => onLineupSelect(index, id));
-		onHunterSelect('forest');
 		onTimeSelect('day');
 
 		onLaunchSelect('glide');
@@ -88,6 +76,35 @@
 	<span class="selection-mark" aria-hidden="true"
 		><svg viewBox="0 0 16 16"><path d="m4 8 3 3 5-6" /></svg></span
 	>
+{/snippet}
+{#snippet optionIcon(kind: TimeOfDay | LaunchStyle | WeatherCondition)}
+	<svg class="option-icon" viewBox="0 0 24 24" aria-hidden="true">
+		{#if kind === 'glide'}
+			<path d="M3 12h18m-6-6 6 6-6 6" />
+		{:else if kind === 'boost'}
+			<path d="m5 19 14-14M9 5h10v10" />
+		{:else if kind === 'dive'}
+			<path d="m5 5 14 14M9 19h10V9" />
+		{:else if kind === 'night'}
+			<path d="M20 13.2A8.4 8.4 0 0 1 10.8 4a8.4 8.4 0 1 0 9.2 9.2Z" />
+		{:else if kind === 'eclipse'}
+			<circle cx="12" cy="12" r="5" /><path
+				d="M12 3v2m0 14v2M3 12h2m14 0h2m-15.4-6.4L7 7m10 10 1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4M12 7a5 5 0 0 0 0 10"
+			/>
+		{:else if kind === 'dawn' || kind === 'sunset'}
+			<path d="M5 15a7 7 0 0 1 14 0M3 18h18" />
+			<path d="M12 3v6m-3-3 3-3 3 3" class:sunset-arrow={kind === 'sunset'} />
+		{:else if kind === 'rain' || kind === 'storm'}
+			<path d="M6 14a4 4 0 1 1 .3-8A6 6 0 0 1 17 8a3 3 0 0 1 1 6H6Z" />
+			{#if kind === 'storm'}<path d="m13 14-3 4h4l-3 4" />{:else}<path
+					d="m8 18-1 3m6-3-1 3m6-3-1 3"
+				/>{/if}
+		{:else}
+			<circle cx="12" cy="12" r="4" /><path
+				d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"
+			/>
+		{/if}
+	</svg>
 {/snippet}
 <dialog
 	bind:this={dialogElement}
@@ -104,7 +121,6 @@
 	<section class="customize-drawer">
 		<header>
 			<div>
-				<span class="eyebrow">{t('flightActive')}</span>
 				<h2 id="customize-title">{t('customize')}</h2>
 			</div>
 			<button
@@ -118,37 +134,17 @@
 		</header>
 		<div class="customize-content">
 			<FlockLineupPicker {lineup} {disabled} onSelect={onLineupSelect} />
-			<fieldset class="option-section" {disabled}>
-				<legend>HUNTER</legend>
-				<div class="hunter-grid">
-					{#each HUNTERS as option (option.id)}<label>
-							<input
-								type="radio"
-								name="hunter-appearance"
-								value={option.id}
-								checked={hunter === option.id}
-								onchange={() => onHunterSelect(option.id)}
-							/>
-							<span class="hunter-option"
-								><img src={hunterImage(option.id)} alt="" /><strong>{option.name}</strong></span
-							>
-						</label>{/each}
-				</div>
-				<p class="weapon-preview">
-					<img src={weaponImage(risk)} alt="" />{RISK_WEAPONS[risk].name} · {risk.toUpperCase()}
-				</p>
-				<p class="option-note">
-					Safe: Glock 17 · Balanced: Trail Rifle · Danger: AK-47. Hunter appearance and bird health
-					are visual only; the round result decides survival.
-				</p>
-			</fieldset>
 			<fieldset
 				class="option-section"
 				disabled={disabled || timeLocked}
 				aria-describedby="customize-time-note"
 			>
 				<legend>{t('time')} <span>{getTimeOfDay(timeOfDay).name.toLowerCase()}</span></legend>
-				<p id="customize-time-note" class="option-note">{getTimeOfDay(timeOfDay).description}</p>
+				<p id="customize-time-note" class="option-note">
+					{timeLocked
+						? 'Safe uses daylight. Choose Balanced or Danger to change the time.'
+						: getTimeOfDay(timeOfDay).description}
+				</p>
 				<div class="option-grid time-grid">
 					{#each TIME_OF_DAY_OPTIONS as option (option.id)}
 						<label
@@ -161,21 +157,18 @@
 							/>
 							<span class="option-content"
 								><span class="preview"
-									><img
-										src={`${base || '.'}/customize/${option.id}.webp`}
-										alt=""
-										loading="lazy"
-										decoding="async"
-									/>{@render selectionMark()}</span
+									>{@render optionIcon(option.id)}{@render selectionMark()}</span
 								><span class="option-name">{option.name.toLowerCase()}</span></span
 							></label
 						>
 					{/each}
 				</div>
 			</fieldset>
-			<p class="option-note">
-				Weather: {getWeather(weather).name}. Safe uses clear daylight, Balanced uses rain, and
-				Danger uses a storm.
+			<p class="option-note weather-note">
+				{@render optionIcon(weather)}<span
+					>Weather: {getWeather(weather).name}. Safe uses clear daylight, Balanced uses rain, and
+					Danger uses a storm.</span
+				>
 			</p>
 			<fieldset
 				class="option-section launch-section"
@@ -183,7 +176,9 @@
 				aria-describedby="customize-launch-note"
 			>
 				<legend>{t('launch')}</legend>
-				<p id="customize-launch-note" class="option-note">{t('launch')}</p>
+				<p id="customize-launch-note" class="option-note">
+					Choose your launch animation. It does not change the outcome.
+				</p>
 				<div class="launch-grid">
 					{#each LAUNCH_OPTIONS as option (option.id)}
 						<label
@@ -196,12 +191,7 @@
 							/>
 							<span class="option-content"
 								><span class="preview"
-									><img
-										src={`${base || '.'}/customize/${option.id}.webp`}
-										alt=""
-										loading="lazy"
-										decoding="async"
-									/>{@render selectionMark()}</span
+									>{@render optionIcon(option.id)}{@render selectionMark()}</span
 								><span class="launch-caption"
 									><strong>{option.name.toLowerCase()}</strong><small
 										>{launchCaptions[option.id]}</small
@@ -214,7 +204,7 @@
 			</fieldset>
 		</div>
 		<footer>
-			<p id="customize-description">Applies instantly · Visuals only, same odds</p>
+			<p id="customize-description">Appearance changes only · Same odds and payouts</p>
 			<div class="footer-actions">
 				<button
 					class="reset-button"
@@ -231,44 +221,6 @@
 </dialog>
 
 <style>
-	.hunter-grid {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
-	}
-	.hunter-option {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 5px;
-		padding: 8px;
-		border: 1px solid #566d72;
-		border-radius: 10px;
-		background: #0b1a22;
-		font-size: 0.7rem;
-		text-align: center;
-	}
-	.hunter-option img {
-		width: 64px;
-		height: 80px;
-	}
-	input:checked + .hunter-option {
-		border-color: #efc56e;
-		background: #453419;
-		color: #efc56e;
-	}
-	.weapon-preview {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		color: #efc56e;
-		font-size: 0.75rem;
-	}
-	.weapon-preview img {
-		width: 90px;
-		height: 30px;
-		object-fit: contain;
-	}
 	.customize-dialog {
 		width: min(540px, calc(100vw - 24px));
 		max-width: calc(100vw - 24px);
@@ -280,7 +232,7 @@
 		border-radius: 18px;
 		background: transparent;
 		color: #edf3ef;
-		font-family: system-ui, sans-serif;
+		font-family: var(--font-ui);
 	}
 	.customize-dialog::backdrop {
 		background: #061119ab;
@@ -304,18 +256,13 @@
 		gap: 16px;
 		padding-bottom: 16px;
 	}
-	.eyebrow {
-		color: #8db6ad;
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.18em;
-	}
 	h2 {
-		margin: 7px 0 0;
+		margin: 0;
 		color: #f6f2df;
 		font-size: 26px;
-		font-weight: 650;
-		line-height: 1.15;
+		font-weight: 600;
+		font-family: var(--font-display);
+		line-height: 1.2;
 		letter-spacing: -0.03em;
 	}
 	.close-button {
@@ -388,7 +335,7 @@
 	.option-note {
 		margin: 0 0 12px;
 		color: #9db2b2;
-		font-size: 11px;
+		font-size: 0.82rem;
 		line-height: 1.5;
 	}
 	.option-grid {
@@ -433,35 +380,41 @@
 	}
 	.preview {
 		position: relative;
-		display: block;
+		display: grid;
+		place-items: center;
 		width: 100%;
-		aspect-ratio: 1;
-		max-height: 70px;
-		overflow: hidden;
-		background: linear-gradient(140deg, #47646b, #1b303f);
+		height: 52px;
+		color: #d0dcd8;
 	}
-	.preview::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(transparent 60%, #0c1c2433);
-		pointer-events: none;
+	.option-icon {
+		width: 30px;
+		height: 30px;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.8;
+		stroke-linecap: round;
+		stroke-linejoin: round;
 	}
-	.preview img {
-		display: block;
-		width: 100%;
-		height: 100%;
-		object-fit: cover;
-		object-position: center;
-		opacity: 0.86;
-		transition: opacity 0.16s;
+	.sunset-arrow {
+		transform: rotate(180deg);
+		transform-origin: 12px 6px;
+	}
+	.weather-note {
+		display: flex;
+		align-items: flex-start;
+		gap: 9px;
+	}
+	.weather-note .option-icon {
+		flex-shrink: 0;
+		width: 20px;
+		height: 20px;
 	}
 	.option-name {
 		display: block;
 		padding: 10px 2px;
 		text-align: center;
-		font-size: 11px;
-		line-height: 1;
+		font-size: 0.78rem;
+		line-height: 1.2;
 		font-weight: 600;
 		text-transform: capitalize;
 	}
@@ -498,15 +451,10 @@
 	input:checked + .option-content .selection-mark {
 		opacity: 1;
 	}
-	input:checked + .option-content img,
-	input:not(:disabled) + .option-content:hover img {
-		opacity: 1;
-	}
 	input:not(:disabled) + .option-content:hover {
 		border-color: #a9d5c3;
 	}
-	input:focus-visible + .option-content,
-	input:focus-visible + .hunter-option {
+	input:focus-visible + .option-content {
 		outline: 2px solid #f0d58c;
 		outline-offset: 3px;
 	}
@@ -522,28 +470,15 @@
 		min-height: 132px;
 	}
 	.launch-grid .preview {
-		position: absolute;
-		inset: 0;
-		height: 100%;
-		max-height: none;
-		aspect-ratio: auto;
-	}
-	.launch-grid .preview img {
-		object-position: 50% 45%;
+		height: 56px;
 	}
 	.launch-caption {
-		position: absolute;
-		z-index: 2;
-		inset: auto 0 0;
 		display: flex;
 		flex-direction: column;
 		gap: 5px;
-		padding: 10px 4px 12px;
+		padding: 0 4px 12px;
 		text-align: center;
-		border-radius: 9px;
-		background: rgba(24, 44, 50, 0.48);
 		color: #f4f8f5;
-		backdrop-filter: blur(3px);
 	}
 	.launch-caption strong {
 		font-size: 13px;
@@ -552,8 +487,8 @@
 	}
 	.launch-caption small {
 		color: #d0dedb;
-		font-size: 10px;
-		line-height: 1.3;
+		font-size: 0.72rem;
+		line-height: 1.4;
 	}
 	footer {
 		flex-shrink: 0;
@@ -564,7 +499,7 @@
 	footer p {
 		margin: 0 0 12px;
 		color: #a1b6b4;
-		font-size: 10px;
+		font-size: 0.78rem;
 		text-align: center;
 		line-height: 1.5;
 	}
@@ -578,9 +513,7 @@
 		padding: 10px;
 		border: 1px solid #a9c4ba35;
 		border-radius: 9px;
-		font:
-			600 12px/1.2 system-ui,
-			sans-serif;
+		font: 600 0.85rem/1.3 var(--font-ui);
 		cursor: pointer;
 	}
 	.reset-button {
@@ -623,7 +556,7 @@
 			gap: 5px;
 		}
 		.option-name {
-			font-size: 10px;
+			font-size: 0.72rem;
 		}
 		.launch-grid {
 			gap: 7px;
@@ -653,15 +586,6 @@
 		.customize-content {
 			padding-bottom: 4px;
 		}
-		.option-note {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			overflow: hidden;
-			clip-path: inset(50%);
-			white-space: nowrap;
-			margin: 0;
-		}
 		.option-section {
 			margin-bottom: 14px;
 		}
@@ -673,8 +597,7 @@
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.option-content,
-		.preview img {
+		.option-content {
 			transition: none;
 		}
 	}

@@ -1,0 +1,8 @@
+{
+ "BLOOM_STANDARD_BONUS":{"world":"BLOOM","variant":"STANDARD","startingWildReels":0,"minimumStartingMultiplier":1,"freeWildChance":0.012,"multipliers":[2,2,2,2,3]},
+ "BLOOM_SUPER_BONUS":{"world":"BLOOM","variant":"SUPER","startingWildReels":1,"minimumStartingMultiplier":2,"freeWildChance":0.017,"multipliers":[2,2,3,3,5]},
+ "BLOOM_MYTHIC_BONUS":{"world":"BLOOM","variant":"MYTHIC","startingWildReels":1,"minimumStartingMultiplier":8,"freeWildChance":0.02,"multipliers":[3,5,5,8,8]},
+ "BLIGHT_STANDARD_BONUS":{"world":"BLIGHT","variant":"STANDARD","startingWildReels":0,"minimumStartingMultiplier":1,"freeWildChance":0.032,"multipliers":[2,3,5,5,10]},
+ "BLIGHT_SUPER_BONUS":{"world":"BLIGHT","variant":"SUPER","startingWildReels":1,"minimumStartingMultiplier":2,"freeWildChance":0.038,"multipliers":[3,5,5,10,15]},
+ "BLIGHT_MYTHIC_BONUS":{"world":"BLIGHT","variant":"MYTHIC","startingWildReels":1,"minimumStartingMultiplier":20,"freeWildChance":0.045,"multipliers":[5,10,15,20,20]}
+}

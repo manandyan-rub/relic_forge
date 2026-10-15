@@ -5,11 +5,11 @@
 	"license": "MIT",
 	"scripts": {
 		"math:audit": "node tests/calibrateBaseMath.mjs",
-		"test": "node --test tests/bonusFlights.test.mjs tests/flightActions.test.mjs tests/gameAudit.test.mjs tests/audio.test.mjs tests/stake.test.mjs tests/flock.test.mjs",
+		"test": "node --test tests/bonusFlights.test.mjs tests/flightActions.test.mjs tests/gameAudit.test.mjs tests/audio.test.mjs tests/stake.test.mjs tests/flock.test.mjs tests/pruneRelease.test.mjs",
 		"format": "prettier --write --ignore-path=../../.prettierignore .",
 		"lint": "eslint \"src\"",
 		"dev": "vite dev --host --port 3007",
-		"build": "vite build",
+		"build": "vite build && node scripts/prune-release.mjs",
 		"preview": "vite preview",
 		"submission:math": "node scripts/export-bonuses.mjs && ../../../math/env/Scripts/python.exe -B scripts/export-stake.py"
 	},

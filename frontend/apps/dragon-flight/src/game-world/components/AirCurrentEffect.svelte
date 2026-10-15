@@ -73,9 +73,7 @@
 		border-radius: 5px;
 		background: #203640bb;
 		color: #eff5f0;
-		font:
-			800 clamp(0.72rem, 1.5vw, 1rem) / 1 system-ui,
-			sans-serif;
+		font: 800 clamp(0.72rem, 1.5vw, 1rem) / 1 var(--font-ui);
 	}
 	.current-event > strong {
 		margin-top: 14px;
@@ -83,9 +81,7 @@
 		border-radius: 5px;
 		background: #142c32dd;
 		color: #e2eeea;
-		font:
-			700 0.61rem/1 system-ui,
-			sans-serif;
+		font: 700 0.61rem/1 var(--font-ui);
 		letter-spacing: 0.1em;
 	}
 	.current-event.enter {

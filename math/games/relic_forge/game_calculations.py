@@ -1,7 +1,4 @@
-"""Relic Forge game-specific calculation layer."""
-
-from src.executables.executables import Executables
-
-
-class GameCalculations(Executables):
-    pass
+"""Integer line calculation public entry point."""
+from model import evaluate
+class GameCalculations:
+    evaluate_board = staticmethod(evaluate)

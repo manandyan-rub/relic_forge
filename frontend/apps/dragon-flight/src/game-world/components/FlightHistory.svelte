@@ -76,9 +76,7 @@
 <style>
 	p {
 		color: #b6cccb;
-		font:
-			0.85rem/1.5 system-ui,
-			sans-serif;
+		font: 0.85rem/1.5 var(--font-ui);
 		margin-top: 0;
 	}
 	.empty {
@@ -98,9 +96,7 @@
 		border: 1px solid #4e6d70;
 		border-radius: 12px;
 		padding: 18px;
-		font:
-			0.8rem system-ui,
-			sans-serif;
+		font: 0.8rem var(--font-ui);
 	}
 	.row {
 		display: flex;

@@ -67,16 +67,12 @@
 	}
 	.pickup-copy strong {
 		color: #e9efea;
-		font:
-			700 0.66rem/1.1 system-ui,
-			sans-serif;
+		font: 700 0.66rem/1.1 var(--font-ui);
 		letter-spacing: 0.08em;
 	}
 	.pickup-copy span {
 		margin-top: 5px;
-		font:
-			700 0.75rem/1 system-ui,
-			sans-serif;
+		font: 700 0.75rem/1 var(--font-ui);
 	}
 	.amberCrystal {
 		color: #d7a366;

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { type Snippet } from 'svelte';
 	import { GlobalStyle } from 'components-ui-html';
-	import Game from '../components/Game.svelte';
+	import Game from '../petal/SlotGame.svelte';
 	import SessionGate from '../components/SessionGate.svelte';
 	import { setContext } from '../game/context';
 
@@ -17,3 +17,4 @@
 </GlobalStyle>
 
 {@render props.children()}
+

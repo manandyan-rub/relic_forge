@@ -44,6 +44,7 @@
 		letter-spacing: 0.05em;
 	}
 	strong {
+		font-family: var(--font-display);
 		font-size: clamp(1.2rem, 3vw, 1.8rem);
 	}
 </style>

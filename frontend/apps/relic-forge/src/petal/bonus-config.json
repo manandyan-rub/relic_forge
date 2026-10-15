@@ -1,0 +1,110 @@
+{
+  "BLOOM_STANDARD_BONUS": {
+    "world": "BLOOM",
+    "variant": "STANDARD",
+    "startingWildReels": 0,
+    "minimumStartingMultiplier": 1,
+    "freeWildChance": 0.012,
+    "multipliers": [
+      2,
+      2,
+      2,
+      2,
+      3
+    ],
+    "costMultiplier": 29,
+    "buyBonus": true,
+    "freeSpins": 10,
+    "connectedApproved": false
+  },
+  "BLOOM_SUPER_BONUS": {
+    "world": "BLOOM",
+    "variant": "SUPER",
+    "startingWildReels": 1,
+    "minimumStartingMultiplier": 2,
+    "freeWildChance": 0.017,
+    "multipliers": [
+      2,
+      2,
+      3,
+      3,
+      5
+    ],
+    "costMultiplier": 241,
+    "buyBonus": true,
+    "freeSpins": 10,
+    "connectedApproved": false
+  },
+  "BLOOM_MYTHIC_BONUS": {
+    "world": "BLOOM",
+    "variant": "MYTHIC",
+    "startingWildReels": 1,
+    "minimumStartingMultiplier": 8,
+    "freeWildChance": 0.02,
+    "multipliers": [
+      3,
+      5,
+      5,
+      8,
+      8
+    ],
+    "costMultiplier": 628,
+    "buyBonus": true,
+    "freeSpins": 10,
+    "connectedApproved": false
+  },
+  "BLIGHT_STANDARD_BONUS": {
+    "world": "BLIGHT",
+    "variant": "STANDARD",
+    "startingWildReels": 0,
+    "minimumStartingMultiplier": 1,
+    "freeWildChance": 0.032,
+    "multipliers": [
+      2,
+      3,
+      5,
+      5,
+      10
+    ],
+    "costMultiplier": 315,
+    "buyBonus": true,
+    "freeSpins": 10,
+    "connectedApproved": false
+  },
+  "BLIGHT_SUPER_BONUS": {
+    "world": "BLIGHT",
+    "variant": "SUPER",
+    "startingWildReels": 1,
+    "minimumStartingMultiplier": 2,
+    "freeWildChance": 0.038,
+    "multipliers": [
+      3,
+      5,
+      5,
+      10,
+      15
+    ],
+    "costMultiplier": 1466,
+    "buyBonus": true,
+    "freeSpins": 10,
+    "connectedApproved": false
+  },
+  "BLIGHT_MYTHIC_BONUS": {
+    "world": "BLIGHT",
+    "variant": "MYTHIC",
+    "startingWildReels": 1,
+    "minimumStartingMultiplier": 20,
+    "freeWildChance": 0.045,
+    "multipliers": [
+      5,
+      10,
+      15,
+      20,
+      20
+    ],
+    "costMultiplier": 2514,
+    "buyBonus": true,
+    "freeSpins": 10,
+    "connectedApproved": false
+  }
+}

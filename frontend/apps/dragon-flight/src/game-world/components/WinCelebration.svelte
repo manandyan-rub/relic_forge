@@ -13,7 +13,6 @@
 </script>
 
 <div class={`win-celebration ${tier.id}`} aria-live="polite">
-	<div class="rays" aria-hidden="true"></div>
 	<div class="sparkles" aria-hidden="true">
 		{#each Array(30) as _, index (index)}
 			<i style={`--i:${index};--x:${(index * 37) % 100}%;--delay:${-(index % 9) * 0.3}s`}></i>
@@ -42,7 +41,7 @@
 		display: grid;
 		place-items: center;
 		overflow: hidden;
-		background: radial-gradient(ellipse at center, #245e4bcc, #06191cec 65%, #02090bf5);
+		background: #091822ef;
 		backdrop-filter: blur(8px);
 		animation: reveal 350ms ease-out both;
 	}
@@ -54,12 +53,13 @@
 		box-sizing: border-box;
 		padding: 24px;
 		text-align: center;
-		font-family: 'Google Sans', sans-serif;
+		font-family: var(--font-ui);
 	}
 	.win-celebration strong {
 		color: #e2e9df;
 		margin-block: 18px 22px;
 		font-size: clamp(1.3rem, 4vw, 3rem);
+		font-family: var(--font-display);
 		letter-spacing: 0.16em;
 	}
 	.win-celebration span {
@@ -68,11 +68,9 @@
 		margin-top: 28px;
 		padding: 9px 24px;
 		border-radius: 999px;
-		background: #13352c99;
-		color: #72efb2;
-		font:
-			800 clamp(1rem, 3vw, 1.8rem) / 1 system-ui,
-			sans-serif;
+		background: #213541;
+		color: #ead6ab;
+		font: 700 clamp(1rem, 3vw, 1.8rem) / 1 var(--font-ui);
 		font-variant-numeric: tabular-nums;
 	}
 	.win-amount {
@@ -98,10 +96,8 @@
 	}
 	.win-celebration small {
 		margin-top: 5px;
-		color: #a8d8c2;
-		font:
-			700 clamp(0.75rem, 2vw, 1rem) / 1 system-ui,
-			sans-serif;
+		color: #bfced5;
+		font: 600 clamp(0.75rem, 2vw, 1rem) / 1 var(--font-display);
 		letter-spacing: 0.1em;
 	}
 	.win-celebration i {
@@ -115,16 +111,9 @@
 		animation: celebration-particle calc(2.5s + var(--i) * 0.04s) linear var(--delay) infinite;
 	}
 	.win-celebration i:nth-child(3n) {
-		background: #8ee8b9;
+		background: #d7e4de;
 		width: 5px;
 		height: 5px;
-	}
-	.rays {
-		position: absolute;
-		width: 150vmax;
-		height: 150vmax;
-		background: repeating-conic-gradient(from 0deg, #e7c66c0b 0deg 12deg, transparent 12deg 30deg);
-		animation: rotate-rays 35s linear infinite;
 	}
 	.sparkles {
 		position: absolute;
@@ -140,11 +129,6 @@
 			opacity: 1;
 		}
 	}
-	@keyframes rotate-rays {
-		to {
-			transform: rotate(360deg);
-		}
-	}
 	@keyframes celebration-particle {
 		to {
 			transform: translate3d(40px, 110vh, 0) rotate(400deg);
@@ -152,7 +136,6 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.win-celebration,
-		.rays,
 		.win-celebration i {
 			animation: none;
 		}

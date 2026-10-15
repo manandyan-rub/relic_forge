@@ -33,10 +33,10 @@
 		width: min(780px, calc(100vw - 24px));
 		max-height: 90dvh;
 		padding: 0;
-		border: 1px solid #698985;
+		border: 1px solid #64727a;
 		border-radius: 18px;
 		color: #e1eeea;
-		background: #12272c;
+		background: #0e1c24;
 		box-shadow: 0 24px 90px #0009;
 	}
 	dialog::backdrop {
@@ -51,15 +51,13 @@
 		position: sticky;
 		top: 0;
 		z-index: 2;
-		background: #12272c;
+		background: #0e1c24;
 		padding: 16px 20px;
 		border-bottom: 1px solid #536c6b;
 	}
 	h2 {
 		margin: 0;
-		font:
-			750 1.3rem/1.2 system-ui,
-			sans-serif;
+		font: 600 1.3rem/1.2 var(--font-display);
 	}
 	button {
 		display: grid;
@@ -67,11 +65,11 @@
 		padding: 0;
 		box-sizing: border-box;
 		flex-shrink: 0;
-		width: 40px;
-		height: 40px;
+		width: 44px;
+		height: 44px;
 		border: 1px solid #698985;
 		border-radius: 50%;
-		background: #092023;
+		background: #14232c;
 		color: #e1eeea;
 		font-size: 24px;
 		cursor: pointer;
