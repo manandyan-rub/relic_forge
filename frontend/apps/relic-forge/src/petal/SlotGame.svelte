@@ -26,12 +26,16 @@
  let message = $state('A little magic is waiting.');
  let error = $state(''), blocked = $state(false), replayDone = $state(false);
  let winningLines = $state<LineWin[]>([]), activeWin = $state(0), lineStake = $state(1);
+ let presentingLines = $state(false);
+ let showWinningLines = $state(false);
+ let finishLines: (()=>void) | undefined;
+ let suppressLineClick = false;
  const selectedWin = $derived(winningLines[activeWin]);
- const highlights = $derived(selectedWin?.positions.map(p=>`${p.reel}:${p.row}`) ?? []);
+ const highlights = $derived(showWinningLines ? selectedWin?.positions.map(p=>`${p.reel}:${p.row}`) ?? [] : []);
  const lineDetail = $derived(selectedWin ? `Line ${selectedWin.meta.lineIndex} · ${money(lineStake*selectedWin.meta.winWithoutMult/100)} × ${selectedWin.meta.lineMultiplier} = ${money(lineStake*selectedWin.win/100)}${selectedWin.win<selectedWin.uncappedWin?' · capped':''}` : '');
  $effect(()=>{
   const count=winningLines.length;
-  if(count<2 || moving) return;
+  if(count<2 || moving || presentingLines || !showWinningLines) return;
   const timer=setInterval(()=>{activeWin=(activeWin+1)%count;},800);
   return ()=>clearInterval(timer);
  });
@@ -57,6 +61,24 @@
   const timer = setTimeout(done,actual ? ms : reduced ? 0 : turbo ? Math.min(120,ms*.22) : ms);
   abort.signal.addEventListener('abort',done,{once:true});
  });
+ function presentWinningLines() {
+  if(!mounted || !winningLines.length || reduced) return Promise.resolve();
+  presentingLines=true;activeWin=0;
+  return new Promise<void>(resolve=>{
+   const count=winningLines.length;
+   const done=()=>{clearInterval(timer);abort.signal.removeEventListener('abort',done);finishLines=undefined;presentingLines=false;showWinningLines=false;resolve();};
+   const timer=setInterval(()=>{if(activeWin+1>=count)done();else activeWin++;},800);
+   finishLines=done;abort.signal.addEventListener('abort',done,{once:true});
+  });
+ }
+ function skipLinePointer(event: PointerEvent) {
+  if(!showWinningLines || !winningLines.length)return;
+  event.preventDefault();event.stopImmediatePropagation();suppressLineClick=true;showWinningLines=false;finishLines?.();
+ }
+ function skipLineClick(event: MouseEvent) {
+  if(!suppressLineClick)return;
+  suppressLineClick=false;event.preventDefault();event.stopImmediatePropagation();
+ }
  function chime(kind: 'spin' | 'win' | 'wild') {
   if (!sound || !mounted || feature) return;
   audio ??= new AudioContext(); void audio.resume();
@@ -84,9 +106,10 @@
    wilds=[...wilds.filter(w=>!e.wilds!.some(n=>n.reel===w.reel)),...e.wilds!]; if(animate)await wait(520);
   } else if(e.type==='stickyWildState') wilds=e.wilds!;
   else if(e.type==='winInfo') {
-   winningLines=e.wins??[];activeWin=0;lineStake=stake;
+   winningLines=e.wins??[];activeWin=0;lineStake=stake;showWinningLines=winningLines.length>0;
   } else if(e.type==='setTotalWin') {
    win=amount(e.amount); if(feature)featureWin=win-featureBase;
+   if(win/stake>=20 && !feature && animate){await presentWinningLines();if(!mounted)return;}
    if(e.amount!>0){reaction=win/stake>=20?'big':'win';message=win/stake>=20?'A wonderful windfall!':'Your magic is growing.';if(animate){if(reaction!=='big'||reduced)chime('win');await wait(340);}}
   } else if(e.type==='freeSpinTrigger'||e.type==='bonusStart') {featureBase=win;feature=true;freeSpins=10;featureWin=0;wilds=[];reaction='intro';message=e.type==='bonusStart'?`${variantTitle(e.variant!)} · 10 Free Spins`:'The petals awaken · 10 Free Spins';if(animate)await wait(1100);}
   else if(e.type==='updateFreeSpin') {freeSpins=11-e.amount!;message=`Free Spin ${e.amount} of 10`;}
@@ -154,11 +177,14 @@
  }
  function keydown(e: KeyboardEvent){
   if(e.defaultPrevented)return;
+  if(showWinningLines&&(e.code==='Space'||e.key==='Escape')){e.preventDefault();showWinningLines=false;finishLines?.();return;}
   if(e.key==='Escape'){if(panel!=='bonus')panel=null;auto=0;return;}
   if(e.code==='Space'&&!e.repeat&&!stateConfig.jurisdiction?.disabledSpacebar&&!['INPUT','BUTTON','SELECT','TEXTAREA'].includes((e.target as HTMLElement)?.tagName)){e.preventDefault();void spin();}
  }
  onMount(()=>{
   mounted=true;
+  window.addEventListener('pointerdown',skipLinePointer,true);
+  window.addEventListener('click',skipLineClick,true);
   const media=matchMedia('(prefers-reduced-motion: reduce)');reduced=media.matches;
   const motion=()=>{reduced=media.matches;};media.addEventListener('change',motion);
   const timer=setInterval(()=>elapsed++,1000);
@@ -170,13 +196,13 @@
    const stake=Number(round.amount)/API_AMOUNT_MULTIPLIER;
    void consume(round,stake,true).then(()=>{if(mounted){stateBet.betToResume=null;busy=false;reaction='idle';}}).catch(fail);
   }else{busy=false;if(replay()){blocked=true;error='This replay has no authoritative round.';}}
-  return()=>{mounted=false;auto=0;abort.abort();clearInterval(timer);media.removeEventListener('change',motion);void audio?.close();};
+  return()=>{mounted=false;auto=0;abort.abort();clearInterval(timer);media.removeEventListener('change',motion);window.removeEventListener('pointerdown',skipLinePointer,true);window.removeEventListener('click',skipLineClick,true);void audio?.close();};
  });
  $effect(()=>{if(stateConfig.jurisdiction?.disabledAutoplay)auto=0;if(stateConfig.jurisdiction?.disabledTurbo)turbo=false;if(stateConfig.jurisdiction?.disabledBuyFeature&&panel==='bonus')panel=null;});
 </script>
 
 <svelte:window onkeydown={keydown}/>
-<main class="petal-world" class:blight={world==='BLIGHT'} class:reduced data-world={world} data-busy={busy} style:--scene={`url('${art(world,'room')}')`}>
+<main class="petal-world" class:blight={world==='BLIGHT'} class:reduced data-world={world} data-busy={busy} data-presenting-lines={presentingLines} style:--scene={`url('${art(world,'room')}')`}>
  <div class="scene-art"></div><div class="scene-shade"></div>
  <header class="petal-header"><div class="edition"><span class="edition-mark"><UiIcon name="flower" size={32}/></span><span>AN ENCHANTED<br/>TALE OF FORTUNE</span></div><div class="mini-brand">The Last Petal</div><div class="header-tools"><button onclick={()=>panel='rules'} aria-label="Open game rules"><UiIcon name="help" size={22}/></button><button onclick={()=>panel='settings'} aria-label="Open settings"><UiIcon name="settings" size={21}/></button></div></header>
  <section class="game-scene">
@@ -184,7 +210,7 @@
   <div class="slot-stage">
    <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
-   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={selectedWin} {reduced}/></div>
+   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={showWinningLines ? selectedWin : undefined} {reduced}/></div>
    <div class="under-reels"><span class="world-description"><UiIcon name="flower" size={12}/><span>{world==='BLOOM'?'More frequent features · Gentler magic':'Rarer features · Greater volatility'}</span></span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
    <div class="round-details">
     <div class="line-detail" aria-live="polite" title={lineDetail}>{lineDetail}</div>

@@ -92,15 +92,31 @@ try{
   check(await ev("!document.querySelector('video,audio')"),world+' base spins use still character without clip audio');
   await idle();await click('.spin-button');await idle();
   check(await ev("!document.querySelector('.character-winnings')"),world+' small win stays below reels');
-  await click('.spin-button');await wait("document.querySelector('.motion-active video.cinematic')?.readyState>=2",world+' full-screen big win');
+  await click('.spin-button');
+  await wait("document.querySelector('main').dataset.presentingLines==='true'",world+' lines before big win');
+  check(await ev("!document.querySelector('video.cinematic')&&document.querySelector('.spin-button').disabled&&Boolean(document.querySelector('.winning-payline'))"),world+' lines show first while wagers stay locked');
+  if(world==='BLIGHT'){
+   const target=await ev("(()=>{const b=document.querySelector('[aria-label=\"Open game rules\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
+   await send('Input.dispatchMouseEvent',{type:'mousePressed',...target,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',clickCount:1});
+   await wait("document.querySelector('main').dataset.presentingLines==='false'",world+' click skips line presentation',700);
+   check(await ev("!document.querySelector('.winning-payline')&&!document.querySelector('.reel-cell.winning')"),world+' skip immediately removes lines and highlights');
+   check(await ev("!document.querySelector('.petal-modal')"),world+' skip click does not activate underlying controls');
+  }else{
+   await ev("window.__shownLines=[];window.__lineWatch=setInterval(()=>{const n=document.querySelector('.winning-payline')?.dataset.line;if(n&&!window.__shownLines.includes(n))window.__shownLines.push(n)},50)");
+  }
+  await wait("document.querySelector('.motion-active video.cinematic')?.readyState>=2",world+' full-screen big win');
+  if(world==='BLOOM')check(await ev("(()=>{clearInterval(window.__lineWatch);return window.__shownLines.length===3})()"),world+' all three winning lines finish before video');
   const fullscreen=await ev("(()=>{const v=document.querySelector('video.cinematic'),b=v.getBoundingClientRect();return {w:b.width,h:b.height,vw:document.body.getBoundingClientRect().width,vh:innerHeight,style:getComputedStyle(v).cssText}})()");check(Math.abs(fullscreen.w-fullscreen.vw)<1&&Math.abs(fullscreen.h-fullscreen.vh)<1,world+' big win covers viewport '+JSON.stringify(fullscreen));
   check(await ev("document.querySelector('.cinematic-win strong').textContent===document.querySelector('.win-presentation strong').textContent"),world+' big amount above head matches win');
   await shot(world.toLowerCase()+'-fullscreen-big-win');
   await viewport(390,844);
-  check(await ev("getComputedStyle(document.querySelector('.reel-window')).isolation==='isolate'&&Number(getComputedStyle(document.querySelector('.character-stage.cinematic-active')).zIndex)>Number(getComputedStyle(document.querySelector('.winning-payline')).zIndex)"),world+' mobile celebration covers isolated winning trails');
+  check(await ev("getComputedStyle(document.querySelector('.reel-window')).isolation==='isolate'&&Number(getComputedStyle(document.querySelector('.character-stage.cinematic-active')).zIndex)>4&&!document.querySelector('.winning-payline')"),world+' mobile celebration covers isolated winning trails');
   await shot(world.toLowerCase()+'-fullscreen-big-win-mobile');
-  await click('[aria-label="Close big win animation"]');await idle();
-  check(await ev("!document.querySelector('.cinematic-active')&&Boolean(document.querySelector('.winning-payline'))"),world+' winning trails remain after closing celebration');
+  const closeTarget=await ev("(()=>{const b=document.querySelector('[aria-label=\"Close big win animation\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
+  check(await ev(`document.elementFromPoint(${closeTarget.x},${closeTarget.y})?.closest('button')?.getAttribute('aria-label')==='Close big win animation'`),world+' mobile X receives pointer input');
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',...closeTarget,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...closeTarget,button:'left',clickCount:1});
+  await wait("!document.querySelector('video.cinematic')",world+' real X click closes video',1000);await idle();
+  check(await ev("!document.querySelector('.cinematic-active')&&!document.querySelector('.winning-payline')"),world+' winning trails stay dismissed after closing celebration');
   await viewport(2322,1267);
  }
  // A Blight bonus keeps one silent video through every free spin and pause.

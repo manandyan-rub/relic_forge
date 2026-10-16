@@ -122,3 +122,5 @@ body,button,input,select,textarea,.petal-world,.petal-world *,.session-error,.se
 /* Contain reel effects, and lift mobile celebrations above every game overlay. */
 .reel-window{isolation:isolate}
 .character-stage.cinematic-active{z-index:20}
+/* Mobile character panels ignore input; their cinematic close button must accept it. */
+.cinematic-close{pointer-events:auto}
