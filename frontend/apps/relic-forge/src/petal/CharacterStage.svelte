@@ -1,4 +1,5 @@
 <script lang="ts">
+ import UiIcon from './UiIcon.svelte';
  import { art } from './config';
  import type { World, Reaction } from './types';
  let { world, reaction, moving, feature, reduced, sound, winnings, hasWin }: { world: World; reaction: Reaction; moving: boolean; feature: boolean; reduced: boolean; sound: boolean; winnings: string; hasWin: boolean } = $props();
@@ -40,7 +41,7 @@
   {#key `${name}-${phase}`}
    {#if phase}<video bind:this={video} class="character-motion" class:cinematic={phase==='big'} style:--cinematic-scene={`url('${art(world,'room')}')`} data-phase={phase} src={`/art/${name}-${phase}.webm${phase==='spin'?`?v=${spinRevision}`:''}`} poster={`/art/${name}-${phase}-poster.webp${phase==='spin'?`?v=${spinRevision}`:''}`} muted playsinline loop={phase==='spin'} preload="auto" aria-hidden="true" onended={()=>celebration=false} onerror={()=>visible=false}></video>{/if}
   {/key}
-  {#if phase==='big'}<button class="cinematic-close" onclick={()=>celebration=false} aria-label="Close big win animation">×</button>{/if}
+  {#if phase==='big'}<button class="cinematic-close" onclick={()=>celebration=false} aria-label="Close big win animation"><UiIcon name="close" size={22}/></button>{/if}
   {#if hasWin && phase==='big'}<div class="character-winnings" class:cinematic-win={phase==='big'} class:windfall={reaction==='big'}><small>{phase==='big'?'BIG WIN':'YOU WON'}</small><strong>{winnings}</strong></div>{/if}
  </div>
  <div class="character-caption"><small>{world === 'BLOOM' ? 'EVERY FLOWER HOLDS A LITTLE' : 'EVEN IN DARKNESS, THERE IS'}</small><strong>{world === 'BLOOM' ? 'Magic.' : 'Power.'}</strong><span>{world === 'BLOOM' ? 'Let your fortune blossom.' : 'See what the shadows keep.'}</span></div>

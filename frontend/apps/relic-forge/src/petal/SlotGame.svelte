@@ -1,4 +1,5 @@
 <script lang="ts">
+ import UiIcon from './UiIcon.svelte';
  import { onMount } from 'svelte';
  import { stateBet, stateConfig } from 'state-shared';
  import { API_AMOUNT_MULTIPLIER } from 'constants-shared/bet';
@@ -170,14 +171,14 @@
 <svelte:window onkeydown={keydown}/>
 <main class="petal-world" class:blight={world==='BLIGHT'} class:reduced data-world={world} data-busy={busy} style:--scene={`url('${art(world,'room')}')`}>
  <div class="scene-art"></div><div class="scene-shade"></div>
- <header class="petal-header"><div class="edition"><span class="edition-mark">❧</span><span>AN ENCHANTED<br/>TALE OF FORTUNE</span></div><div class="mini-brand">The Last Petal</div><div class="header-tools"><button onclick={()=>panel='rules'} aria-label="Open game rules">?</button><button onclick={()=>panel='settings'} aria-label="Open settings">☷</button></div></header>
+ <header class="petal-header"><div class="edition"><span class="edition-mark"><UiIcon name="flower" size={32}/></span><span>AN ENCHANTED<br/>TALE OF FORTUNE</span></div><div class="mini-brand">The Last Petal</div><div class="header-tools"><button onclick={()=>panel='rules'} aria-label="Open game rules"><UiIcon name="help" size={22}/></button><button onclick={()=>panel='settings'} aria-label="Open settings"><UiIcon name="settings" size={21}/></button></div></header>
  <section class="game-scene">
   <CharacterStage {world} {reaction} {moving} {feature} {reduced} {sound} winnings={money(win)} hasWin={win/bet>=20}/>
   <div class="slot-stage">
    <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
    <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights}/></div>
-   <div class="under-reels"><span class="world-description">{world==='BLOOM'?'❀ More frequent features · Gentler magic':'✦ Rarer features · Greater volatility'}</span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
+   <div class="under-reels"><span class="world-description"><UiIcon name="flower" size={12}/><span>{world==='BLOOM'?'More frequent features · Gentler magic':'Rarer features · Greater volatility'}</span></span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
    <div class="round-details">
     <div class="line-detail" aria-live="polite" title={lineDetail}>{lineDetail}</div>
     <div class="purchase-receipt" class:empty={!receipt} aria-hidden={!receipt} title={receipt}>{receipt}</div>

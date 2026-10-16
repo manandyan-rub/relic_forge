@@ -1,4 +1,5 @@
 <script lang="ts">
+ import UiIcon from './UiIcon.svelte';
  import { onMount } from 'svelte';
  import { bonusConfig, bonusModes, variantTitle } from './bonus';
  import { art } from './config';
@@ -25,7 +26,7 @@
  });
 </script>
 <div class="modal-scrim bonus-scrim"><section bind:this={dialog} class="bonus-panel" class:dark-bonus={world==='BLIGHT'} role="dialog" aria-modal="true" aria-label={quote?'Confirm Bonus Buy':`${world} Bonus Buy`} tabindex="-1" data-bonus-world={world}>
- <button class="modal-close" onclick={close} disabled={confirming} aria-label="Close Bonus Buy">×</button>
+ <button class="modal-close" onclick={close} disabled={confirming} aria-label="Close Bonus Buy"><UiIcon name="close" size={22}/></button>
  <header class="bonus-heading"><span class="eyebrow">THE LAST PETAL · {world}</span><h2>{quote?'Your next chapter awaits':world==='BLOOM'?'A garden full of possibility':'What sleeps beneath the roots'}</h2><p>{quote?'Confirm your purchase to enter the feature.':'Choose a bonus. Ten Free Spins. A little more magic.'}</p></header>
  {#if quote}
   <div class="purchase-confirmation">

@@ -1,4 +1,5 @@
 <script lang="ts">
+ import UiIcon from './UiIcon.svelte';
  import { onMount } from 'svelte';
  import { rules, worldLabels } from './config';
  import statistics from './statistics.json';
@@ -21,7 +22,7 @@
  });
 </script>
 <div class="modal-scrim"><section bind:this={dialog} class="petal-modal" role="dialog" aria-modal="true" aria-label={panel === 'rules' ? 'Game rules and paytable' : 'Game settings'} tabindex="-1">
- <button class="modal-close" onclick={close} aria-label="Close dialog">×</button>
+ <button class="modal-close" onclick={close} aria-label="Close dialog"><UiIcon name="close" size={22}/></button>
  <span class="eyebrow">THE LAST PETAL</span><h2>{panel === 'rules' ? 'A little garden magic' : 'Make yourself at home'}</h2>
  {#if panel === 'settings'}
   <label class="setting"><span>Sound effects</span><input type="checkbox" checked={sound} onchange={e => setSound(e.currentTarget.checked)}/></label>

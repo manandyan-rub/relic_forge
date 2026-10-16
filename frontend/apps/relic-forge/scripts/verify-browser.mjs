@@ -55,6 +55,10 @@ try{
   await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:'application/json'},{name:'Access-Control-Allow-Origin',value:'*'},{name:'Access-Control-Allow-Methods',value:'GET, POST, OPTIONS'},{name:'Access-Control-Allow-Headers',value:'Content-Type, Accept'}],body:Buffer.from(JSON.stringify(body)).toString('base64')});
  });
  await navigate(origin+'/?demo=true');await idle();
+ await ev('document.fonts.ready');
+ check(await ev(`document.fonts.check('400 14px "Google Sans"')&&[...document.fonts].some(f=>f.family.replaceAll('"','')==='Google Sans'&&f.status==='loaded')`),'local Google Sans font loaded');
+ const wrongFonts=await ev(`[...document.querySelectorAll('.petal-world *')].filter(e=>[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&!getComputedStyle(e).fontFamily.includes('Google Sans')).map(e=>({tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:getComputedStyle(e).fontFamily}))`);
+ check(wrongFonts.length===0,'all game text uses Google Sans '+JSON.stringify(wrongFonts));
  check(await ev("document.querySelectorAll('.reel-cell').length===25"),'5 by 5 board');
  check(await ev("document.title==='The Last Petal'"),'new branding');
  check(await ev("!document.querySelector('.title-lockup img')"),'round title logo removed');
@@ -68,6 +72,13 @@ try{
   check(await ev("[...document.querySelectorAll('.secondary-control svg')].every(i=>{const p=i.parentElement,b=p.getBoundingClientRect(),a=getComputedStyle(p).flexDirection==='row'?[...p.children].reduce((r,c)=>{const x=c.getBoundingClientRect();return {left:Math.min(r.left,x.left),right:Math.max(r.right,x.right)}},{left:Infinity,right:-Infinity}):i.getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})"),name+' control icons centered in buttons');
   check(await ev("(()=>{const a=document.querySelector('.win-presentation').getBoundingClientRect(),b=document.querySelector('.under-reels').getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})()"),name+' win display centered below reels');
 
+  check(await ev("[...document.querySelectorAll('.world-choice')].every(b=>{const a=b.children[1].getBoundingClientRect(),p=b.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2)<1})"),name+' world labels centered inside cards');
+  check(await ev("[...document.querySelectorAll('.header-tools button,.bet-picker button')].every(b=>{const i=b.querySelector('svg'),a=i.getBoundingClientRect(),p=b.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2)<1&&Math.abs((a.top+a.bottom-p.top-p.bottom)/2)<1})"),name+' header and bet icons centered on both axes');
+  check(await ev("(()=>{const a=document.querySelector('.bonus-buy-button'),b=a.getBoundingClientRect(),x=[...a.children].map(c=>c.getBoundingClientRect());return Math.abs((Math.min(...x.map(p=>p.left))+Math.max(...x.map(p=>p.right))-b.left-b.right)/2)<1&&x.every(p=>Math.abs((p.top+p.bottom-b.top-b.bottom)/2)<1)})()"),name+' bonus icon and label centered as a group');
+  check(await ev("[...document.querySelectorAll('svg.ui-icon')].every(i=>{const b=i.getBBox();return Math.abs(b.x+b.width/2-12)<.5&&Math.abs(b.y+b.height/2-12)<.5})"),name+' visible icon paths centered within viewboxes');
+  check(await ev("(()=>{const p=document.querySelector('.under-reels').getBoundingClientRect();return [...document.querySelectorAll('.world-description,.win-presentation small,.win-presentation strong')].every(e=>{const b=e.getBoundingClientRect();return b.top>=p.top&&b.bottom<=p.bottom})})()"),name+' result text rows fit without clipping');
+  if(name==='bloom-desktop')writeFileSync(join(output,'icon-metrics.json'),JSON.stringify(await ev("[...document.querySelectorAll('svg.ui-icon')].map(i=>{const b=i.getBBox();return {name:i.dataset.icon,centerX:b.x+b.width/2,centerY:b.y+b.height/2}})"),null,2));
+  check(await ev("(()=>{const footer=document.querySelector('.cabinet-bottom'),f=footer.getBoundingClientRect(),c=[...footer.children].map(e=>e.getBoundingClientRect());return Math.abs((c[0].left+c[2].right-f.left-f.right)/2)<1&&c.every((e,i)=>Math.abs((e.top+e.bottom-f.top-f.bottom)/2+(parseFloat(getComputedStyle(footer.children[i]).marginBottom)||0)/2)<1)&&getComputedStyle(footer.firstElementChild).justifyContent==='center'&&getComputedStyle(footer.lastElementChild).justifyContent==='center'})()"),name+' reel footer captions centered with equal bottom margins');
   await shot(name);
   if(name==='bloom-mobile'){await ev("document.querySelector('.bet-controls').scrollIntoView({block:'center'})");await shot('bloom-mobile-controls');await ev('scrollTo(0,0)');}
  }

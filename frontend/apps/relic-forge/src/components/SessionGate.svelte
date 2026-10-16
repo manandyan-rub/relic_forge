@@ -36,7 +36,7 @@
 		padding: 24px;
 		background: #050908;
 		color: #f4e8c7;
-		font-family: system-ui, sans-serif;
+		font-family: var(--font-ui);
 		text-align: center;
 	}
 	.session-error h1 { color: #f4c95d; }
