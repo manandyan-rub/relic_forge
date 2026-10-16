@@ -34,7 +34,7 @@
 {#key `${name}-${phase}`}
  {#if phase==='big' && !feature}<audio bind:this={soundtrack} src={`/art/${name}-${phase}.mp3`} preload="auto"></audio>{/if}
 {/key}
-<aside class="character-stage" data-reaction={reaction} aria-label={`${world === 'BLOOM' ? 'The Lantern Traveler' : 'The Withered Keeper'}: ${reaction}`}>
+<aside class="character-stage" class:cinematic-active={phase==='big'} data-reaction={reaction} aria-label={`${world === 'BLOOM' ? 'The Lantern Traveler' : 'The Withered Keeper'}: ${reaction}`}>
  <div class="character-aura"></div>
  <div class="character-figure" class:motion-active={visible && !!phase}>
   <img class="character-art" src={art(world,world === 'BLOOM' ? 'traveler-stage' : 'keeper')} alt={world === 'BLOOM' ? 'Magical forest traveler holding a lantern staff' : 'Hooded Blight creature with a chained weapon'} />

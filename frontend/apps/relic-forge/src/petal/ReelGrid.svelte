@@ -1,9 +1,10 @@
 <script lang="ts">
  import UiIcon from './UiIcon.svelte';
- import type { SymbolId, World, Wild } from './types';
+ import type { SymbolId, World, Wild, LineWin } from './types';
+ import WinningPayline from './WinningPayline.svelte';
  import ReelSymbol from './ReelSymbol.svelte';
  import ExpandingWild from './ExpandingWild.svelte';
- let { board, world, spinning, wilds, sticky, highlights }: { board: SymbolId[][]; world: World; spinning: boolean; wilds: Wild[]; sticky: boolean; highlights: string[] } = $props();
+ let { board, world, spinning, wilds, sticky, highlights, line, reduced }: { board: SymbolId[][]; world: World; spinning: boolean; wilds: Wild[]; sticky: boolean; highlights: string[]; line?: LineWin; reduced: boolean } = $props();
 </script>
 <div class="reel-cabinet" class:reels-moving={spinning} aria-label="Five reels, five rows, twenty paylines">
  <div class="cabinet-top"><span><UiIcon name="sparkle" size={17}/></span><span>{world === 'BLOOM' ? 'THE ENCHANTED GARDEN' : 'THE WITHERED GARDEN'}</span><span><UiIcon name="sparkle" size={17}/></span></div>
@@ -19,6 +20,7 @@
    {/if}
   </div>{/each}
   <div class="wild-layer">{#each wilds as wild (wild.reel)}<ExpandingWild {wild} {world} {sticky}/>{/each}</div>
+  {#if !spinning && line}{#key line}<WinningPayline {line} {world} {reduced}/>{/key}{/if}
  </div>
  <div class="cabinet-bottom"><span>20 FIXED LINES</span><span><UiIcon name="flower" size={17}/></span><span>5,000× MAX WIN</span></div>
 </div>

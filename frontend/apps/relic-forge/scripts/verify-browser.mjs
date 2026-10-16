@@ -95,7 +95,13 @@ try{
   await click('.spin-button');await wait("document.querySelector('.motion-active video.cinematic')?.readyState>=2",world+' full-screen big win');
   const fullscreen=await ev("(()=>{const v=document.querySelector('video.cinematic'),b=v.getBoundingClientRect();return {w:b.width,h:b.height,vw:document.body.getBoundingClientRect().width,vh:innerHeight,style:getComputedStyle(v).cssText}})()");check(Math.abs(fullscreen.w-fullscreen.vw)<1&&Math.abs(fullscreen.h-fullscreen.vh)<1,world+' big win covers viewport '+JSON.stringify(fullscreen));
   check(await ev("document.querySelector('.cinematic-win strong').textContent===document.querySelector('.win-presentation strong').textContent"),world+' big amount above head matches win');
-  await shot(world.toLowerCase()+'-fullscreen-big-win');await click('[aria-label="Close big win animation"]');await idle();
+  await shot(world.toLowerCase()+'-fullscreen-big-win');
+  await viewport(390,844);
+  check(await ev("getComputedStyle(document.querySelector('.reel-window')).isolation==='isolate'&&Number(getComputedStyle(document.querySelector('.character-stage.cinematic-active')).zIndex)>Number(getComputedStyle(document.querySelector('.winning-payline')).zIndex)"),world+' mobile celebration covers isolated winning trails');
+  await shot(world.toLowerCase()+'-fullscreen-big-win-mobile');
+  await click('[aria-label="Close big win animation"]');await idle();
+  check(await ev("!document.querySelector('.cinematic-active')&&Boolean(document.querySelector('.winning-payline'))"),world+' winning trails remain after closing celebration');
+  await viewport(2322,1267);
  }
  // A Blight bonus keeps one silent video through every free spin and pause.
  await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
@@ -131,7 +137,15 @@ try{
  await viewport(1536,960);await media(true);
  for(const world of ['BLOOM','BLIGHT']){
   await navigate(origin+'/?demo=true');await idle();if(world==='BLIGHT')await click('.world-choice:nth-child(2)');
-  for(let i=0;i<7;i++){await click('.spin-button');await idle();check(!(await ev("Boolean(document.querySelector('.round-error'))")),world+` base fixture ${i+1} reconciles`);if(i===2)check(await ev("document.querySelectorAll('.expanded-wild').length===1"),world+' expanding reel');if(i===3)check(await ev("document.querySelectorAll('.expanded-wild').length===2"),world+' multiple expanded reels');}
+  for(let i=0;i<7;i++){await click('.spin-button');await idle();check(!(await ev("Boolean(document.querySelector('.round-error'))")),world+` base fixture ${i+1} reconciles`);if(i===2)check(await ev("document.querySelectorAll('.expanded-wild').length===1"),world+' expanding reel');if(i===3)check(await ev("document.querySelectorAll('.expanded-wild').length===2"),world+' multiple expanded reels');if(i===2){
+   const wins=fixtures[world][i].events.find(e=>e.type==='winInfo').wins;
+   const trail=await ev("(()=>{const p=document.querySelector('.winning-payline');return {line:Number(p.dataset.line),points:p.querySelector('.payline-core').getAttribute('points'),detail:document.querySelector('.line-detail').textContent}})()");
+   const paid=wins.find(w=>w.meta.lineIndex===trail.line);
+   check(trail.points===[...paid.positions].sort((a,b)=>a.reel-b.reel).map(p=>`${p.reel*20+10},${p.row*20+10}`).join(' ')&&trail.detail.includes('Line '+trail.line+' ·'),world+' trail connects exact authoritative paid positions and matching text');
+   await wait(`Number(document.querySelector('.winning-payline')?.dataset.line)!==${trail.line}`,world+' winning lines cycle');
+   check(await ev("!document.querySelector('.character-wild')&&Boolean(document.querySelector('.expanded-wild svg'))"),world+' original multiplier vines restored');
+   await shot(world.toLowerCase()+'-winning-payline');
+  }}
   check(await ev("document.querySelector('.win-presentation strong').textContent.includes('5,000')"),world+' cap displayed');
  }
  await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Start 10 autoplay spins"]');await wait("document.querySelector('[aria-label=\"Stop autoplay\"]')",'auto starts');await click('[aria-label="Stop autoplay"]');await idle();check(await ev("Boolean(document.querySelector('[aria-label=\"Start 10 autoplay spins\"]'))"),'autoplay stops');

@@ -7,7 +7,7 @@
  import { initialBoard, betLevels as developmentBets, art } from './config';
  import { available, demo, replay, play, record, settle, validateWallet, bonusUnavailableReason } from './rgs';
  import { bonusConfig, isBonusMode, modeCost, modeWorld, variantTitle } from './bonus';
- import type { World, Wild, Reaction, Round, BookEvent, Mode, PurchaseQuote, BonusVariant } from './types';
+ import type { World, Wild, Reaction, Round, BookEvent, Mode, PurchaseQuote, BonusVariant, LineWin } from './types';
  import WorldSelection from './WorldSelection.svelte';
  import CharacterStage from './CharacterStage.svelte';
  import ReelGrid from './ReelGrid.svelte';
@@ -25,7 +25,16 @@
  let reaction = $state<Reaction>('idle');
  let message = $state('A little magic is waiting.');
  let error = $state(''), blocked = $state(false), replayDone = $state(false);
- let highlights = $state<string[]>([]), lineDetail = $state('');
+ let winningLines = $state<LineWin[]>([]), activeWin = $state(0), lineStake = $state(1);
+ const selectedWin = $derived(winningLines[activeWin]);
+ const highlights = $derived(selectedWin?.positions.map(p=>`${p.reel}:${p.row}`) ?? []);
+ const lineDetail = $derived(selectedWin ? `Line ${selectedWin.meta.lineIndex} · ${money(lineStake*selectedWin.meta.winWithoutMult/100)} × ${selectedWin.meta.lineMultiplier} = ${money(lineStake*selectedWin.win/100)}${selectedWin.win<selectedWin.uncappedWin?' · capped':''}` : '');
+ $effect(()=>{
+  const count=winningLines.length;
+  if(count<2 || moving) return;
+  const timer=setInterval(()=>{activeWin=(activeWin+1)%count;},800);
+  return ()=>clearInterval(timer);
+ });
  let turbo = $state(false), reduced = $state(false), sound = $state(true);
  let auto = $state(0), sequence = 0;
  let panel = $state<'rules' | 'settings' | 'bonus' | null>(null);
@@ -41,7 +50,7 @@
  const validBet = $derived(Number.isFinite(bet) && bet>0 && (betLevels.length ? betLevels.includes(bet) : stateConfig.minBet>0 && stateConfig.stepBet>0 && bet>=stateConfig.minBet && bet<=stateConfig.maxBet && Math.abs(bet/stateConfig.stepBet-Math.round(bet/stateConfig.stepBet))<1e-9));
  const canSpin = $derived(!locked && available(world) && validBet && stateBet.balanceAmount >= bet);
  const canOpenBonus = $derived(!locked && validBet && !stateConfig.jurisdiction?.disabledBuyFeature);
- const money = (n: number) => formatCurrency(n,stateBet.currency || 'USD');
+ function money(n: number) { return formatCurrency(n,stateBet.currency || 'USD'); }
  const wait = (ms: number, actual = false) => new Promise<void>(resolve => {
   if (!mounted) return resolve();
   const done = () => { clearTimeout(timer); abort.signal.removeEventListener('abort',done); resolve(); };
@@ -57,7 +66,7 @@
   osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.25);
  }
  function fail(e: unknown) { error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
- function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;lineDetail='';receipt='';highlights=[];message='A little magic is waiting.';reaction='idle'; }
+ function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt='';winningLines=[];activeWin=0;message='A little magic is waiting.';reaction='idle'; }
  function change(n: number) { if (locked) return; const i=betLevels.indexOf(bet); stateBet.betAmount=betLevels[Math.max(0,Math.min(betLevels.length-1,i+n))] ?? bet; }
  async function showEvent(e: BookEvent, stake: number, animate: boolean) {
   const amount=(v=0) => stake*v/100;
@@ -65,7 +74,7 @@
    reaction='spin';moving=true;
    if(animate&&!feature)chime('spin');
    if (!feature) wilds=[];
-   highlights=[];lineDetail='';
+   winningLines=[];activeWin=0;
    if(animate) await wait(feature?480:720);
    if(!mounted) return;
    board=e.board!;moving=false;
@@ -75,9 +84,7 @@
    wilds=[...wilds.filter(w=>!e.wilds!.some(n=>n.reel===w.reel)),...e.wilds!]; if(animate)await wait(520);
   } else if(e.type==='stickyWildState') wilds=e.wilds!;
   else if(e.type==='winInfo') {
-   highlights=(e.wins??[]).flatMap(w=>w.positions.map(p=>`${p.reel}:${p.row}`));
-   const line=e.wins?.find(w=>w.meta.lineMultiplier>1) ?? e.wins?.[0];
-   lineDetail=line?`Line ${line.meta.lineIndex} · ${money(amount(line.meta.winWithoutMult))} × ${line.meta.lineMultiplier} = ${money(amount(line.win))}${line.win<line.uncappedWin?' · capped':''}`:'';
+   winningLines=e.wins??[];activeWin=0;lineStake=stake;
   } else if(e.type==='setTotalWin') {
    win=amount(e.amount); if(feature)featureWin=win-featureBase;
    if(e.amount!>0){reaction=win/stake>=20?'big':'win';message=win/stake>=20?'A wonderful windfall!':'Your magic is growing.';if(animate){if(reaction!=='big'||reduced)chime('win');await wait(340);}}
@@ -113,7 +120,7 @@
   const cost=modeCost(mode), purchaseMode=isBonusMode(mode);
   if(busy||blocked||replay()||replayDone||modeWorld(mode)!==world||!validBet||stateBet.balanceAmount<bet*cost)return false;
   if(purchaseMode ? (auto>0||Boolean(bonusUnavailableReason(mode))) : !available(world))return false;
-  busy=true;error='';win=0;featureWin=0;highlights=[];lineDetail='';reaction='spin';moving=true;
+  busy=true;error='';win=0;featureWin=0;winningLines=[];activeWin=0;reaction='spin';moving=true;
   const stake=bet, started=Date.now();
   try {
    const round=await play(mode,stake,sequence++);
@@ -177,7 +184,7 @@
   <div class="slot-stage">
    <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
-   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights}/></div>
+   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={selectedWin} {reduced}/></div>
    <div class="under-reels"><span class="world-description"><UiIcon name="flower" size={12}/><span>{world==='BLOOM'?'More frequent features · Gentler magic':'Rarer features · Greater volatility'}</span></span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
    <div class="round-details">
     <div class="line-detail" aria-live="polite" title={lineDetail}>{lineDetail}</div>

@@ -103,3 +103,22 @@ html{scrollbar-gutter:stable}.petal-world{overflow-anchor:none}
 
 /* Override the shared shell font for every game text surface. */
 body,button,input,select,textarea,.petal-world,.petal-world *,.session-error,.session-error *{font-family:var(--font-ui)}
+/* Winning trails follow paid symbol centers without changing cabinet geometry. */
+.winning-payline{--trail:#ffe2a0;--trail-glow:#f4bd4e;position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;overflow:visible}
+.winning-payline[data-world=BLIGHT]{--trail:#ffddbb;--trail-glow:#c78aaf}
+.winning-payline polyline{fill:none;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.payline-shadow{stroke:#24190dc9;stroke-width:6}
+.payline-glow{stroke:var(--trail-glow);stroke-width:4;filter:drop-shadow(0 0 5px var(--trail-glow));opacity:.75}
+.payline-core{stroke:var(--trail);stroke-width:1.8;stroke-dasharray:1;animation:payline-trace .2s ease-out both;filter:drop-shadow(0 0 2px #fff4d4)}
+@keyframes payline-trace{from{stroke-dashoffset:1;opacity:0}to{stroke-dashoffset:0;opacity:1}}
+.winning-payline.still *{animation:none}
+@media(prefers-reduced-motion:reduce){.winning-payline *{animation:none}}
+/* World colors keep the winning trails consistent with the multiplier columns. */
+.winning-payline{--trail:#f4dda0;--trail-glow:#a9b86a;--vine:#799551}
+.winning-payline[data-world=BLIGHT]{--trail:#dac3a0;--trail-glow:#9b7156;--vine:#625743}
+.winning-payline .payline-shadow{stroke:#201b10d9;stroke-width:5}
+.winning-payline .payline-glow{stroke:var(--vine);stroke-width:3.5;opacity:.95;filter:drop-shadow(0 0 3px var(--trail-glow))}
+.winning-payline .payline-core{stroke:var(--trail);stroke-width:1.2}
+/* Contain reel effects, and lift mobile celebrations above every game overlay. */
+.reel-window{isolation:isolate}
+.character-stage.cinematic-active{z-index:20}
