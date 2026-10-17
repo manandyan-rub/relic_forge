@@ -32,7 +32,7 @@
  let suppressLineClick = false;
  const selectedWin = $derived(winningLines[activeWin]);
  const highlights = $derived(showWinningLines ? selectedWin?.positions.map(p=>`${p.reel}:${p.row}`) ?? [] : []);
- const lineDetail = $derived(selectedWin ? `Line ${selectedWin.meta.lineIndex} · ${money(lineStake*selectedWin.meta.winWithoutMult/100)} × ${selectedWin.meta.lineMultiplier} = ${money(lineStake*selectedWin.win/100)}${selectedWin.win<selectedWin.uncappedWin?' · capped':''}` : '');
+ const lineDetail = $derived(showWinningLines && selectedWin ? `Line ${selectedWin.meta.lineIndex} · ${money(lineStake*selectedWin.meta.winWithoutMult/100)} × ${selectedWin.meta.lineMultiplier} = ${money(lineStake*selectedWin.win/100)}${selectedWin.win<selectedWin.uncappedWin?' · capped':''}` : '');
  $effect(()=>{
   const count=winningLines.length;
   if(count<2 || moving || presentingLines || !showWinningLines) return;
@@ -63,7 +63,7 @@
   abort.signal.addEventListener('abort',done,{once:true});
  });
  function presentWinningLines() {
-  if(!mounted || !winningLines.length || reduced) return Promise.resolve();
+  if(!mounted || !showWinningLines || !winningLines.length || reduced) return Promise.resolve();
   presentingLines=true;activeWin=0;
   return new Promise<void>(resolve=>{
    const count=winningLines.length;
@@ -72,14 +72,21 @@
    finishLines=done;abort.signal.addEventListener('abort',done,{once:true});
   });
  }
+ function dismissWinningLines() {
+  if(!showWinningLines && !presentingLines)return false;
+  showWinningLines=false;finishLines?.();return true;
+ }
  function skipLinePointer(event: PointerEvent) {
-  if(!showWinningLines || !winningLines.length)return;
-  event.preventDefault();event.stopImmediatePropagation();suppressLineClick=true;showWinningLines=false;finishLines?.();
+  // A fresh gesture must not inherit suppression from a cancelled earlier tap.
+  suppressLineClick=false;
+  if(!dismissWinningLines())return;
+  event.preventDefault();event.stopImmediatePropagation();suppressLineClick=true;
  }
  function skipLineClick(event: MouseEvent) {
-  if(!suppressLineClick)return;
+  if(!suppressLineClick && !dismissWinningLines())return;
   suppressLineClick=false;event.preventDefault();event.stopImmediatePropagation();
  }
+ function cancelLinePointer() {suppressLineClick=false;}
  function chime(kind: 'spin' | 'win' | 'wild') {
   if (!sound || !mounted || feature) return;
   audio ??= new AudioContext(); void audio.resume();
@@ -89,7 +96,7 @@
   osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.25);
  }
  function fail(e: unknown) { error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
- function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt='';winningLines=[];activeWin=0;message='A little magic is waiting.';reaction='idle'; }
+ function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt='';winningLines=[];activeWin=0;showWinningLines=false;message='A little magic is waiting.';reaction='idle'; }
  function change(n: number) { if (locked) return; const i=betLevels.indexOf(bet); stateBet.betAmount=betLevels[Math.max(0,Math.min(betLevels.length-1,i+n))] ?? bet; }
  async function showEvent(e: BookEvent, stake: number, animate: boolean) {
   const amount=(v=0) => stake*v/100;
@@ -97,7 +104,7 @@
    reaction='spin';moving=true;
    if(animate&&!feature)chime('spin');
    if (!feature) wilds=[];
-   winningLines=[];activeWin=0;
+   winningLines=[];activeWin=0;showWinningLines=false;
    if(animate) await wait(feature?300:440);
    if(!mounted) return;
    board=e.board!;moving=false;
@@ -146,7 +153,7 @@
   const cost=modeCost(mode), purchaseMode=isBonusMode(mode);
   if(busy||blocked||replay()||replayDone||modeWorld(mode)!==world||!validBet||stateBet.balanceAmount<bet*cost)return false;
   if(purchaseMode ? (auto>0||Boolean(bonusUnavailableReason(mode))) : !available(world))return false;
-  busy=true;error='';win=0;featureWin=0;winningLines=[];activeWin=0;reaction='spin';moving=true;
+  busy=true;error='';win=0;featureWin=0;winningLines=[];activeWin=0;showWinningLines=false;reaction='spin';moving=true;
   const stake=bet, started=Date.now();
   try {
    const round=await play(mode,stake,sequence++);
@@ -180,7 +187,7 @@
  }
  function keydown(e: KeyboardEvent){
   if(e.defaultPrevented)return;
-  if(showWinningLines&&(e.code==='Space'||e.key==='Escape')){e.preventDefault();showWinningLines=false;finishLines?.();return;}
+  if((e.code==='Space'||e.key==='Escape')&&dismissWinningLines()){e.preventDefault();e.stopImmediatePropagation();return;}
   if(e.key==='Escape'){if(panel!=='bonus')panel=null;auto=0;return;}
   if(e.code==='Space'&&!e.repeat&&!stateConfig.jurisdiction?.disabledSpacebar&&!['INPUT','BUTTON','SELECT','TEXTAREA'].includes((e.target as HTMLElement)?.tagName)){e.preventDefault();void spin();}
  }
@@ -188,6 +195,7 @@
   mounted=true;
   window.addEventListener('pointerdown',skipLinePointer,true);
   window.addEventListener('click',skipLineClick,true);
+  window.addEventListener('pointercancel',cancelLinePointer,true);
   const media=matchMedia('(prefers-reduced-motion: reduce)');reduced=media.matches;
   const motion=()=>{reduced=media.matches;};media.addEventListener('change',motion);
   const timer=setInterval(()=>elapsed++,1000);
@@ -199,7 +207,7 @@
    const stake=Number(round.amount)/API_AMOUNT_MULTIPLIER;
    void consume(round,stake,true).then(()=>{if(mounted){stateBet.betToResume=null;busy=false;reaction='idle';}}).catch(fail);
   }else{busy=false;if(replay()){blocked=true;error='This replay has no authoritative round.';}}
-  return()=>{mounted=false;auto=0;abort.abort();clearInterval(timer);media.removeEventListener('change',motion);window.removeEventListener('pointerdown',skipLinePointer,true);window.removeEventListener('click',skipLineClick,true);void audio?.close();};
+  return()=>{mounted=false;auto=0;abort.abort();clearInterval(timer);media.removeEventListener('change',motion);window.removeEventListener('pointerdown',skipLinePointer,true);window.removeEventListener('click',skipLineClick,true);window.removeEventListener('pointercancel',cancelLinePointer,true);void audio?.close();};
  });
  $effect(()=>{if(stateConfig.jurisdiction?.disabledAutoplay)auto=0;if(stateConfig.jurisdiction?.disabledTurbo)turbo=false;if(stateConfig.jurisdiction?.disabledBuyFeature&&panel==='bonus')panel=null;});
 </script>

@@ -14,6 +14,8 @@ let socket;
 const results=[],errors=[];
 const counts={authenticate:0,play:0,event:0,end:0,replay:0};
 let modes=[],restricted=false,recovery=false,bad=false,recoveryMode='BLIGHT',historicPrice=null;
+let holdWinInfo=false,releaseWinInfo;
+let playBookIndex=2,holdPlayAt=-1,releasePlay;
 const fixtures=JSON.parse(readFileSync('src/petal/fixtures.json','utf8'));
 const bonusFixtures=JSON.parse(readFileSync('src/petal/bonus-fixtures.json','utf8'));
 const bonusConfig=JSON.parse(readFileSync('src/petal/bonus-config.json','utf8'));
@@ -29,7 +31,9 @@ try{
  const ev=async expression=>{const r=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});if(r.exceptionDetails)throw Error(r.exceptionDetails.exception?.description??r.exceptionDetails.text);return r.result.value;};
  const check=(v,label)=>{if(!v)throw Error('FAIL '+label);results.push(label);};
  const wait=async(expression,label,timeout=20000)=>{const t=Date.now();while(Date.now()-t<timeout){if(await ev(expression))return;await delay(35);}throw Error(`Timeout ${label}: ${await ev('document.body.innerText')}`);};
- const click=selector=>ev(`document.querySelector(${JSON.stringify(selector)})?.click()`);
+ // Dismiss and activate within one turn so a new win cannot race the action helper.
+ // Explicit dismissal regressions below use raw input so consumption is still tested.
+ const click=selector=>ev(`(()=>{if(document.querySelector('.winning-payline'))document.querySelector('.title-lockup h1').click();document.querySelector(${JSON.stringify(selector)})?.click()})()`);
  const navigate=async url=>{await send('Page.navigate',{url});await wait("document.querySelector('.petal-world') || document.querySelector('.session-error')",'render');await delay(100);};
  const idle=()=>wait("document.querySelector('.petal-world')?.dataset.busy === 'false'",'round idle',60000);
  const shot=async name=>{const {data}=await send('Page.captureScreenshot',{format:'png'});writeFileSync(join(output,name+'.png'),Buffer.from(data,'base64'));};
@@ -49,8 +53,8 @@ try{
   else if(url.includes('authenticate')){
    counts.authenticate++;
    body={balance:{amount:1000000000,currency:'USD'},config:{minBet:200000,maxBet:50000000,stepBet:100000,defaultBetLevel:1000000,betLevels:[200000,500000,1000000,2000000],betModes:{BLOOM:{costMultiplier:1},BLIGHT:{costMultiplier:1},...Object.fromEntries(Object.entries(bonusConfig).map(([mode,c])=>[mode,{costMultiplier:c.costMultiplier,buyBonus:true}]))},jurisdiction:{disabledTurbo:restricted,disabledAutoplay:restricted,disabledSpacebar:restricted,disabledBuyFeature:restricted,minimumRoundDuration:0}},...(recovery?{round:makeRound(recoveryMode,4)}:{})};
-  }else if(url.includes('/wallet/play')){counts.play++;modes.push(input.mode);body={balance:{amount:999000000,currency:'USD'},round:makeRound(input.mode)};}
-  else if(url.includes('/bet/event')){counts.event++;body={event:String(input.event)};}
+  }else if(url.includes('/wallet/play')){counts.play++;modes.push(input.mode);body={balance:{amount:999000000,currency:'USD'},round:makeRound(input.mode,playBookIndex)};if(counts.play===holdPlayAt)await new Promise(resolve=>{releasePlay=resolve;});}
+  else if(url.includes('/bet/event')){counts.event++;body={event:String(input.event)};if(holdWinInfo&&Number(input.event)===fixtures.BLOOM[2].events.find(e=>e.type==='winInfo').index)await new Promise(resolve=>{releaseWinInfo=resolve;});}
   else if(url.includes('end-round')){counts.end++;body={balance:{amount:1000200000,currency:'USD'}};}
   else if(url.includes('replay')){counts.replay++;const mode=url.split('/').at(-2);const b=bonusFixtures[mode]?bonusFixtures[mode][0]:fixtures.BLIGHT[2];body={...b,state:b.events,payoutMultiplier:b.payoutMultiplier/100};}
   await send('Fetch.fulfillRequest',{requestId:p.requestId,responseCode:200,responseHeaders:[{name:'Content-Type',value:'application/json'},{name:'Access-Control-Allow-Origin',value:'*'},{name:'Access-Control-Allow-Methods',value:'GET, POST, OPTIONS'},{name:'Access-Control-Allow-Headers',value:'Content-Type, Accept'}],body:Buffer.from(JSON.stringify(body)).toString('base64')});
@@ -157,10 +161,10 @@ try{
  }
  // Compare the seam immediately before and after one exact strip cycle.
  await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
- await click('.spin-button');await wait("Boolean(document.querySelector('.reel-spin-track'))",'continuous strip');
- await delay(100);const scrollStart=await ev("new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.reel-spin-track')).transform).m42");await delay(70);
- check(await ev(`Math.abs(new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.reel-spin-track')).transform).m42-(${scrollStart}))>.5`),'normal reels continuously advance before landing');
- const seam=await ev(`(()=>{const t=document.querySelector('.reel-spin-track'),v=t.parentElement,a=t.getAnimations()[0];a.pause();const frame=ms=>{a.currentTime=ms;const box=v.getBoundingClientRect();return [...t.children].map(c=>{const b=c.getBoundingClientRect();return {label:c.querySelector('.symbol').getAttribute('aria-label'),y:(b.top+b.bottom)/2-box.top}}).filter(c=>c.y>0&&c.y<box.height)};const before=frame(479.99),after=frame(.01);a.play();return {before,after}})()`);
+ await ev(`(()=>{window.__rollingProbe=new Promise(resolve=>{const samples=[],started=performance.now();let raf,timer,done=false;const finish=(reason,seam)=>{if(done)return;done=true;cancelAnimationFrame(raf);clearTimeout(timer);const positions=samples.map(s=>s.y);resolve({reason,samples,span:positions.length?Math.max(...positions)-Math.min(...positions):0,seam,landing:Boolean(document.querySelector('.reel-landing-track')),busy:document.querySelector('main').dataset.busy,reduced:document.querySelector('main').classList.contains('reduced')})};const sample=now=>{const t=document.querySelector('.reel-spin-track:not(.reel-landing-track)');if(t){const a=t.getAnimations()[0],transform=getComputedStyle(t).transform,y=transform==='none'?0:new DOMMatrixReadOnly(transform).m42;samples.push({ms:Math.round(now-started),y,state:a?.playState??'missing',time:a?.currentTime??null,rate:a?.playbackRate??null});const positions=samples.map(s=>s.y);if(a&&samples.length>=2&&Math.max(...positions)-Math.min(...positions)>.5){a.pause();const frame=ms=>{a.currentTime=ms;const box=t.parentElement.getBoundingClientRect();return [...t.children].map(c=>{const b=c.getBoundingClientRect();return {label:c.querySelector('.symbol').getAttribute('aria-label'),y:(b.top+b.bottom)/2-box.top}}).filter(c=>c.y>0&&c.y<box.height)};const before=frame(479.99),after=frame(.01);a.play();finish('movement observed',{before,after});return;}}else if(document.querySelector('.reel-landing-track')){finish('landing reached before measurable rolling');return;}raf=requestAnimationFrame(sample)};raf=requestAnimationFrame(sample);timer=setTimeout(()=>finish('rolling probe timed out'),1500)});return true})()`);
+ await click('.spin-button');const motion=await ev('window.__rollingProbe');
+ const moved=motion.reason==='movement observed'&&motion.samples.length>=2&&motion.span>.5;check(moved,'normal reels continuously advance before landing'+(moved?'':': '+JSON.stringify(motion)));
+ const seam=motion.seam;
  check(seam.before.length===5&&seam.after.length===5&&seam.before.every((s,i)=>s.label===seam.after[i].label&&Math.abs(s.y-seam.after[i].y)<.1),'reel wrap has matching symbols and subpixel-continuous positions');
  await wait("document.querySelectorAll('.reel-landing-track').length===5",'authoritative reel landing');
  const lossBoard=fixtures.BLOOM[0].events.find(e=>e.type==='reveal').board;
@@ -191,6 +195,26 @@ try{
   }}
   check(await ev("document.querySelector('.win-presentation strong').textContent.includes('5,000')"),world+' cap displayed');
  }
+ // Idle paylines dismiss from the heading, touch input and click-only activation.
+ for(const input of ['mouse','touch','click-only']){
+  await viewport(input==='touch'?390:1536,input==='touch'?844:960);await media(false);await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Toggle turbo"]');
+  for(let i=0;i<2;i++){await click('.spin-button');await idle();}
+  check(await ev("Boolean(document.querySelector('.winning-payline'))&&!document.querySelector('.spin-button').disabled&&document.querySelector('.line-detail').textContent.includes('Line ')"),input+' idle winning lines are visible before dismissal');
+  const winnings=await ev("document.querySelector('.win-presentation strong').textContent");
+  if(input==='click-only')await ev("document.querySelector('[aria-label=\"Open game rules\"]').click()");
+  else{
+   const target=await ev(`(()=>{const b=document.querySelector(${JSON.stringify(input==='mouse'?'.title-lockup h1':'[aria-label="Open game rules"]')}).getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()`);
+   if(input==='touch'){await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...target,id:1,radiusX:1,radiusY:1}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
+   else{await send('Input.dispatchMouseEvent',{type:'mousePressed',...target,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',clickCount:1});}
+  }
+  check(await ev(`!document.querySelector('.winning-payline,.reel-cell.winning,.petal-modal')&&!document.querySelector('.line-detail').textContent.trim()&&document.querySelector('.win-presentation strong').textContent===${JSON.stringify(winnings)}`),input+' dismissal clears trails, highlights and line labels without changing winnings or activating controls');
+  if(input==='mouse')await shot('lines-skipped');
+  const next=await ev("(()=>{const b=document.querySelector('[aria-label=\"Open game rules\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
+  await send('Input.dispatchMouseEvent',{type:'mousePressed',...next,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...next,button:'left',clickCount:1});
+  check(await ev("Boolean(document.querySelector('.petal-modal'))"),input+' next genuine click opens the requested control');await click('[aria-label="Close dialog"]');
+  if(input==='touch')await send('Emulation.setTouchEmulationEnabled',{enabled:false});
+ }
+ await viewport(1536,960);await media(true);
  await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Start 10 autoplay spins"]');await wait("document.querySelector('[aria-label=\"Stop autoplay\"]')",'auto starts');await click('[aria-label="Stop autoplay"]');await idle();check(await ev("Boolean(document.querySelector('[aria-label=\"Start 10 autoplay spins\"]'))"),'autoplay stops');
  await click('[aria-label="Open game rules"]');check(await ev("document.querySelectorAll('tbody tr').length===8"),'paytable remains available');await click('[aria-label="Close dialog"]');
  // Every purchase starts from a fresh deterministic wallet and the minimum base bet.
@@ -226,6 +250,25 @@ try{
  await navigate(live);await idle();await click('.world-choice:nth-child(2)');await click('.spin-button');await idle();
  check(modes.at(-1)==='BLIGHT','base mode sent unchanged');check(counts.play===1&&counts.end===1&&counts.event>0,'base play and settlement once');
  check(await ev("document.querySelector('.wallet strong').textContent.includes('1,000.20')"),'authoritative settled balance');
+ // Dismiss while winInfo awaits acknowledgment, before setTotalWin can start its sequence.
+ await media(false);await navigate(live);await idle();holdWinInfo=true;await click('.spin-button');await wait("Boolean(document.querySelector('.winning-payline'))",'live winInfo displayed before acknowledgment');
+ for(let i=0;i<60&&!releaseWinInfo;i++)await delay(25);
+ check(Boolean(releaseWinInfo)&&await ev("document.querySelector('main').dataset.presentingLines==='false'&&!document.querySelector('video.cinematic')"),'live winInfo acknowledgment held before the big-win sequence');
+ const early=await ev("(()=>{const b=document.querySelector('.title-lockup h1').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
+ await send('Input.dispatchMouseEvent',{type:'mousePressed',...early,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...early,button:'left',clickCount:1});
+ check(await ev("!document.querySelector('.winning-payline,.reel-cell.winning')&&!document.querySelector('.line-detail').textContent.trim()"),'early live click clears the pending line display');
+ holdWinInfo=false;const release=releaseWinInfo;releaseWinInfo=undefined;release();
+ await wait("Boolean(document.querySelector('video.cinematic'))",'early live dismissal skips the future hidden line delay',1100);await idle();
+ check(await ev("!document.querySelector('.round-error')&&document.querySelector('main').dataset.presentingLines==='false'&&document.querySelector('.wallet strong').textContent.includes('1,000.20')"),'early live dismissal still settles the authoritative payout');await click('[aria-label="Close big win animation"]');await media(true);
+ // A previous small win must not consume Stop while the next autoplay wager is pending.
+ await navigate(live);await idle();const beforeAuto=counts.play;playBookIndex=1;holdPlayAt=beforeAuto+2;await click('[aria-label="Start 10 autoplay spins"]');
+ for(let i=0;i<160&&!releasePlay;i++)await delay(25);
+ check(Boolean(releasePlay)&&await ev("document.querySelector('main').dataset.busy==='true'&&!document.querySelector('.winning-payline')&&Boolean(document.querySelector('[aria-label=\"Stop autoplay\"]'))"),'second autoplay request held after a small win with no line overlay');
+ const stop=await ev("(()=>{const b=document.querySelector('[aria-label=\"Stop autoplay\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
+ await send('Input.dispatchMouseEvent',{type:'mousePressed',...stop,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...stop,button:'left',clickCount:1});
+ check(await ev("document.querySelector('main').dataset.busy==='true'&&!document.querySelector('[aria-label=\"Stop autoplay\"]')&&Boolean(document.querySelector('[aria-label=\"Start 10 autoplay spins\"]'))"),'one genuine Stop click cancels autoplay while the wager reply is pending');
+ holdPlayAt=-1;playBookIndex=2;const releaseAuto=releasePlay;releasePlay=undefined;releaseAuto();await idle();await delay(100);
+ check(counts.play===beforeAuto+2&&await ev("!document.querySelector('.round-error,[aria-label=\"Stop autoplay\"]')"),'released autoplay wager settles without starting another round');
  recovery=true;const before=counts.play;await navigate(live);await idle();check(counts.play===before,'base recovery never wagers');check(!(await ev("Boolean(document.querySelector('.round-error'))")),'base feature recovery succeeds');
  recoveryMode='BLOOM_MYTHIC_BONUS';historicPrice=611;const beforePurchaseRecovery={...counts};await navigate(live);await idle();
  check(counts.play===beforePurchaseRecovery.play&&counts.end===beforePurchaseRecovery.end+1,'purchased recovery settles without buying again');
