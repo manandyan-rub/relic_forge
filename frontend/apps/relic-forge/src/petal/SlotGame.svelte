@@ -43,6 +43,7 @@
  let auto = $state(0), sequence = 0;
  let panel = $state<'rules' | 'settings' | 'bonus' | null>(null);
  let receipt = $state('');
+ let reelGrid: { settle: () => Promise<void> } | undefined;
  let mounted = false;
  let elapsed = $state(0), netPosition = $state(0);
  let audio: AudioContext | undefined;
@@ -97,9 +98,11 @@
    if(animate&&!feature)chime('spin');
    if (!feature) wilds=[];
    winningLines=[];activeWin=0;
-   if(animate) await wait(feature?480:720);
+   if(animate) await wait(feature?300:440);
    if(!mounted) return;
    board=e.board!;moving=false;
+   if(animate) await reelGrid?.settle();
+   if(!mounted) return;
    reaction=board.flat().filter(s=>s==='scatter').length>=2?'anticipation':'idle';
   } else if(e.type==='expandWilds') {
    reaction='wild'; if(animate) {chime('wild');await wait(240);}
@@ -210,7 +213,7 @@
   <div class="slot-stage">
    <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
-   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={showWinningLines ? selectedWin : undefined} {reduced}/></div>
+   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid bind:this={reelGrid} {turbo} {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={showWinningLines ? selectedWin : undefined} {reduced}/></div>
    <div class="under-reels"><span class="world-description"><UiIcon name="flower" size={12}/><span>{world==='BLOOM'?'More frequent features · Gentler magic':'Rarer features · Greater volatility'}</span></span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
    <div class="round-details">
     <div class="line-detail" aria-live="polite" title={lineDetail}>{lineDetail}</div>

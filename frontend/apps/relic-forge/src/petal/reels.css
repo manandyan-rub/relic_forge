@@ -1,0 +1,75 @@
+/* Continuous strips and their authoritative landing share one clipped viewport. */
+.reel-column {
+	position: relative;
+}
+.reels-moving .reel-column:not(.locked) > .reel-cell > .symbol {
+	animation: none;
+	filter: none;
+}
+.reel-column.reel-in-motion > .reel-cell > .symbol {
+	visibility: hidden;
+}
+.reel-spin-viewport {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	overflow: hidden;
+	contain: paint;
+	pointer-events: none;
+}
+.reel-spin-track {
+	position: absolute;
+	inset-inline: 0;
+	inset-block-start: 0;
+	display: grid;
+	will-change: transform;
+	animation: petal-reel-scroll 0.48s linear infinite;
+}
+.reel-spin-cell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-block-size: 0;
+	border-bottom: 1px solid #9c855b21;
+}
+.reel-spin-track .symbol {
+	filter: blur(0.65px);
+}
+.reel-spin-track.reel-landing-track {
+	animation: none;
+}
+.reel-landing-track .symbol {
+	animation: petal-reel-sharpen var(--settle-duration) ease-out both;
+}
+@keyframes petal-reel-scroll {
+	from {
+		transform: translate3d(0, 0, 0);
+	}
+	to {
+		transform: translate3d(0, -33.3333333333%, 0);
+	}
+}
+@keyframes petal-reel-sharpen {
+	0%,
+	30% {
+		filter: blur(0.65px);
+	}
+	85%,
+	100% {
+		filter: blur(0);
+	}
+}
+.reduced .reel-spin-viewport {
+	display: none;
+}
+.reduced .reel-column.reel-in-motion > .reel-cell > .symbol {
+	visibility: visible;
+}
+@media (prefers-reduced-motion: reduce) {
+	.reel-spin-viewport {
+		display: none;
+	}
+	.reel-column.reel-in-motion > .reel-cell > .symbol {
+		visibility: visible;
+	}
+}

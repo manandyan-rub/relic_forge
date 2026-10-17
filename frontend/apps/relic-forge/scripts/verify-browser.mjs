@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import WebSocket from 'ws';
@@ -7,8 +7,8 @@ const origin=process.env.APP_ORIGIN??'http://localhost:3006';
 const output=process.env.QA_OUTPUT??join(process.cwd(),'art','qa');mkdirSync(output,{recursive:true});
 const chrome=['C:/Program Files/Google/Chrome/Application/chrome.exe','C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe','C:/Program Files/Microsoft/Edge/Application/msedge.exe'].find(existsSync);
 if(!chrome)throw Error('No installed browser');
-const port=9335;
-const browser=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,`--user-data-dir=${join(tmpdir(),`petal-qa-${process.pid}`)}`,'--no-first-run','--disable-gpu','about:blank'],{stdio:'ignore',windowsHide:true});
+const profile=mkdtempSync(join(tmpdir(),'petal-qa-'));
+const browser=spawn(chrome,['--headless=new','--remote-debugging-port=0',`--user-data-dir=${profile}`,'--no-first-run','--disable-gpu','about:blank'],{stdio:'ignore',windowsHide:true});
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
 let socket;
 const results=[],errors=[];
@@ -18,8 +18,9 @@ const fixtures=JSON.parse(readFileSync('src/petal/fixtures.json','utf8'));
 const bonusFixtures=JSON.parse(readFileSync('src/petal/bonus-fixtures.json','utf8'));
 const bonusConfig=JSON.parse(readFileSync('src/petal/bonus-config.json','utf8'));
 try{
- let targets;for(let i=0;i<100;i++){try{targets=await(await fetch(`http://localhost:${port}/json/list`)).json();break;}catch{await delay(100);}}
- socket=new WebSocket(targets.find(t=>t.type==='page').webSocketDebuggerUrl);
+ let targets,port;for(let i=0;i<100;i++){try{[port]=readFileSync(join(profile,'DevToolsActivePort'),'utf8').trim().split(/\r?\n/);if(!/^\d+$/.test(port))throw Error('Invalid spawned browser port');targets=await(await fetch(`http://127.0.0.1:${port}/json/list`)).json();if(targets.some(t=>t.type==='page'))break;}catch{}await delay(100);}
+ const target=targets?.find(t=>t.type==='page');if(!target||new URL(target.webSocketDebuggerUrl).port!==port)throw Error('Spawned browser did not expose its own page');
+ socket=new WebSocket(target.webSocketDebuggerUrl);
  await new Promise(r=>socket.once('open',r));
  let id=0;const pending=new Map(),handlers=new Map();
  socket.on('message',data=>{const m=JSON.parse(data);if(m.id){const p=pending.get(m.id);pending.delete(m.id);if(m.error)p.reject(Error(m.error.message));else p.resolve(m.result);}else for(const fn of handlers.get(m.method)??[])void fn(m.params);});
@@ -62,12 +63,13 @@ try{
  check(await ev("document.querySelectorAll('.reel-cell').length===25"),'5 by 5 board');
  check(await ev("document.title==='The Last Petal'"),'new branding');
  check(await ev("!document.querySelector('.title-lockup img')"),'round title logo removed');
- for(const [w,h,name] of [[1536,960,'bloom-desktop'],[768,1024,'bloom-tablet'],[390,844,'bloom-mobile'],[844,390,'bloom-landscape']]){
+ for(const [w,h,name] of [[1536,960,'bloom-desktop'],[1366,768,'bloom-laptop'],[1024,650,'bloom-short-desktop'],[1024,651,'bloom-desktop-breakpoint'],[768,1024,'bloom-tablet'],[390,844,'bloom-mobile'],[320,568,'bloom-small-mobile'],[844,390,'bloom-landscape'],[568,320,'bloom-small-landscape']]){
   await viewport(w,h);await delay(150);await wait("[...document.images].every(i=>i.complete)",'images loaded');
   check(await ev("[...document.images].filter(i=>i.closest('.petal-world')).every(i=>i.naturalWidth>0)"),name+' artwork loads');
   check(await ev('document.documentElement.scrollWidth<=innerWidth'),name+' no horizontal overflow');
-  check(await ev("(()=>{const b=document.querySelector('.reel-window').getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.width>=300})()"),name+' readable board');
-  if(w>1000)check(await ev("document.querySelector('.bet-controls').getBoundingClientRect().bottom<=innerHeight"),name+' all controls visible');
+  check(await ev("(()=>{const p=document.querySelector('.bet-controls').getBoundingClientRect();return [...document.querySelectorAll('.bet-controls button')].every(e=>{const b=e.getBoundingClientRect();return b.left>=p.left&&b.right<=p.right})})()"),name+' every control stays inside the deck');
+  check(await ev("(()=>{const b=document.querySelector('.reel-window').getBoundingClientRect();return b.left>=0&&b.right<=innerWidth&&b.width>=Math.min(300,innerWidth-48)})()"),name+' readable board');
+  if(w>1000&&h>=700)check(await ev("document.querySelector('.bet-controls').getBoundingClientRect().bottom<=innerHeight"),name+' all controls visible');
   if(w>700)check(await ev("(()=>{const b=document.querySelector('.bet-controls').getBoundingClientRect(),s=document.querySelector('.spin-button').getBoundingClientRect();return Math.abs((s.left+s.right-b.left-b.right)/2)<1})()"),name+' Spin centered in bottom bar');
   check(await ev("[...document.querySelectorAll('.secondary-control svg')].every(i=>{const p=i.parentElement,b=p.getBoundingClientRect(),a=getComputedStyle(p).flexDirection==='row'?[...p.children].reduce((r,c)=>{const x=c.getBoundingClientRect();return {left:Math.min(r.left,x.left),right:Math.max(r.right,x.right)}},{left:Infinity,right:-Infinity}):i.getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})"),name+' control icons centered in buttons');
   check(await ev("(()=>{const a=document.querySelector('.win-presentation').getBoundingClientRect(),b=document.querySelector('.under-reels').getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})()"),name+' win display centered below reels');
@@ -81,6 +83,15 @@ try{
   check(await ev("(()=>{const footer=document.querySelector('.cabinet-bottom'),f=footer.getBoundingClientRect(),c=[...footer.children].map(e=>e.getBoundingClientRect());return Math.abs((c[0].left+c[2].right-f.left-f.right)/2)<1&&c.every((e,i)=>Math.abs((e.top+e.bottom-f.top-f.bottom)/2+(parseFloat(getComputedStyle(footer.children[i]).marginBottom)||0)/2)<1)&&getComputedStyle(footer.firstElementChild).justifyContent==='center'&&getComputedStyle(footer.lastElementChild).justifyContent==='center'})()"),name+' reel footer captions centered with equal bottom margins');
   await shot(name);
   if(name==='bloom-mobile'){await ev("document.querySelector('.bet-controls').scrollIntoView({block:'center'})");await shot('bloom-mobile-controls');await ev('scrollTo(0,0)');}
+ }
+ // Short landscape dialogs keep readable copy and a reachable close control.
+ await viewport(568,320);
+ for(const [open,close,name] of [['Open game rules','Close dialog','rules'],['Open settings','Close dialog','settings'],['Open Bonus Buy','Close Bonus Buy','Bonus Buy']]){
+  await click(`[aria-label="${open}"]`);await wait("Boolean(document.querySelector('.modal-scrim [role=dialog]'))",name+' dialog opens');
+  check(await ev("(()=>{const d=document.querySelector('.modal-scrim [role=dialog]'),b=d.getBoundingClientRect();return b.left>=0&&b.top>=0&&b.right<=innerWidth&&b.bottom<=innerHeight&&d.scrollWidth<=d.clientWidth})()"),'short landscape '+name+' fits and scrolls inside the viewport');
+  check(await ev("(()=>{const b=document.querySelector('.modal-close').getBoundingClientRect();return b.width>=44&&b.height>=44&&b.left>=0&&b.top>=0&&b.right<=innerWidth&&b.bottom<=innerHeight})()"),'short landscape '+name+' has a visible 44px close control');
+  check(await ev("(()=>{const p=[...document.querySelectorAll('.modal-scrim p')];return p.length>0&&p.every(e=>parseFloat(getComputedStyle(e).fontSize)>=12)})()"),'short landscape '+name+' body text stays at least 12px');
+  await click(`[aria-label="${close}"]`);
  }
  // Character videos match each world; only big wins show amounts above the head.
  await viewport(2322,1267);await media(false);await navigate(origin+'/?demo=true');await idle();
@@ -147,9 +158,25 @@ try{
  // Compare the seam immediately before and after one exact strip cycle.
  await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
  await click('.spin-button');await wait("Boolean(document.querySelector('.reel-spin-track'))",'continuous strip');
+ await delay(100);const scrollStart=await ev("new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.reel-spin-track')).transform).m42");await delay(70);
+ check(await ev(`Math.abs(new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.reel-spin-track')).transform).m42-(${scrollStart}))>.5`),'normal reels continuously advance before landing');
  const seam=await ev(`(()=>{const t=document.querySelector('.reel-spin-track'),v=t.parentElement,a=t.getAnimations()[0];a.pause();const frame=ms=>{a.currentTime=ms;const box=v.getBoundingClientRect();return [...t.children].map(c=>{const b=c.getBoundingClientRect();return {label:c.querySelector('.symbol').getAttribute('aria-label'),y:(b.top+b.bottom)/2-box.top}}).filter(c=>c.y>0&&c.y<box.height)};const before=frame(479.99),after=frame(.01);a.play();return {before,after}})()`);
  check(seam.before.length===5&&seam.after.length===5&&seam.before.every((s,i)=>s.label===seam.after[i].label&&Math.abs(s.y-seam.after[i].y)<.1),'reel wrap has matching symbols and subpixel-continuous positions');
+ await wait("document.querySelectorAll('.reel-landing-track').length===5",'authoritative reel landing');
+ const lossBoard=fixtures.BLOOM[0].events.find(e=>e.type==='reveal').board;
+ check(await ev(`(async()=>{const {worldLabels}=await import('/src/petal/config.ts');const expected=${JSON.stringify(lossBoard)};return [...document.querySelectorAll('.reel-landing-track')].every((t,r)=>[...t.children].slice(-5).every((c,row)=>c.querySelector('.symbol').getAttribute('aria-label')===worldLabels.BLOOM[expected[r][row].name??expected[r][row]]))})()`),'landing strip ends with the authoritative loss-book symbols');
+ await wait("(()=>{const a=[...document.querySelectorAll('.reel-landing-track')].map(t=>t.getAnimations()[0]);return a.length===5&&a[0]?.playState==='finished'&&a[4]?.playState==='running'})()",'staggered final reel landing');
+ check(await ev("document.querySelector('.spin-button').disabled&&!document.querySelector('.winning-payline')"),'wagers stay locked and paylines stay hidden until the last reel lands');
  await idle();
+ check(await ev("!document.querySelector('.reel-spin-track,.reels-moving,.round-error')&&!document.querySelector('.spin-button').disabled"),'landing clears motion and unlocks the completed round');
+ check(await ev("[...document.querySelectorAll('.reel-column')].every(c=>new Set([...c.querySelectorAll('.reel-cell>.symbol')].map(s=>s.getAttribute('aria-label'))).size>=3)"),'first demo loss lands on mixed symbol columns');
+ await shot('bloom-first-spin');
+ // A system motion preference can hide the strip even after the in-game override.
+ await media(true);await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Open settings"]');
+ await ev("[...document.querySelectorAll('.setting')].find(e=>e.textContent.includes('Reduce motion')).querySelector('input').click()");await click('[aria-label="Close dialog"]');
+ check(await ev("!document.querySelector('main').classList.contains('reduced')&&matchMedia('(prefers-reduced-motion: reduce)').matches"),'in-game motion override exercised while system preference stays reduced');
+ await click('.spin-button');await idle();
+ check(await ev("!document.querySelector('.round-error,.reel-spin-track,.reels-moving')&&!document.querySelector('.spin-button').disabled"),'hidden reduced-motion strips settle without invalid geometry or round errors');
  await viewport(1536,960);await media(true);
  for(const world of ['BLOOM','BLIGHT']){
   await navigate(origin+'/?demo=true');await idle();if(world==='BLIGHT')await click('.world-choice:nth-child(2)');

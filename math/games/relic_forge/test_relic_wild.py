@@ -55,6 +55,17 @@ def test_representative_books(mode,scenario):
     if scenario=='cap':assert b['payoutMultiplier']==CAP
     if scenario=='bonus':assert sum(e['type']=='reveal' for e in b['events'])==11
 
+@pytest.mark.parametrize('mode',MODES)
+def test_showcase_loss_is_mixed_deterministic_and_mirrored(mode):
+    book=generate(mode,777,'loss')
+    assert book==generate(mode,777,'loss')
+    board=book['events'][0]['board']
+    assert all(len(set(column))>=3 for column in board)
+    assert evaluate(board,{})==(0,[])
+    assert book['payoutMultiplier']==0
+    fixtures=ROOT.parents[2]/'frontend'/'apps'/'relic-forge'/'src'/'petal'/'fixtures.json'
+    assert json.loads(fixtures.read_text())[mode][0]==book
+
 def test_twenty_unique_five_row_paylines():
     assert len(RULES['lines'])==len(set(map(tuple,RULES['lines'])))==20
     assert all(len(line)==5 and all(0<=r<5 for r in line) for line in RULES['lines'])

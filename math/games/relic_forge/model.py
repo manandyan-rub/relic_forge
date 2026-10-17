@@ -102,7 +102,17 @@ def generate(mode, seed, scenario=None):
             board = [['guardian'] * 5 for _ in range(5)]
         if force == 'loss':
             expanding, new = {}, []
-            board = [[SYMBOLS[r]] * 5 for r in range(5)]
+            # Keep showcase losses on natural reel strips, with mixed symbols.
+            # This forced scenario never changes ordinary outcome sampling.
+            for attempt in range(1001):
+                if all(len(set(column)) >= 3 for column in board) and evaluate(board, {})[0] == 0:
+                    break
+                if attempt == 1000:
+                    raise RuntimeError('Unable to generate a mixed showcase loss')
+                board = []
+                for strip in REELS:
+                    stop = rng.randrange(len(strip))
+                    board.append([strip[(stop + row) % len(strip)] for row in range(5)])
         for reel in expanding:
             if free and reel in sticky:
                 board[reel] = ['wild'] * 5
