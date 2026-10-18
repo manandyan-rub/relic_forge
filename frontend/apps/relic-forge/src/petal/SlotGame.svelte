@@ -7,11 +7,12 @@
  import { initialBoard, betLevels as developmentBets, art } from './config';
  import { available, demo, replay, play, record, settle, validateWallet, bonusUnavailableReason } from './rgs';
  import { bonusConfig, isBonusMode, modeCost, modeWorld, variantTitle } from './bonus';
- import type { World, Wild, Reaction, Round, BookEvent, Mode, PurchaseQuote, BonusVariant, LineWin } from './types';
+ import type { World, Wild, Reaction, Round, BookEvent, Mode, PurchaseQuote, PurchaseReceiptData, BonusVariant, LineWin } from './types';
  import WorldSelection from './WorldSelection.svelte';
  import CharacterStage from './CharacterStage.svelte';
  import ReelGrid from './ReelGrid.svelte';
  import FreeSpinsPresentation from './FreeSpinsPresentation.svelte';
+ import PurchaseReceipt from './PurchaseReceipt.svelte';
  import WinPresentation from './WinPresentation.svelte';
  import BetControls from './BetControls.svelte';
  import GameSettings from './GameSettings.svelte';
@@ -42,7 +43,7 @@
  let turbo = $state(false), reduced = $state(false), sound = $state(true);
  let auto = $state(0), sequence = 0;
  let panel = $state<'rules' | 'settings' | 'bonus' | null>(null);
- let receipt = $state('');
+ let receipt = $state<PurchaseReceiptData|null>(null);
  let reelGrid: { settle: () => Promise<void> } | undefined;
  let mounted = false;
  let elapsed = $state(0), netPosition = $state(0);
@@ -96,7 +97,7 @@
   osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.25);
  }
  function fail(e: unknown) { error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
- function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt='';winningLines=[];activeWin=0;showWinningLines=false;message='A little magic is waiting.';reaction='idle'; }
+ function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt=null;winningLines=[];activeWin=0;showWinningLines=false;message='A little magic is waiting.';reaction='idle'; }
  function change(n: number) { if (locked) return; const i=betLevels.indexOf(bet); stateBet.betAmount=betLevels[Math.max(0,Math.min(betLevels.length-1,i+n))] ?? bet; }
  async function showEvent(e: BookEvent, stake: number, animate: boolean) {
   const amount=(v=0) => stake*v/100;
@@ -133,7 +134,8 @@
   if(expectedMode && decoded.mode!==expectedMode)throw new Error('Server mode does not match this purchase. Reload to recover.');
   if(expectedMode && decoded.costMultiplier!==modeCost(expectedMode))throw new Error('Server purchase price does not match the confirmed cost. Reload to recover.');
   world=decoded.world; stateBet.activeBetModeKey=decoded.mode;
-  receipt=isBonusMode(decoded.mode)?`${world} ${variantTitle(bonusConfig[decoded.mode].variant as BonusVariant)} · Base bet ${money(stake)} · Purchase ${decoded.costMultiplier}× = ${money(stake*decoded.costMultiplier)}`:'';
+  const receiptCurrency=stateBet.currency||'USD';
+  receipt=isBonusMode(decoded.mode)?{world,bonus:variantTitle(bonusConfig[decoded.mode].variant as BonusVariant),multiplier:decoded.costMultiplier,currency:receiptCurrency,baseBet:formatCurrency(stake,receiptCurrency),paid:formatCurrency(stake*decoded.costMultiplier,receiptCurrency),win:null}:null;
   const cursor=round.event==null?-1:Number(round.event);
   if(!Number.isInteger(cursor) || cursor < -1 || cursor>=decoded.events.length)throw new Error('Invalid recovery cursor. Reload to recover this round.');
   feature=false;freeSpinNumber=0;wilds=[];win=0;featureWin=0;
@@ -146,7 +148,7 @@
   }
   if(!mounted)return;
   await settle(round);
-  if(isBonusMode(decoded.mode))receipt+=` · Feature win ${money(stake*decoded.payout/100)}`;
+  if(isBonusMode(decoded.mode)&&receipt)receipt={...receipt,win:formatCurrency(stake*decoded.payout/100,receipt.currency)};
   if(replay()){replayDone=true;message='Replay complete';}
  }
  async function run(mode:Mode=world) {
@@ -225,7 +227,7 @@
    <div class="under-reels"><span class="world-description"><UiIcon name="flower" size={12}/><span>{world==='BLOOM'?'More frequent features · Gentler magic':'Rarer features · Greater volatility'}</span></span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
    <div class="round-details">
     <div class="line-detail" aria-live="polite" title={lineDetail}>{lineDetail}</div>
-    <div class="purchase-receipt" class:empty={!receipt} aria-hidden={!receipt} title={receipt}>{receipt}</div>
+    <PurchaseReceipt {receipt}/>
    </div>
   </div>
  </section>

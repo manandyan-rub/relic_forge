@@ -3,6 +3,7 @@ export type BonusVariant = 'STANDARD' | 'SUPER' | 'MYTHIC';
 export type BonusMode = `${World}_${BonusVariant}_BONUS`;
 export type Mode = World | BonusMode;
 export type PurchaseQuote = { mode: BonusMode; world: World; stake: number; costMultiplier: number; total: number; currency: string };
+export type PurchaseReceiptData = { world: World; bonus: string; multiplier: number; currency: string; baseBet: string; paid: string; win: string | null };
 export type SymbolId = 'keeper' | 'traveler' | 'guardian' | 'flower' | 'lantern' | 'key' | 'book' | 'mushroom' | 'wild' | 'scatter';
 export type Wild = { reel: number; row?: number; multiplier: number };
 export type LineWin = { symbol: SymbolId; kind: number; win: number; uncappedWin: number; positions: { reel: number; row: number }[]; meta: { lineIndex: number; winWithoutMult: number; lineMultiplier: number } };
