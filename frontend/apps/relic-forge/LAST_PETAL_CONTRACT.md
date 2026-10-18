@@ -74,6 +74,8 @@ A shared transport guard and synchronous presentation lock prevent duplicate req
 
 Bloom uses the 60 corrected PNGs in `art/sources/bloom-corrected-spin`, in their supplied order at 60 fps for a one-second loop. Only tiny detached alpha fragments behind the shoulder and below the feet are removed; source PNGs remain unchanged. Blight uses the first 500 ms of its original 21:29:23 video, with a two-second eased forward/return cycle at 60 fps. Neither loop blends poses. Current sources, cleanup settings, frame mappings, and hashes are recorded in `art/character-media.json` and `art/*-spin-loop.json`. Rebuild clips with `scripts/prepare-character-media.py --scratch <temporary-directory>`.
 
+Blight's bonus loop conservatively removes weak, near-black floor haze at least four pixels from solid artwork, within its fixed floor region. Solid robe pixels, feet, and the weapon and chain remain protected. Its resting image uses the cleaned spin poster so its canvas and first pose match the animation. The loop video and poster use lossless encoding with preserved alpha.
+
 Normal base spins use the still character artwork. Character loops run only throughout bonus features and stay silent. A short reel-spin cue plays on normal base spins when Sound effects is enabled. All bonus sound effects are muted. During bonuses, the same animation continues through all ten free spins and their pauses.
 
 Big wins (20× or more) play the corresponding five-second clip full-screen against the current world's background, with original audio controlled by Sound effects. Bloom big-win source: 21:23:21; Blight: 21:29:23. Win labels never appear above the side characters; totals remain below the reels and on the full-screen big-win display. Reduced motion uses still artwork.

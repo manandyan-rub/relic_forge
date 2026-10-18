@@ -12,6 +12,7 @@
  import CharacterStage from './CharacterStage.svelte';
  import ReelGrid from './ReelGrid.svelte';
  import FreeSpinsPresentation from './FreeSpinsPresentation.svelte';
+ import FreeSpinsAward from './FreeSpinsAward.svelte';
  import PurchaseReceipt from './PurchaseReceipt.svelte';
  import WinPresentation from './WinPresentation.svelte';
  import BetControls from './BetControls.svelte';
@@ -23,6 +24,8 @@
  let wilds = $state<Wild[]>([]);
  let busy = $state(true), moving = $state(false), feature = $state(false);
  let freeSpins = $state(0), freeSpinNumber = $state(0), featureWin = $state(0), win = $state(0);
+ let awardedFreeSpins = $state(0);
+ let finishFreeSpinsAward: (()=>void) | undefined;
  let reaction = $state<Reaction>('idle');
  let message = $state('A little magic is waiting.');
  let error = $state(''), blocked = $state(false), replayDone = $state(false);
@@ -63,6 +66,21 @@
   const timer = setTimeout(done,actual ? ms : reduced ? 0 : turbo ? Math.min(120,ms*.22) : ms);
   abort.signal.addEventListener('abort',done,{once:true});
  });
+ function presentFreeSpinsAward(count: number) {
+  if(!mounted)return Promise.resolve();
+  awardedFreeSpins=count;
+  return new Promise<void>(resolve=>{
+   let finished=false;
+   const done=()=>{
+    if(finished)return;finished=true;
+    clearTimeout(timer);abort.signal.removeEventListener('abort',done);
+    finishFreeSpinsAward=undefined;awardedFreeSpins=0;resolve();
+   };
+   // Keep the award readable in Turbo and reduced-motion modes too.
+   const timer=setTimeout(done,2200);
+   finishFreeSpinsAward=done;abort.signal.addEventListener('abort',done,{once:true});
+  });
+ }
  function presentWinningLines() {
   if(!mounted || !showWinningLines || !winningLines.length || reduced) return Promise.resolve();
   presentingLines=true;activeWin=0;
@@ -96,7 +114,7 @@
   gain.gain.setValueAtTime(.025,audio.currentTime); gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.25);
   osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.25);
  }
- function fail(e: unknown) { error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
+ function fail(e: unknown) { finishFreeSpinsAward?.();error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
  function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt=null;winningLines=[];activeWin=0;showWinningLines=false;message='A little magic is waiting.';reaction='idle'; }
  function change(n: number) { if (locked) return; const i=betLevels.indexOf(bet); stateBet.betAmount=betLevels[Math.max(0,Math.min(betLevels.length-1,i+n))] ?? bet; }
  async function showEvent(e: BookEvent, stake: number, animate: boolean) {
@@ -122,7 +140,13 @@
    win=amount(e.amount); if(feature)featureWin=win-featureBase;
    if(win/stake>=20 && !feature && animate){await presentWinningLines();if(!mounted)return;}
    if(e.amount!>0){reaction=win/stake>=20?'big':'win';message=win/stake>=20?'A wonderful windfall!':'Your magic is growing.';if(animate){if(reaction!=='big'||reduced)chime('win');await wait(340);}}
-  } else if(e.type==='freeSpinTrigger'||e.type==='bonusStart') {featureBase=win;feature=true;freeSpins=10;freeSpinNumber=0;featureWin=0;wilds=[];reaction='intro';message=e.type==='bonusStart'?`${variantTitle(e.variant!)} · 10 Free Spins`:'The petals awaken · 10 Free Spins';if(animate)await wait(1100);}
+  } else if(e.type==='freeSpinTrigger'||e.type==='bonusStart') {
+   const count=e.totalFs!;
+   featureBase=win;feature=true;freeSpins=count;freeSpinNumber=0;featureWin=0;wilds=[];
+   winningLines=[];activeWin=0;showWinningLines=false;
+   reaction='intro';message=e.type==='bonusStart'?`${variantTitle(e.variant!)} · ${count} Free Spins`:`The petals awaken · ${count} Free Spins`;
+   if(animate)await presentFreeSpinsAward(count);
+  }
   else if(e.type==='updateFreeSpin') {freeSpinNumber=e.amount!;freeSpins=11-freeSpinNumber;message=`Free Spin ${freeSpinNumber} of 10`;}
   else if(e.type==='freeSpinEnd') {freeSpins=0;featureWin=amount(e.amount);reaction='ending';message='Your garden’s gift';if(animate)await wait(900);feature=false;}
   else if(e.type==='wincap') {message='5,000× · The garden’s greatest gift';reaction='big';}
@@ -234,6 +258,7 @@
  {#if error}<div class="round-error" role="alert">{error}</div>{/if}
  <BetControls bet={money(bet)} balance={money(stateBet.balanceAmount)} {locked} {canSpin} {busy} {auto} {turbo} {canOpenBonus} openBonus={()=>panel='bonus'} autoAllowed={!stateConfig.jurisdiction?.disabledAutoplay&&!replay()} turboAllowed={!stateConfig.jurisdiction?.disabledTurbo&&!replay()} {change} spin={()=>void spin()} toggleAuto={()=>void toggleAuto()} toggleTurbo={()=>turbo=!turbo}/>
  <div class="game-footnote"><span>{demo()?'DEVELOPMENT DEMO · FIXED SHOWCASE BOOKS':replay()?'READ-ONLY REPLAY':'THE LAST PETAL'}</span><span>{stateConfig.jurisdiction?.displaySessionTimer?`Session ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`:'3 SCATTERS · 10 FREE SPINS'}{stateConfig.jurisdiction?.displayNetPosition?` · Net ${money(netPosition)}`:''}</span></div>
+ {#if awardedFreeSpins>0}<FreeSpinsAward {world} count={awardedFreeSpins} {reduced} oncontinue={(stopAutoplay=false)=>{if(stopAutoplay)auto=0;finishFreeSpinsAward?.();}}/>{/if}
  {#if panel==='bonus'}<BonusBuy {world} stake={bet} currency={stateBet.currency} balance={stateBet.balanceAmount} format={money} reason={bonusUnavailableReason} close={()=>panel=null} {purchase}/>
  {:else if panel}<GameSettings {panel} {world} close={()=>panel=null} {reduced} setReduced={v=>reduced=v} {sound} setSound={v=>sound=v}/>{/if}
 </main>

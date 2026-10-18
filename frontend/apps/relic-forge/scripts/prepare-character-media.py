@@ -5,6 +5,7 @@ Original RGB source clips are untouched.
 The corrected Bloom spin preserves its sixty supplied frames, RGB and canvas;
 only tiny detached alpha specks in two fixed exterior regions are removed.
 Other clips preserve semantic soft edges and repair opaque character interiors.
+The Blight spin also attenuates isolated weak dark floor haze in a fixed ROI.
 """
 from io import BytesIO
 from pathlib import Path
@@ -123,6 +124,58 @@ def cleanup_bloom_specks(frames):
     return cleaned, cleanup
 
 
+def cleanup_blight_floor(frames):
+    from scipy import ndimage
+
+    size = (458, 820)
+    left, top, right, bottom = (0, 752, 458, 820)
+    feather = 12
+    y_weight = np.clip((np.arange(size[1]) - top) / feather, 0, 1)
+    strength = np.broadcast_to(y_weight[:, None], (size[1], size[0]))
+    roi = np.zeros((size[1], size[0]), dtype=bool)
+    roi[top:bottom, left:right] = True
+    cleanup = dict(
+        method='alpha-only feathered removal of weak dark floor haze isolated from opaque foreground; preserve RGB, opaque body/robe and pixels outside the fixed floor ROI',
+        region=[left, top, right, bottom], maximumAlpha=64, maximumRgb=12,
+        opaqueForegroundMinimumAlpha=128, minimumDistancePixels=4,
+        distanceMetric='Euclidean pixel centers from original alpha>=128 foreground',
+        featherPixels=feather, featherAxes=['y'],
+        featherMethod='linear y onset from zero strength at ROI boundary to full strength after 12 pixels',
+        diagnosticScope='every output frame; before/after alpha within the fixed ROI',
+        before=dict(nonzeroPixelsByFrame=[], alphaSumByFrame=[]),
+        after=dict(nonzeroPixelsByFrame=[], alphaSumByFrame=[]),
+        eligiblePixelsByFrame=[], clearedPixelsByFrame=[], attenuatedPixelsByFrame=[])
+    cleaned = []
+    for image in frames:
+        if image.mode != 'RGBA' or image.size != size:
+            raise ValueError(f'Blight floor cleanup requires an RGBA {size[0]}x{size[1]} canvas')
+        rgba = np.asarray(image)
+        alpha = rgba[:, :, 3]
+        opaque = alpha >= 128
+        distance = ndimage.distance_transform_edt(~opaque) if opaque.any() else np.full(alpha.shape, np.inf)
+        eligible = roi & (alpha > 0) & (alpha <= 64) & (rgba[:, :, :3].max(axis=2) <= 12) & (distance >= 4)
+        changed_alpha = alpha.copy()
+        changed_alpha[eligible] = np.rint(alpha[eligible] * (1 - strength[eligible])).astype(np.uint8)
+        cleared = int(np.count_nonzero((alpha > 0) & (changed_alpha == 0)))
+        attenuated = int(np.count_nonzero((changed_alpha > 0) & (changed_alpha < alpha)))
+        cleanup['before']['nonzeroPixelsByFrame'].append(int(np.count_nonzero(alpha[roi])))
+        cleanup['before']['alphaSumByFrame'].append(int(alpha[roi].sum()))
+        cleanup['after']['nonzeroPixelsByFrame'].append(int(np.count_nonzero(changed_alpha[roi])))
+        cleanup['after']['alphaSumByFrame'].append(int(changed_alpha[roi].sum()))
+        cleanup['eligiblePixelsByFrame'].append(int(np.count_nonzero(eligible)))
+        cleanup['clearedPixelsByFrame'].append(cleared)
+        cleanup['attenuatedPixelsByFrame'].append(attenuated)
+        if cleared or attenuated:
+            image = image.copy()
+            image.putalpha(Image.fromarray(changed_alpha))
+        cleaned.append(image)
+    cleanup['totals'] = dict(
+        clearedPixels=sum(cleanup['clearedPixelsByFrame']),
+        attenuatedPixels=sum(cleanup['attenuatedPixelsByFrame']),
+        removedAlpha=sum(cleanup['before']['alphaSumByFrame']) - sum(cleanup['after']['alphaSumByFrame']))
+    return cleaned, cleanup
+
+
 def harden(rgb, prepared):
     from scipy import ndimage
 
@@ -176,6 +229,7 @@ def main():
         work = args.scratch / name
         work.mkdir(exist_ok=True)
         corrected = name == 'bloom-traveler-spin'
+        blight_spin = name == 'blight-keeper-spin'
         if corrected:
             frames, source_files = corrected_bloom_frames(SOURCES / source)
             frames, alpha_cleanup = cleanup_bloom_specks(frames)
@@ -218,6 +272,10 @@ def main():
                         sourceKind='supplied-original-rgb-clip', edit='semantic alpha support; original RGB poses; nearest frames; cosine-paced forward/return' if cycle else 'preserved semantic alpha; eroded interior hardening; original RGB and frame order',
                         matteThreshold=None, filledHoleMaximumPixels=0, minimumComponentPixels=120,
                         opaqueInteriorAlphaThreshold=64, opaqueInteriorErosionPixels=2)
+        if blight_spin:
+            frames, alpha_cleanup = cleanup_blight_floor(frames)
+            meta['alphaCleanup'] = alpha_cleanup
+            meta['edit'] += '; feathered alpha-only cleanup of isolated weak dark floor haze'
         for index, frame in enumerate(frames):
             frame.save(work / f'frame-{index:03d}.png')
         room = Image.open(ROOT / 'static' / 'art' / ('bloom-room.webp' if name.startswith('bloom') else 'blight-room.webp'))
@@ -227,19 +285,20 @@ def main():
                     frames=len(frames), fps=fps, sourceFrameIndices=[first + i for i in indices])
         if not args.preview_only:
             output = ROOT / 'static' / 'art' / f'{name}.webm'
-            quality = ['-lossless', '1'] if corrected else ['-crf', '25']
+            lossless = corrected or blight_spin
+            quality = ['-lossless', '1'] if lossless else ['-crf', '25']
             # Convert color separately: swscale's RGBA-to-YUVA path rounds
             # alpha values 128..254 upward. Reattach the untouched alpha plane.
             alpha_filter = [
                 '-filter_complex', '[0:v]split[color][alpha];[alpha]alphaextract[a];'
                 '[color]format=yuv420p[c];[c][a]alphamerge[out]', '-map', '[out]',
-            ] if corrected else []
+            ] if lossless else []
             subprocess.run([
                 'ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-framerate', str(fps),
                 '-i', str(work / 'frame-%03d.png'), *alpha_filter, '-frames:v', str(len(frames)), '-an',
                 '-c:v', 'libvpx-vp9', '-pix_fmt', 'yuva420p', '-auto-alt-ref', '0', '-b:v', '0',
                 *quality, '-deadline', 'good', '-cpu-used', '3', '-metadata:s:v:0', 'alpha_mode=1', str(output)], check=True)
-            poster_options = dict(lossless=True, exact=True, method=6) if corrected else dict(quality=92, method=6)
+            poster_options = dict(lossless=True, exact=True, method=6) if lossless else dict(quality=92, method=6)
             frames[0].save(ROOT / 'static' / 'art' / f'{name}-poster.webp', 'WEBP', **poster_options)
             meta['sha256'] = hashlib.sha256(output.read_bytes()).hexdigest()
             if cycle:

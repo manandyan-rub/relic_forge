@@ -9,8 +9,9 @@
  let video = $state<HTMLVideoElement>();
  let soundtrack = $state<HTMLAudioElement>();
  const name = $derived(world==='BLOOM'?'bloom-traveler':'blight-keeper');
- const mediaRevision = $derived(world==='BLOOM' && feature ? 'clean-specks-6' : 'clean-matte-2');
- const still = $derived(art(world,world === 'BLOOM' ? 'traveler-stage' : 'keeper'));
+ const loopRevision = $derived(world==='BLOOM' ? 'clean-specks-6' : 'blight-clean-1');
+ const mediaRevision = $derived(feature ? loopRevision : 'clean-matte-2');
+ const still = $derived(world==='BLOOM' ? art(world,'traveler-stage') : `/art/${name}-spin-poster.webp?v=${loopRevision}`);
  const phase = $derived(reduced ? null : feature ? 'spin' : celebration ? 'big' : null);
  $effect(()=>{void world;celebration=false;});
  $effect(()=>{if(feature || moving || reduced)celebration=false;else if(reaction==='big')celebration=true;});
@@ -72,7 +73,7 @@
  {#if phase==='big' && !feature}<audio bind:this={soundtrack} src={`/art/${name}-${phase}.mp3`} preload="auto"></audio>{/if}
 {/key}
 <aside class="character-stage" class:cinematic-active={phase==='big'} data-reaction={reaction} aria-label={`${world === 'BLOOM' ? 'The Lantern Traveler' : 'The Withered Keeper'}: ${reaction}`}>
- <div class="character-aura"></div>
+ {#if world==='BLOOM'}<div class="character-aura"></div>{/if}
  <div class="character-figure" class:has-motion={!!phase} class:motion-active={visible && !!phase}>
   <img class="character-art" src={still} alt={world === 'BLOOM' ? 'Magical forest traveler holding a lantern staff' : 'Hooded Blight creature with a chained weapon'} />
   {#if phase==='big'}<div class="cinematic-backdrop" out:fade={{duration:reduced?0:180}} class:cinematic-ready={visible} style:--cinematic-scene={`url('${art(world,'room')}')`} aria-hidden="true"><img class="cinematic-fallback" src={`/art/${name}-big-poster.webp?v=${mediaRevision}`} alt=""/></div>{/if}

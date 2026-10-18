@@ -1020,15 +1020,12 @@ input:focus-visible {
 	background: radial-gradient(ellipse, #ebd49185, transparent 70%);
 	animation: aura 1s ease-out;
 }
-.character-stage[data-reaction='anticipation'] .character-art {
+.petal-world:not(.blight) .character-stage[data-reaction='anticipation'] .character-art {
 	filter: drop-shadow(0 0 16px #deb76690);
 }
 .blight .character-stage {
 	--character-frame-ratio: 0.6;
-	--character-shadow: drop-shadow(0 0 18px #c8864240) drop-shadow(0 18px 12px #070301);
-}
-.blight .character-aura {
-	background: radial-gradient(ellipse, #944a333e, transparent 65%);
+	--character-shadow: drop-shadow(0 18px 12px #070301);
 }
 .character-motion {
 	position: absolute;
