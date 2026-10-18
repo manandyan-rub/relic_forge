@@ -64,7 +64,7 @@ The wallet request sends the original base bet with the exact purchase mode; the
 
 
 
-Character loops use clean source poses with eased forward/return timing. Bloom uses 1.0–1.5 seconds of the original 21:18:08 clip with a one-second cycle; Blight uses the first 500 ms of its original 21:29:23 clip with a two-second cycle. The 60 fps outputs sample original poses without cross-blending faces, limbs, or props. Each loop uses one fixed crop across every frame, aligned to the still artwork at the feet. Original clips and prepared transparency inputs remain in `art/sources`; exact sources, matte settings, crops, frame mappings, and hashes are recorded in `art/character-media.json` and `art/*-spin-loop.json`.
+Bloom's one-second loop uses the 60 corrected transparent PNGs in `art/sources/bloom-corrected-spin`, in their supplied order at 60 fps. Their 512×748 canvas and alpha are preserved without cropping, matte cleanup, blending, or retiming. The video uses lossless VP9 encoding with alpha, and its poster uses lossless WebP. Blight uses the first 500 ms of its original 21:29:23 clip with a two-second eased forward/return cycle at 60 fps, sampling original poses without blending. Original clips and prepared transparency inputs remain in `art/sources`; exact sources, frame mappings, and hashes are recorded in `art/character-media.json` and `art/*-spin-loop.json`.
 
 Normal base spins use the still character artwork. Character loops run only throughout bonus features and stay silent. A short reel-spin cue plays on normal base spins when Sound effects is enabled. All bonus sound effects are muted. During bonuses, the same animation continues through all ten free spins and their pauses.
 
