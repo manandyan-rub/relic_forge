@@ -21,7 +21,7 @@
  let board = $state(initialBoard());
  let wilds = $state<Wild[]>([]);
  let busy = $state(true), moving = $state(false), feature = $state(false);
- let freeSpins = $state(0), featureWin = $state(0), win = $state(0);
+ let freeSpins = $state(0), freeSpinNumber = $state(0), featureWin = $state(0), win = $state(0);
  let reaction = $state<Reaction>('idle');
  let message = $state('A little magic is waiting.');
  let error = $state(''), blocked = $state(false), replayDone = $state(false);
@@ -121,8 +121,8 @@
    win=amount(e.amount); if(feature)featureWin=win-featureBase;
    if(win/stake>=20 && !feature && animate){await presentWinningLines();if(!mounted)return;}
    if(e.amount!>0){reaction=win/stake>=20?'big':'win';message=win/stake>=20?'A wonderful windfall!':'Your magic is growing.';if(animate){if(reaction!=='big'||reduced)chime('win');await wait(340);}}
-  } else if(e.type==='freeSpinTrigger'||e.type==='bonusStart') {featureBase=win;feature=true;freeSpins=10;featureWin=0;wilds=[];reaction='intro';message=e.type==='bonusStart'?`${variantTitle(e.variant!)} · 10 Free Spins`:'The petals awaken · 10 Free Spins';if(animate)await wait(1100);}
-  else if(e.type==='updateFreeSpin') {freeSpins=11-e.amount!;message=`Free Spin ${e.amount} of 10`;}
+  } else if(e.type==='freeSpinTrigger'||e.type==='bonusStart') {featureBase=win;feature=true;freeSpins=10;freeSpinNumber=0;featureWin=0;wilds=[];reaction='intro';message=e.type==='bonusStart'?`${variantTitle(e.variant!)} · 10 Free Spins`:'The petals awaken · 10 Free Spins';if(animate)await wait(1100);}
+  else if(e.type==='updateFreeSpin') {freeSpinNumber=e.amount!;freeSpins=11-freeSpinNumber;message=`Free Spin ${freeSpinNumber} of 10`;}
   else if(e.type==='freeSpinEnd') {freeSpins=0;featureWin=amount(e.amount);reaction='ending';message='Your garden’s gift';if(animate)await wait(900);feature=false;}
   else if(e.type==='wincap') {message='5,000× · The garden’s greatest gift';reaction='big';}
   else if(e.type==='finalWin') {win=amount(e.amount);if(!win)message='Another petal, another possibility.';freeSpins=0;}
@@ -136,7 +136,7 @@
   receipt=isBonusMode(decoded.mode)?`${world} ${variantTitle(bonusConfig[decoded.mode].variant as BonusVariant)} · Base bet ${money(stake)} · Purchase ${decoded.costMultiplier}× = ${money(stake*decoded.costMultiplier)}`:'';
   const cursor=round.event==null?-1:Number(round.event);
   if(!Number.isInteger(cursor) || cursor < -1 || cursor>=decoded.events.length)throw new Error('Invalid recovery cursor. Reload to recover this round.');
-  feature=false;wilds=[];win=0;featureWin=0;
+  feature=false;freeSpinNumber=0;wilds=[];win=0;featureWin=0;
   for(const e of decoded.events) {
    if(!mounted) return;
    const skip=recovering&&!replay()&&e.index<=cursor;
@@ -221,7 +221,7 @@
   <div class="slot-stage">
    <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
-   <div class="board-wrap"><FreeSpinsPresentation active={feature} remaining={freeSpins} total={money(featureWin)}/><ReelGrid bind:this={reelGrid} {turbo} {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={showWinningLines ? selectedWin : undefined} {reduced}/></div>
+   <div class="board-wrap"><FreeSpinsPresentation active={feature} current={freeSpinNumber} remaining={freeSpins} total={money(featureWin)}/><ReelGrid bind:this={reelGrid} {turbo} {board} {world} spinning={moving} {wilds} sticky={feature} {highlights} line={showWinningLines ? selectedWin : undefined} {reduced}/></div>
    <div class="under-reels"><span class="world-description"><UiIcon name="flower" size={12}/><span>{world==='BLOOM'?'More frequent features · Gentler magic':'Rarer features · Greater volatility'}</span></span><WinPresentation win={money(win)} {message} big={win/bet>=20}/></div>
    <div class="round-details">
     <div class="line-detail" aria-live="polite" title={lineDetail}>{lineDetail}</div>

@@ -61,6 +61,34 @@ def harden(rgb, prepared):
     return Image.fromarray(rgba, 'RGBA')
 
 
+def repair_bloom_foot_floor(image):
+    """Remove detached floor glow below the left boot, preserving its edge.
+
+    The original RGB clip has a stationary dark floor reflection. The short
+    semantic support can admit that reflection after the boot lifts away.
+    A real boot stays connected to the character in all twelve source poses.
+    Only disconnected components wholly inside this small floor region qualify.
+    """
+    rgba = np.array(image)
+    alpha = rgba[:, :, 3]
+    labels, _ = ndimage.label(alpha > 127)
+    regions = ndimage.find_objects(labels)
+    removed = np.zeros(alpha.shape, dtype=bool)
+    boxes = []
+    for label, region in enumerate(regions, 1):
+        if region is None:
+            continue
+        y, x = region
+        if x.start >= 240 and x.stop <= 380 and y.start >= 620 and y.stop <= 790:
+            removed |= labels == label
+            boxes.append([x.start, y.start, x.stop, y.stop])
+    if boxes:
+        # Include only the discarded component's tiny antialias fringe.
+        fringe = ndimage.binary_dilation(removed, iterations=2) & (alpha < 128)
+        rgba[removed | fringe, 3] = 0
+    return Image.fromarray(rgba, 'RGBA'), boxes
+
+
 def decode(path, alpha=False):
     command = ['ffmpeg', '-hide_banner', '-loglevel', 'error']
     if alpha and path.suffix == '.webm':
@@ -90,11 +118,15 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--scratch', type=Path, required=True)
     parser.add_argument('--preview-only', action='store_true')
+    parser.add_argument('--only', choices=[job[0] for job in JOBS])
     args = parser.parse_args()
     args.scratch.mkdir(parents=True, exist_ok=True)
     cache = {}
-    manifest = {}
+    manifest_path = ROOT / 'art' / 'character-media.json'
+    manifest = json.loads(manifest_path.read_text()) if args.only and manifest_path.exists() else {}
     for name, source, threshold, hole_limit, start, duration, cycle in JOBS:
+        if args.only and name != args.only:
+            continue
         work = args.scratch / name
         work.mkdir(exist_ok=True)
         if source not in cache:
@@ -110,13 +142,16 @@ def main():
             # The legacy short input was already blended. Use only its semantic
             # support; original RGB supplies every visible pose without doubles.
             source_frames = []
+            foot_repairs = []
             for rgb in original[first:first + available]:
                 scores = []
                 for prepared in semantic:
                     opaque = prepared[:, :, 3] > 230
                     scores.append(np.abs(rgb[opaque].astype(np.float32) - prepared[:, :, :3][opaque]).mean())
                 support = semantic[int(np.argmin(scores)), :, :, 3]
-                source_frames.append(matte(rgb, 6, hole_limit, support))
+                frame, removed = repair_bloom_foot_floor(matte(rgb, 6, hole_limit, support))
+                source_frames.append(frame)
+                foot_repairs.append(removed)
         else:
             source_frames = [harden(rgb, prepared) for rgb, prepared in
                              zip(original[first:first + available], semantic)]
@@ -149,6 +184,11 @@ def main():
                     opaqueInteriorAlphaThreshold=64, opaqueInteriorErosionPixels=2,
                     crop=list(crop), dimensions=list(frames[0].size), durationSeconds=len(frames) / fps,
                     frames=len(frames), fps=fps, sourceFrameIndices=[first + i for i in indices])
+        if name == 'bloom-traveler-spin':
+            meta['footMatteRepair'] = dict(
+                method='remove disconnected stationary floor-glow components; preserve connected boot alpha and all RGB',
+                region=[240, 620, 380, 790], foregroundAlphaThreshold=127,
+                removedComponentBoxesBySourceFrame={str(first + index): boxes for index, boxes in enumerate(foot_repairs)})
         if not args.preview_only:
             output = ROOT / 'static' / 'art' / f'{name}.webm'
             subprocess.run([

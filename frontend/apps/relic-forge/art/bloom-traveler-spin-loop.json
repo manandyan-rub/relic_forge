@@ -88,5 +88,57 @@
     24,
     24
   ],
-  "sha256": "c94648870cb2c9040c5b43e117b73e318e86d9cd57ea9c723e9580aa156cfb61"
+  "footMatteRepair": {
+    "method": "remove disconnected stationary floor-glow components; preserve connected boot alpha and all RGB",
+    "region": [
+      240,
+      620,
+      380,
+      790
+    ],
+    "foregroundAlphaThreshold": 127,
+    "removedComponentBoxesBySourceFrame": {
+      "24": [],
+      "25": [],
+      "26": [],
+      "27": [],
+      "28": [],
+      "29": [],
+      "30": [],
+      "31": [],
+      "32": [
+        [
+          259,
+          765,
+          320,
+          774
+        ]
+      ],
+      "33": [
+        [
+          259,
+          765,
+          320,
+          774
+        ]
+      ],
+      "34": [
+        [
+          259,
+          765,
+          320,
+          774
+        ]
+      ],
+      "35": [
+        [
+          259,
+          765,
+          320,
+          774
+        ]
+      ]
+    }
+  },
+  "sha256": "857f6ed99598dc0ccf33d21137fa828123bcef64d4693b5d5a9338cd938793b7"
 }

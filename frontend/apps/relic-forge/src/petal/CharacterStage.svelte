@@ -9,7 +9,7 @@
  let video = $state<HTMLVideoElement>();
  let soundtrack = $state<HTMLAudioElement>();
  const name = $derived(world==='BLOOM'?'bloom-traveler':'blight-keeper');
- const mediaRevision = 'clean-matte-2';
+ const mediaRevision = $derived(world==='BLOOM' && feature ? 'boot-mask-3' : 'clean-matte-2');
  const still = $derived(art(world,world === 'BLOOM' ? 'traveler-stage' : 'keeper'));
  const phase = $derived(reduced ? null : feature ? 'spin' : celebration ? 'big' : null);
  $effect(()=>{void world;celebration=false;});
