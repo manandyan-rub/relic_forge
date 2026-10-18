@@ -4,9 +4,8 @@
 }
 .reels-moving .reel-column:not(.locked) > .reel-cell > .symbol {
 	animation: none;
-	filter: none;
 }
-.reel-column.reel-in-motion > .reel-cell > .symbol {
+.reel-column.reel-in-motion > .reel-cell {
 	visibility: hidden;
 }
 .reel-spin-viewport {
@@ -18,6 +17,7 @@
 	pointer-events: none;
 }
 .reel-spin-track {
+	--reel-symbol-shadow: drop-shadow(1px 3px 1px #7a644536);
 	position: absolute;
 	inset-inline: 0;
 	inset-block-start: 0;
@@ -33,7 +33,7 @@
 	border-bottom: 1px solid #9c855b21;
 }
 .reel-spin-track .symbol {
-	filter: blur(0.65px);
+	filter: var(--reel-symbol-shadow) blur(0.65px);
 }
 .reel-spin-track.reel-landing-track {
 	animation: none;
@@ -52,24 +52,24 @@
 @keyframes petal-reel-sharpen {
 	0%,
 	30% {
-		filter: blur(0.65px);
+		filter: var(--reel-symbol-shadow) blur(0.65px);
 	}
 	85%,
 	100% {
-		filter: blur(0);
+		filter: var(--reel-symbol-shadow) blur(0);
 	}
 }
 .reduced .reel-spin-viewport {
 	display: none;
 }
-.reduced .reel-column.reel-in-motion > .reel-cell > .symbol {
+.reduced .reel-column.reel-in-motion > .reel-cell {
 	visibility: visible;
 }
 @media (prefers-reduced-motion: reduce) {
 	.reel-spin-viewport {
 		display: none;
 	}
-	.reel-column.reel-in-motion > .reel-cell > .symbol {
+	.reel-column.reel-in-motion > .reel-cell {
 		visibility: visible;
 	}
 }

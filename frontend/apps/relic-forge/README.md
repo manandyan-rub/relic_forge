@@ -64,15 +64,16 @@ The wallet request sends the original base bet with the exact purchase mode; the
 
 
 
-Bloom uses the first 500 ms of its previous edited spin loop, with a one-second smooth return cycle. Blight uses the first 500 ms of its original 21:29:23 video, with a two-second smooth return cycle. Both render at 60 fps with transparent backgrounds and temporal blending. Lossless prepared inputs are preserved in `art/sources/bloom-spin-input.mkv` and `art/sources/blight-spin-input.mkv`. Exact frame mappings and output hashes are recorded in `art/*-spin-loop.json`. `scripts/prepare-character-loop.py` accepts `--video` to rebuild directly from those inputs.
+Character loops use clean source poses with eased forward/return timing. Bloom uses 1.0–1.5 seconds of the original 21:18:08 clip with a one-second cycle; Blight uses the first 500 ms of its original 21:29:23 clip with a two-second cycle. The 60 fps outputs sample original poses without cross-blending faces, limbs, or props. Each loop uses one fixed crop across every frame, aligned to the still artwork at the feet. Original clips and prepared transparency inputs remain in `art/sources`; exact sources, matte settings, crops, frame mappings, and hashes are recorded in `art/character-media.json` and `art/*-spin-loop.json`.
 
 Normal base spins use the still character artwork. Character loops run only throughout bonus features and stay silent. A short reel-spin cue plays on normal base spins when Sound effects is enabled. All bonus sound effects are muted. During bonuses, the same animation continues through all ten free spins and their pauses.
 
-Big wins (20× or more) play the corresponding five-second clip full-screen against the current world's background, with original audio controlled by Sound effects. Bloom big-win source: 21:23:21; Blight: 21:29:23. Win labels never appear above the side characters; totals remain below the reels and on the full-screen big-win display. Reduced motion uses still artwork.
+Big wins (20× or more) play the corresponding five-second clip full-screen against the current world's background, with original audio controlled by Sound effects. Bloom big-win source: 21:23:21; Blight: 21:29:23. Their prepared transparency preserves soft exterior edges while restoring opacity inside dark clothing. Playback waits for a presented video frame before replacing the still and starting audio; the character and cinematic background fade out together. Win labels never appear above the side characters; totals remain below the reels and on the full-screen big-win display. Reduced motion uses still artwork.
 
-Rebuild the current loops with Python (Pillow/NumPy) and FFmpeg:
+Rebuild all current character clips and posters with Python (Pillow, NumPy, SciPy) and FFmpeg:
 
 ```powershell
-python scripts/prepare-character-loop.py --video art/sources/bloom-spin-input.mkv --source-start 0 --source-duration 0.5 --source-fps 60 --cycle-duration 1 --source-kind previous-two-second-loop --output-name bloom-traveler-spin --scratch art/qa/rebuild-bloom
-python scripts/prepare-character-loop.py --video art/sources/blight-spin-input.mkv --source-start 0 --source-duration 0.5 --source-fps 24 --cycle-duration 2 --output-name blight-keeper-spin --scratch art/qa/rebuild-blight
+python scripts/prepare-character-media.py --scratch art/qa/rebuild-characters
 ```
+
+Add `--preview-only` to inspect gold and room background contact sheets before replacing runtime assets. `prepare-character-loop.py` is retired and directs callers to this builder.

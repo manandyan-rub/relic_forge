@@ -61,7 +61,17 @@ try{
  });
  await navigate(origin+'/?demo=true');await idle();
  await ev('document.fonts.ready');
- check(await ev(`document.fonts.check('400 14px "Google Sans"')&&[...document.fonts].some(f=>f.family.replaceAll('"','')==='Google Sans'&&f.status==='loaded')`),'local Google Sans font loaded');
+ const googleSansStylesheet='https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&display=swap';
+ check(await ev(`[...document.querySelectorAll('link[rel="stylesheet"]')].some(l=>l.href===${JSON.stringify(googleSansStylesheet)})`),'hosted Google Sans requests the exact upright, italic, optical-size and weight ranges');
+ await ev(`document.fonts.load('400 14px "Google Sans"','Magic')`);
+ check(await ev(`(()=>{const family=f=>f.family.replaceAll('"','').replaceAll("'",'');return [...document.fonts].some(f=>family(f)==='Google Sans'&&f.style==='normal'&&f.status==='loaded')&&[...document.fonts].some(f=>family(f)==='Google Sans Local')&&getComputedStyle(document.body).fontFamily.split(',')[0].replaceAll('"','').replaceAll("'",'').trim()==='Google Sans'&&getComputedStyle(document.documentElement).fontOpticalSizing==='auto'})()`),'hosted Google Sans loads as the primary face with optical sizing and a registered local fallback');
+ await ev(`document.fonts.load('italic 400 14px "Google Sans"','Magic')`);
+ check(await ev(`[...document.fonts].some(f=>f.family.replaceAll('"','').replaceAll("'",'')==='Google Sans'&&f.style==='italic'&&f.status==='loaded')`),'hosted Google Sans supplies a real loaded italic face');
+ // A fresh page still renders the local font when both Google Fonts origins are unavailable.
+ await send('Network.setCacheDisabled',{cacheDisabled:true});await send('Network.setBlockedURLs',{urls:['*://fonts.googleapis.com/*','*://fonts.gstatic.com/*']});await viewport(390,844);await navigate(origin+'/?demo=true');await idle();await ev('document.fonts.ready');
+ check(await ev(`(()=>{const family=f=>f.family.replaceAll('"','').replaceAll("'",'');return [...document.fonts].some(f=>family(f)==='Google Sans Local'&&f.status==='loaded')&&![...document.fonts].some(f=>family(f)==='Google Sans')&&document.documentElement.scrollWidth<=innerWidth})()`),'blocked Google Fonts falls back to loaded local Google Sans without horizontal overflow');
+ await send('Network.setBlockedURLs',{urls:[]});await viewport(1536,960);await navigate(origin+'/?demo=true');await idle();await ev('document.fonts.ready');await send('Network.setCacheDisabled',{cacheDisabled:false});
+ check(await ev(`[...document.fonts].some(f=>f.family.replaceAll('"','').replaceAll("'",'')==='Google Sans'&&f.style==='normal'&&f.status==='loaded')`),'hosted Google Sans returns after restoring the connection');
  const wrongFonts=await ev(`[...document.querySelectorAll('.petal-world *')].filter(e=>[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&!getComputedStyle(e).fontFamily.includes('Google Sans')).map(e=>({tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:getComputedStyle(e).fontFamily}))`);
  check(wrongFonts.length===0,'all game text uses Google Sans '+JSON.stringify(wrongFonts));
  check(await ev("document.querySelectorAll('.reel-cell').length===25"),'5 by 5 board');
@@ -146,6 +156,7 @@ try{
  const continuous=await ev("(()=>{cancelAnimationFrame(window.__featureMediaRaf);return window.__featureMedia})()");
  check(continuous.samples>30&&continuous.between>0&&continuous.counts.length>=10,'Blight media observed across all ten free spins and pauses');
  check(continuous.changes===0&&continuous.paused===0,'Blight keeps the same playing video and stays silent throughout the feature');
+ await wait("!document.querySelector('audio,video')",'Blight feature media finishes its exit fade',800);
  check(await ev("!document.querySelector('audio')&&!document.querySelector('video')"),'Blight feature media stops after completion');
  // Observe layout throughout real motion, wins and a purchased sticky feature.
  for(const [w,h] of [[1536,960],[768,1024],[390,844],[844,390]]){
