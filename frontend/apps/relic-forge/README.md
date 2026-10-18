@@ -15,7 +15,7 @@ pnpm verify:browser
 
 The explicit development demo cycles seven Python-authored showcase books per world: loss, small win, expansion, multiple expansion, feature, multiple paylines, and cap. It is **not a probability simulation**. Demo requires a development build, `demo=true`, and no complete or partial live credentials. Production builds require authentication or replay.
 
-The active app is `src/petal/SlotGame.svelte`, loaded by the existing SvelteKit layout and SessionGate. The former `src/components/Game.svelte`, old symbol images and old game helpers remain historical source only; none are imported by the new game. Forge and Dragon boosts are retired. Bonus Buy is a permanent feature with Standard, Super and Mythic variants in both worlds; it is playable in explicit local development and remains locked for connected purchases pending production validation. Local SessionAuthenticate preserves the shared SDK authentication implementation while adapting branding and original-stake replay recovery without changing shared packages.
+The active app is `src/petal/SlotGame.svelte`, loaded by the existing SvelteKit layout and SessionGate. The retired Relic Forge UI, asset registry, and artwork have been removed. Shared context, event handling, and currency helpers remain in `src/game`. Bonus Buy is a permanent feature with Standard, Super and Mythic variants in both worlds; it is playable in explicit local development and remains locked for connected purchases pending production validation. Local SessionAuthenticate preserves the shared SDK authentication implementation while adapting branding and original-stake replay recovery without changing shared packages.
 
 ## Active responsibilities
 
@@ -64,7 +64,7 @@ The wallet request sends the original base bet with the exact purchase mode; the
 
 
 
-Bloom's one-second loop uses the 60 corrected transparent PNGs in `art/sources/bloom-corrected-spin`, in their supplied order at 60 fps. Their 512×748 canvas and alpha are preserved without cropping, matte cleanup, blending, or retiming. The video uses lossless VP9 encoding with alpha, and its poster uses lossless WebP. Blight uses the first 500 ms of its original 21:29:23 clip with a two-second eased forward/return cycle at 60 fps, sampling original poses without blending. Original clips and prepared transparency inputs remain in `art/sources`; exact sources, frame mappings, and hashes are recorded in `art/character-media.json` and `art/*-spin-loop.json`.
+Bloom's one-second loop uses the 60 corrected transparent PNGs in `art/sources/bloom-corrected-spin`, in their supplied order at 60 fps. Source PNGs remain unchanged. The rebuild removes only tiny detached alpha fragments behind the right shoulder and below the feet; the 512×748 canvas, character pixels, and timing are preserved without cropping, blending, or retiming. The video uses lossless VP9 encoding with alpha, and its poster uses lossless WebP. Blight uses the first 500 ms of its original 21:29:23 clip with a two-second eased forward/return cycle at 60 fps, sampling original poses without blending. Original clips and prepared transparency inputs remain in `art/sources`; exact sources, cleanup settings, frame mappings, and hashes are recorded in `art/character-media.json` and `art/*-spin-loop.json`.
 
 Normal base spins use the still character artwork. Character loops run only throughout bonus features and stay silent. A short reel-spin cue plays on normal base spins when Sound effects is enabled. All bonus sound effects are muted. During bonuses, the same animation continues through all ten free spins and their pauses.
 
@@ -76,4 +76,4 @@ Rebuild all current character clips and posters with Python (Pillow, NumPy, SciP
 python scripts/prepare-character-media.py --scratch art/qa/rebuild-characters
 ```
 
-Add `--preview-only` to inspect gold and room background contact sheets before replacing runtime assets. `prepare-character-loop.py` is retired and directs callers to this builder.
+Add `--preview-only` to inspect gold and room background contact sheets before replacing runtime assets, or `--only <clip-name>` to rebuild one clip.

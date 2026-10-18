@@ -2,7 +2,8 @@
 
 Requires ffmpeg, Pillow and NumPy; original clip processing also needs SciPy.
 Original RGB source clips are untouched.
-The corrected Bloom spin uses all sixty supplied RGBA frames without edits.
+The corrected Bloom spin preserves its sixty supplied frames, RGB and canvas;
+only tiny detached alpha specks in two fixed exterior regions are removed.
 Other clips preserve semantic soft edges and repair opaque character interiors.
 """
 from io import BytesIO
@@ -46,6 +47,80 @@ def corrected_bloom_frames(source):
             frames.append(image.copy())
         provenance.append(dict(filename=filename, sha256=hashlib.sha256(payload).hexdigest()))
     return frames, provenance
+
+
+def cleanup_bloom_specks(frames):
+    regions = [
+        dict(name='shoulder', bounds=[416, 272, 456, 336], maximumComponentPixels=32,
+             minimumDistancePixels=0),
+        dict(name='floor', bounds=[320, 732, 352, 748], maximumComponentPixels=32,
+             minimumDistancePixels=6),
+    ]
+    for region in regions:
+        region.update(removedComponentsByFrame=[], removedPixelsByFrame=[])
+    cleanup = dict(
+        method='clear alpha only for small 8-connected alpha>0 components wholly inside fixed ROIs; protect ROI boundaries, larger components and the floor region minimum distance to foreground',
+        connectivity=8, alphaThreshold=0, distanceMetric='Euclidean pixel centers',
+        distanceWindowRadius=8, maximumComponentPixels=32, regions=regions,
+        removedComponentsByFrame=[], removedPixelsByFrame=[])
+    cleaned = []
+    for image in frames:
+        if image.mode != 'RGBA' or image.size != (512, 748):
+            raise ValueError('Bloom speck cleanup requires the corrected 512x748 RGBA canvas')
+        rgba = np.asarray(image)
+        alpha = rgba[:, :, 3].copy()
+        foreground = alpha > 0
+        frame_components = frame_pixels = 0
+        for region in regions:
+            left, top, right, bottom = region['bounds']
+            active = foreground[top:bottom, left:right]
+            height, width = active.shape
+            visited = np.zeros(active.shape, dtype=bool)
+            removed_components = removed_pixels = 0
+            for row, column in zip(*np.nonzero(active)):
+                if visited[row, column]:
+                    continue
+                visited[row, column] = True
+                stack, component = [(int(row), int(column))], []
+                boundary = False
+                while stack:
+                    y, x = stack.pop()
+                    component.append((y, x))
+                    boundary |= y == 0 or x == 0 or y == height - 1 or x == width - 1
+                    for next_y in range(max(0, y - 1), min(height, y + 2)):
+                        for next_x in range(max(0, x - 1), min(width, x + 2)):
+                            if active[next_y, next_x] and not visited[next_y, next_x]:
+                                visited[next_y, next_x] = True
+                                stack.append((next_y, next_x))
+                if boundary or len(component) > region['maximumComponentPixels']:
+                    continue
+                ys, xs = np.asarray(component).T
+                ys, xs = ys + top, xs + left
+                window_left, window_top = max(0, int(xs.min()) - 8), max(0, int(ys.min()) - 8)
+                window_right = min(image.width, int(xs.max()) + 9)
+                window_bottom = min(image.height, int(ys.max()) + 9)
+                nearby = foreground[window_top:window_bottom, window_left:window_right].copy()
+                nearby[ys - window_top, xs - window_left] = False
+                other_ys, other_xs = np.nonzero(nearby)
+                if len(other_ys):
+                    distances = ((other_ys[:, None] + window_top - ys) ** 2 +
+                                 (other_xs[:, None] + window_left - xs) ** 2)
+                    if np.any(distances < region['minimumDistancePixels'] ** 2):
+                        continue
+                alpha[ys, xs] = 0
+                removed_components += 1
+                removed_pixels += len(component)
+            region['removedComponentsByFrame'].append(removed_components)
+            region['removedPixelsByFrame'].append(removed_pixels)
+            frame_components += removed_components
+            frame_pixels += removed_pixels
+        if frame_pixels:
+            image = image.copy()
+            image.putalpha(Image.fromarray(alpha))
+        cleaned.append(image)
+        cleanup['removedComponentsByFrame'].append(frame_components)
+        cleanup['removedPixelsByFrame'].append(frame_pixels)
+    return cleaned, cleanup
 
 
 def harden(rgb, prepared):
@@ -103,11 +178,13 @@ def main():
         corrected = name == 'bloom-traveler-spin'
         if corrected:
             frames, source_files = corrected_bloom_frames(SOURCES / source)
+            frames, alpha_cleanup = cleanup_bloom_specks(frames)
             fps, first, indices, crop = 60, 0, list(range(60)), (0, 0, *frames[0].size)
             meta = dict(source=f'art/sources/{source}', sourceFiles=source_files,
                         sourceStartSeconds=0.0, sourceEndSeconds=1.0, sourceFps=60,
                         sourceKind='user-corrected-rgba-png-sequence',
-                        edit='supplied PNGs in original order; unchanged RGBA pixel canvas; no matte, crop, blending or retiming')
+                        edit='supplied PNGs in original order; RGB and full canvas preserved; conservative detached-speck alpha cleanup only; no crop, blending or retiming',
+                        alphaCleanup=alpha_cleanup)
         else:
             if source not in cache:
                 cache[source] = decode(SOURCES / source)
