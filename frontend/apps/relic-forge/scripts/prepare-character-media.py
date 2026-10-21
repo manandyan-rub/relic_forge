@@ -5,11 +5,12 @@ Original RGB source clips are untouched.
 The corrected Bloom spin preserves its sixty supplied frames, RGB and canvas;
 only tiny detached alpha specks in two fixed exterior regions are removed.
 Other clips preserve semantic soft edges and repair opaque character interiors.
-The Blight spin also attenuates isolated weak dark floor haze in a fixed ROI.
+The Blight spin attenuates isolated weak dark floor haze, restores its lower
+cloak from a preserved reference frame, and gently antialiases alpha edges.
 """
 from io import BytesIO
 from pathlib import Path
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 import argparse
 import hashlib
 import json
@@ -176,6 +177,404 @@ def cleanup_blight_floor(frames):
     return cleaned, cleanup
 
 
+def repair_blight_cloak(frames):
+    from scipy import ndimage
+
+    reference_path = SOURCES / 'blight-cloak-reference.png'
+    reference = Image.open(reference_path).convert('RGBA')
+    if reference.size != (458, 820):
+        raise ValueError('Blight cloak reference requires the native 458x820 RGBA canvas')
+    # Follow the inner leg/hem and the back panel behind the hanging arm.
+    # Each moving frame remains above the fabric, preserving its foreground.
+    polygon = [(196, 500), (315, 500), (332, 545), (349, 612), (364, 700),
+               (364, 810), (96, 810), (96, 781), (135, 764), (172, 744),
+               (193, 721), (201, 692), (190, 640), (177, 595), (171, 550)]
+    back_polygon = [(327, 265), (372, 265), (380, 276), (391, 300), (394, 325),
+                    (396, 350), (394, 375), (416, 400), (412, 425), (401, 450),
+                    (389, 465), (373, 480), (352, 468), (345, 435), (338, 390), (330, 330)]
+    masks = []
+    for contour, feather in ((polygon, .8), (back_polygon, .65)):
+        mask = Image.new('L', (reference.width * 4, reference.height * 4))
+        ImageDraw.Draw(mask).polygon([(x * 4, y * 4) for x, y in contour], fill=255)
+        masks.append(np.array(mask.resize(reference.size, Image.Resampling.LANCZOS).filter(ImageFilter.GaussianBlur(feather))))
+    mask = np.maximum(*masks)
+    patch = np.array(reference)
+    patch[:, :, 3] = np.rint(patch[:, :, 3].astype(float) * mask / 255).astype(np.uint8)
+    patch_active = patch[:, :, 3] > 0
+    underlay = Image.fromarray(patch)
+    # Frame 32 retains the exterior flap beside the bent leg/right foot.
+    # Retain its ragged outline without copying faint exterior haze or skin.
+    foot_reference_path = SOURCES / 'blight-foot-cloak-reference.png'
+    foot_reference = Image.open(foot_reference_path).convert('RGBA')
+    if foot_reference.size != reference.size:
+        raise ValueError('Blight foot cloak reference requires the native 458x820 RGBA canvas')
+    foot_polygon = [(142, 568), (148, 575), (151, 590), (153, 600), (158, 620),
+                    (160, 634), (160, 650), (162, 665), (160, 680), (155, 690),
+                    (151, 700), (143, 715), (127, 730), (108, 740), (86, 744), (80, 744), (82, 724),
+                    (92, 700), (108, 675), (119, 650), (126, 625), (131, 600), (136, 577)]
+    foot_mask = Image.new('L', (reference.width * 4, reference.height * 4))
+    ImageDraw.Draw(foot_mask).polygon([(x * 4, y * 4) for x, y in foot_polygon], fill=255)
+    foot_mask = np.array(foot_mask.resize(reference.size, Image.Resampling.LANCZOS).filter(ImageFilter.GaussianBlur(.5)))
+    foot_patch = np.array(foot_reference)
+    foot_alpha = np.rint((foot_patch[:, :, 3].astype(float) - 64) * 255 / 128).clip(0, 255)
+    foot_patch[:, :, 3] = np.rint(foot_alpha * foot_mask / 255).astype(np.uint8)
+    foot_active = foot_patch[:, :, 3] > 0
+    underlay = Image.alpha_composite(Image.fromarray(foot_patch), underlay)
+    patch_active |= foot_active
+    # Protect the thin chain/flail, the moving grip, face and finger details.
+    protected_regions = [[0, 120, 185, 470], [220, 105, 335, 185], [376, 430, 449, 576]]
+    protected = np.zeros((820, 458), dtype=bool)
+    for left, top, right, bottom in protected_regions:
+        protected[top:bottom, left:right] = True
+    meta = dict(
+        reference=f'art/sources/{reference_path.name}',
+        referenceSha256=hashlib.sha256(reference_path.read_bytes()).hexdigest(),
+        referenceOutputFrame=31, referenceOriginalSourceFrame=5,
+        referenceRuntimeSha256='fa6f54ac874baf8598a36ecf3303df5f128759ccffeccc8522884eaf1a3a550b',
+        extraction='ffmpeg -c:v libvpx-vp9 -i static/art/blight-keeper-spin.webm -pix_fmt rgba spin-frames/frame_%04d.png',
+        method='reference lower cloak, side/back panel and exterior right-foot flap RGBA underlays behind each original frame; fixed native-canvas registration; preserve original opaque foreground RGB',
+        polygon=[list(point) for point in polygon], maskSupersampling=4, maskFeatherPixels=.8,
+        backPanelPolygon=[list(point) for point in back_polygon], backPanelMaskFeatherPixels=.65,
+        footPanel=dict(reference=f'art/sources/{foot_reference_path.name}',
+                       referenceSha256=hashlib.sha256(foot_reference_path.read_bytes()).hexdigest(),
+                       referenceOutputFrame=32, referenceOriginalSourceFrame=6,
+                       referenceRuntimeSha256='fa6f54ac874baf8598a36ecf3303df5f128759ccffeccc8522884eaf1a3a550b',
+                       polygon=[list(point) for point in foot_polygon], maskSupersampling=4, maskFeatherPixels=.5,
+                       alphaRemap=dict(transparentMaximum=64, opaqueMinimum=192, method='linear clamped remap before masking; preserve reference RGB')),
+        preservedFingerOpening=[387, 485, 410, 535],
+        edgeSmoothing=dict(method='Gaussian alpha antialiasing; retain RGB detail and extend nearest foreground RGB only at newly softened exterior pixels',
+                           sigmaPixels=.55, minimumAlpha=4, snapOpaqueMinimumAlpha=252,
+                           protectedRegions=protected_regions),
+        addedCloakAlphaPixelsByFrame=[], addedBackPanelAlphaPixelsByFrame=[], addedFootPanelAlphaPixelsByFrame=[],
+        smoothedAlphaPixelsByFrame=[], changedRgbPixelsByFrame=[])
+    result, cache = [], {}
+    for frame in frames:
+        if frame.mode != 'RGBA' or frame.size != reference.size:
+            raise ValueError('Blight cloak repair requires matching RGBA frames')
+        key = hashlib.sha256(frame.tobytes()).digest()
+        if key not in cache:
+            original = np.array(frame)
+            composite = np.array(Image.alpha_composite(underlay, frame))
+            rgba = original.copy()
+            rgba[patch_active] = composite[patch_active]
+            alpha = rgba[:, :, 3].copy()
+            smoothed = np.rint(ndimage.gaussian_filter(alpha.astype(float), sigma=.55, mode='constant')).clip(0, 255).astype(np.uint8)
+            smoothed[smoothed < 4] = 0
+            smoothed[smoothed >= 252] = 255
+            smoothed[protected] = alpha[protected]
+            newly_visible = (alpha == 0) & (smoothed > 0)
+            _, nearest = ndimage.distance_transform_edt(alpha == 0, return_indices=True)
+            rgba[newly_visible, :3] = rgba[nearest[0][newly_visible], nearest[1][newly_visible], :3]
+            rgba[:, :, 3] = smoothed
+            stats = (int(np.count_nonzero(alpha > original[:, :, 3])),
+                     int(np.count_nonzero((alpha > original[:, :, 3]) & (masks[1] > 0))),
+                     int(np.count_nonzero((alpha > original[:, :, 3]) & foot_active)),
+                     int(np.count_nonzero(smoothed != alpha)),
+                     int(np.count_nonzero(np.any(rgba[:, :, :3] != original[:, :, :3], axis=2))))
+            cache[key] = (Image.fromarray(rgba), stats)
+        repaired, stats = cache[key]
+        result.append(repaired)
+        for name, value in zip(('addedCloakAlphaPixelsByFrame', 'addedBackPanelAlphaPixelsByFrame', 'addedFootPanelAlphaPixelsByFrame', 'smoothedAlphaPixelsByFrame', 'changedRgbPixelsByFrame'), stats):
+            meta[name].append(value)
+    meta['uniqueInputPoses'] = len(cache)
+    meta['totals'] = {name.replace('ByFrame', ''): sum(meta[name]) for name in
+                      ('addedCloakAlphaPixelsByFrame', 'addedBackPanelAlphaPixelsByFrame', 'addedFootPanelAlphaPixelsByFrame', 'smoothedAlphaPixelsByFrame', 'changedRgbPixelsByFrame')}
+    return result, meta
+
+
+def blight_garment_mask(rgb, semantic, number, settings):
+    from scipy import ndimage
+
+    keys = {int(key): value for key, value in settings['keyframePolygons'].items()}
+    lower = max(key for key in keys if key <= number)
+    upper = min(key for key in keys if key >= number)
+    fraction = (number - lower) / (upper - lower) if upper != lower else 0
+    polygon = np.asarray(keys[lower]) * (1 - fraction) + np.asarray(keys[upper]) * fraction
+    roi_image = Image.new('L', (SIZE[0] * 4, SIZE[1] * 4))
+    ImageDraw.Draw(roi_image).polygon([(round(x * 4), round(y * 4)) for x, y in polygon], fill=255)
+    roi = np.asarray(roi_image.resize(SIZE, Image.Resampling.LANCZOS)) >= 128
+    red, green, blue = rgb.astype(float).transpose(2, 0, 1)
+    semantic_alpha = semantic[:, :, 3]
+    warm = ((red >= green * settings['minimumRedGreenRatio']) &
+            (green >= blue * settings['minimumGreenBlueRatio']) &
+            (red >= settings['minimumRed']))
+    support = roi & ((semantic_alpha >= settings['opaqueSemanticMinimum']) |
+                     (warm & (semantic_alpha >= settings['edgeSemanticMinimum'])))
+    # A source-green opening with zero semantic support is an actual tear.
+    support[(semantic_alpha == 0) & (green >= red)] = False
+    support[settings['maximumNewClothY']:] = False
+    labels, _ = ndimage.label(support, structure=np.ones((3, 3)))
+    areas = np.bincount(labels.ravel())
+    areas[0] = 0
+    support = np.isin(labels, np.flatnonzero(areas >= settings['minimumComponentPixels']))
+    mask = np.rint(ndimage.gaussian_filter(support.astype(float), sigma=settings['edgeSigmaPixels']) * 255).astype(np.uint8)
+    mask[mask < 4] = 0
+    mask[mask >= 252] = 255
+    return mask
+
+
+def repair_final_win(frames, source_rgb, name='bloom-traveler-big', semantic_rgba=None):
+    from scipy import ndimage
+
+    plan_path = ROOT / 'art' / f'{name}-repairs.json'
+    plan = json.loads(plan_path.read_text(encoding='utf-8'))
+    if len(frames) != plan['frames'] or len(source_rgb) != len(frames) or any(list(frame.size) != plan['canvas'] or frame.mode != 'RGBA' for frame in frames):
+        raise ValueError(f'{name} final-win repair requires all 120 native 624x832 RGBA frames')
+    if hashlib.sha256((ROOT / plan['source']).read_bytes()).hexdigest() != plan['sourceSha256']:
+        raise ValueError(f'{name} final-win repair source has changed')
+    width, height = plan['canvas']
+    black_frames = {entry['frame']: entry for entry in plan['blackMatte']['frames']}
+    restores = {}
+    for entry in plan['sourceRestores']:
+        frame_numbers = range(entry['frameRange'][0], entry['frameRange'][1] + 1) if 'frameRange' in entry else [entry['frame']]
+        for number in frame_numbers:
+            restores.setdefault(number, []).append(entry)
+    stats = []
+    result = []
+    for number, (image, rgb) in enumerate(zip(frames, source_rgb), 1):
+        original = np.array(image)
+        rgba = original.copy()
+        alpha = rgba[:, :, 3].copy()
+        source_max = rgb.max(axis=2)
+        restored = np.zeros(alpha.shape, dtype=bool)
+        protected = np.zeros(alpha.shape, dtype=bool)
+        for entry in restores.get(number, []):
+            mask_image = Image.new('L', (width * 4, height * 4))
+            draw = ImageDraw.Draw(mask_image)
+            if 'bounds' in entry:
+                x0, y0, x1, y1 = entry['bounds']
+                draw.rectangle((x0 * 4, y0 * 4, x1 * 4 - 1, y1 * 4 - 1), fill=255)
+            for polygon in entry.get('polygons', []):
+                draw.polygon([(x * 4, y * 4) for x, y in polygon], fill=255)
+            for line in entry.get('polylines', []):
+                draw.line([(x * 4, y * 4) for x, y in line], fill=255,
+                          width=round(entry['lineWidthPixels'] * 4), joint='curve')
+            for ellipse in entry.get('ellipses', []):
+                draw.ellipse(tuple(coordinate * 4 for coordinate in ellipse), fill=255)
+            mask_image = mask_image.resize((width, height), Image.Resampling.LANCZOS)
+            dilation = entry.get('polygonDilationPixels', 0)
+            if dilation:
+                mask_image = mask_image.filter(ImageFilter.MaxFilter(2 * dilation + 1))
+            mask = np.array(mask_image.filter(ImageFilter.GaussianBlur(entry.get('maskFeatherPixels', .5)))) / 255
+            if entry.get('protectOnly'):
+                protected |= (mask >= .25) & (semantic_rgba[number - 1, :, :, 3] >= 16)
+                continue
+            if entry['kind'].startswith('solid-'):
+                support = np.ones(alpha.shape)
+            elif entry['kind'] == 'brown-staff':
+                red, green, blue = rgb.astype(float).transpose(2, 0, 1)
+                support = np.clip((red - 6) / 18, 0, 1) * (red > green * 1.25) * (red > blue * 1.5)
+            else:
+                transparent, opaque = entry.get('supportRamp', [18, 38])
+                support = np.clip((source_max.astype(float) - transparent) / (opaque - transparent), 0, 1)
+            if 'sourceWarmth' in entry:
+                red, green, blue = rgb.astype(float).transpose(2, 0, 1)
+                rg, gb = entry['sourceWarmth']
+                support *= (red >= green * rg) & (green >= blue * gb)
+            target = np.rint(support * mask * 255).astype(np.uint8)
+            protected |= target >= 64
+            raised = target > alpha
+            alpha[raised] = target[raised]
+            rgba[raised, :3] = rgb[raised]
+            restored |= raised
+
+        cloth_restored = cloth_dehazed = neutral_removed = 0
+        if 'garmentRepair' in plan:
+            if semantic_rgba is None:
+                raise ValueError('Blight garment repair needs its matching semantic RGBA source')
+            semantic_frame = semantic_rgba[number - 1]
+            cloth = blight_garment_mask(rgb, semantic_frame, number, plan['garmentRepair'])
+            raised = cloth > alpha
+            alpha[raised] = cloth[raised]
+            rgba[raised, :3] = rgb[raised]
+            restored |= raised
+            cloth_restored = int(raised.sum())
+            protected |= cloth >= 64
+            red, green, blue = rgb.astype(float).transpose(2, 0, 1)
+            sr, sg, sb = semantic_frame[:, :, :3].astype(float).transpose(2, 0, 1)
+            dehaze = ((cloth >= 128) & (semantic_frame[:, :, 3] >= 64) &
+                      (source_max > 20) & (red < green * 1.25) &
+                      (sr >= sg * 1.3) & (sg >= sb * 1.1))
+            rgba[dehaze, :3] = semantic_frame[dehaze, :3]
+            cloth_dehazed = int(dehaze.sum())
+
+        if 'neutralBackgroundCleanup' in plan:
+            settings = plan['neutralBackgroundCleanup']
+            red, green, blue = rgb.astype(float).transpose(2, 0, 1)
+            # Confirmed semantic foreground protects ink-black anatomy and
+            # clothing as well as bright bones. Ground haze is handled below.
+            confirmed = semantic_rgba[number - 1, :, :, 3] >= 128
+            confirmed[755:] = False
+            protected |= confirmed
+            warm = ((red > green * settings['foregroundRedGreenRatio']) &
+                    (green > blue * settings['foregroundGreenBlueRatio']) &
+                    (red > settings['foregroundMinimumRed']) & (alpha >= 128))
+            warm[settings['floorY']:] &= red[settings['floorY']:] >= settings['floorForegroundMinimumRed']
+            protected |= warm
+            protect_distance = ndimage.distance_transform_edt(~protected)
+            neutral = (((red <= green * settings['backgroundRedGreenMaximumRatio'] + 1) &
+                        (green <= blue * settings['backgroundGreenBlueMaximumRatio'] + 1)) |
+                       (source_max <= settings['sourceDarkMaximum']))
+            candidate = neutral & (protect_distance >= settings['minimumDistanceToArtwork'])
+            candidate[:settings['minimumY']] = False
+            candidate[settings['floorY']:] |= protect_distance[settings['floorY']:] >= settings['floorDistanceToArtwork']
+            candidate = ndimage.binary_closing(candidate, iterations=settings['closingPixels'])
+            strength = ndimage.gaussian_filter(candidate.astype(float), sigma=settings['edgeSigmaPixels'])
+            strength[protect_distance < settings['artworkGuardPixels']] = 0
+            before = alpha.copy()
+            alpha = np.rint(alpha * (1 - strength)).clip(0, 255).astype(np.uint8)
+            alpha[alpha < 4] = 0
+            neutral_removed = int(np.count_nonzero(alpha != before))
+
+        # Semantic mattes sometimes retain black background as opaque chunks.
+        # Follow source-black background only; never fill genuine object gaps.
+        black_removed = np.zeros(alpha.shape, dtype=bool)
+        black_plan = plan['blackMatte']
+        if number in black_frames:
+            entry = black_frames[number]
+            source_black = source_max <= black_plan['sourceRgbMaximum']
+            distance = ndimage.distance_transform_edt(source_black)
+            eligible = source_black & (distance >= black_plan['minimumDistanceToSourceColor'])
+            for x0, y0, x1, y1 in entry['regions']:
+                labels, _ = ndimage.label(eligible[y0:y1, x0:x1], structure=np.ones((3, 3)))
+                chosen = np.unique(np.concatenate((labels[0], labels[-1], labels[:, 0], labels[:, -1])))
+                for x, y in entry['backgroundSeeds']:
+                    if x0 <= x < x1 and y0 <= y < y1:
+                        chosen = np.append(chosen, labels[y - y0, x - x0])
+                selected = np.isin(labels, chosen[chosen != 0])
+                black_removed[y0:y1, x0:x1] |= selected & (alpha[y0:y1, x0:x1] > 0)
+            alpha[black_removed] = 0
+
+        # Warm lantern light makes a few known background gaps non-black.
+        # Their reviewed contours exclude the real hat and wooden staff.
+        for entry in plan.get('backgroundCutouts', []):
+            if entry['frame'] != number:
+                continue
+            cutout = Image.new('L', (width * 4, height * 4))
+            for polygon in entry['polygons']:
+                ImageDraw.Draw(cutout).polygon([(x * 4, y * 4) for x, y in polygon], fill=255)
+            cutout = np.array(cutout.resize((width, height), Image.Resampling.LANCZOS).filter(
+                ImageFilter.GaussianBlur(entry.get('maskFeatherPixels', .65)))) / 255
+            if 'sourceForegroundMinimum' in entry:
+                foreground_distance = ndimage.distance_transform_edt(source_max < entry['sourceForegroundMinimum'])
+                cutout[foreground_distance < entry.get('sourceForegroundGuardPixels', 2)] = 0
+            if 'maximumAlpha' in entry:
+                cutout[alpha > entry['maximumAlpha']] = 0
+            changed_alpha = np.rint(alpha * (1 - cutout)).astype(np.uint8)
+            black_removed |= changed_alpha < alpha
+            alpha = changed_alpha
+
+        # Remove weak dark haze outside solid artwork with a soft distance onset.
+        solid = alpha >= 128
+        distance = ndimage.distance_transform_edt(~solid)
+        exterior = plan['weakExteriorCleanup']
+        eligible = ((alpha > 0) & (alpha <= exterior['maximumAlpha']) &
+                    (source_max <= exterior['sourceRgbMaximum']) & (distance >= exterior['minimumDistanceToOpaque']))
+        strength = np.clip((distance - exterior['minimumDistanceToOpaque']) / exterior['distanceFeatherPixels'], 0, 1)
+        before_exterior = alpha.copy()
+        alpha[eligible] = np.rint(alpha[eligible] * (1 - strength[eligible])).astype(np.uint8)
+        exterior_changed = int(np.count_nonzero(before_exterior != alpha))
+
+        # Detached faint fragments cannot include the visible lantern or tool.
+        detached = plan['detachedCleanup']
+        labels, _ = ndimage.label(alpha > 0, structure=np.ones((3, 3)))
+        detached_removed = 0
+        for label, bounds in enumerate(ndimage.find_objects(labels), 1):
+            if bounds is None:
+                continue
+            selected = labels[bounds] == label
+            if (int(selected.sum()) <= detached['maximumPixels'] and
+                alpha[bounds][selected].max() <= detached['maximumAlpha'] and
+                rgba[bounds][:, :, :3][selected].max() <= detached['maximumRgb'] and
+                distance[bounds][selected].min() >= detached['minimumDistanceToOpaque']):
+                alpha[bounds][selected] = 0
+                detached_removed += int(selected.sum())
+
+        floor = plan['floorCleanup']
+        x0, y0, x1, y1 = floor['region']
+        floor_region = np.zeros(alpha.shape, dtype=bool)
+        floor_region[y0:y1, x0:x1] = True
+        eligible = (floor_region & (alpha > 0) & (alpha <= floor['maximumAlpha']) &
+                    (rgba[:, :, :3].max(axis=2) <= floor['maximumRgb']) &
+                    (distance >= floor['minimumDistanceToOpaque']))
+        strength = np.broadcast_to(np.clip((np.arange(height) - y0) / floor['verticalFeatherPixels'], 0, 1)[:, None], alpha.shape)
+        before_floor = alpha.copy()
+        alpha[eligible] = np.rint(alpha[eligible] * (1 - strength[eligible])).astype(np.uint8)
+        rgba[:, :, 3] = alpha
+        result.append(Image.fromarray(rgba))
+        stats.append(dict(frame=number, restoredSourcePixels=int(restored.sum()),
+                          removedBlackMattePixels=int(black_removed.sum()),
+                          cleanedWeakExteriorPixels=exterior_changed,
+                          removedDetachedPixels=detached_removed,
+                          cleanedFloorPixels=int(np.count_nonzero(before_floor != alpha)),
+                          changedAlphaPixels=int(np.count_nonzero(alpha != original[:, :, 3])),
+                          changedRgbPixels=int(np.count_nonzero(np.any(rgba[:, :, :3] != original[:, :, :3], axis=2)))))
+        if 'garmentRepair' in plan:
+            stats[-1].update(restoredClothPixels=cloth_restored, dehazedClothPixels=cloth_dehazed,
+                             cleanedNeutralBackgroundPixels=neutral_removed)
+    meta = dict(plan='art/' + plan_path.name, planSha256=hashlib.sha256(plan_path.read_bytes()).hexdigest(),
+                method=plan['sourceRestoreMethod'] + '; reviewed source-black background removal and conservative exterior/floor cleanup',
+                reviewedFrames=len(frames), frameNumbering=plan['frameNumbering'], perFrame=stats)
+    meta['totals'] = {key: sum(entry[key] for entry in stats) for key in stats[0] if key != 'frame'}
+    return result, meta
+
+
+def complete_blight_weapon(frames, settings):
+    """Complete cropped and erased weapon artwork with intact native plates."""
+    reference_path = ROOT / settings['reference']
+    if hashlib.sha256(reference_path.read_bytes()).hexdigest() != settings['referenceSha256']:
+        raise ValueError('Blight weapon completion reference has changed')
+    plate = Image.open(reference_path).convert('RGBA')
+    for key in ('shaftReference', 'weightReference'):
+        if hashlib.sha256((ROOT / settings[key]).read_bytes()).hexdigest() != settings[key + 'Sha256']:
+            raise ValueError(f'Blight weapon completion {key} has changed')
+    left, top, right, bottom = settings['padding']
+    canvas = (SIZE[0] + left + right, SIZE[1] + top + bottom)
+    track = {entry['frame']: entry for entry in settings['frames']}
+    output, stats = [], []
+    for number, frame in enumerate(frames, 1):
+        underlay = Image.new('RGBA', canvas)
+        full_head = None
+        entry = track.get(number)
+        if entry:
+            forward = np.asarray(entry['forwardAffine']).reshape(2, 3)
+            inverse = np.linalg.inv(forward[:, :2])
+            offset = -inverse @ (forward[:, 2] + np.array([left, top]))
+            painted = plate.transform(canvas, Image.Transform.AFFINE, tuple(np.c_[inverse, offset].ravel()), Image.Resampling.BICUBIC)
+            rgba = np.array(painted)
+            rgba[:, :, :3] = np.rint(rgba[:, :, :3] * np.asarray(entry.get('rgbGain', [1, 1, 1]))).clip(0, 255).astype(np.uint8)
+            # Connect a head that swung fully outside the canvas to its shaft.
+            if 'shaftReference' in settings and 'shaftForwardAffine' in entry:
+                shaft = Image.open(ROOT / settings['shaftReference']).convert('RGBA')
+                transform = np.asarray(entry['shaftForwardAffine']).reshape(2, 3)
+                inv = np.linalg.inv(transform[:, :2])
+                off = -inv @ (transform[:, 2] + np.array([left, top]))
+                shaft = shaft.transform(canvas, Image.Transform.AFFINE, tuple(np.c_[inv, off].ravel()), Image.Resampling.BICUBIC)
+                underlay.alpha_composite(shaft)
+            underlay.alpha_composite(Image.fromarray(rgba))
+            if number in settings.get('fullHeadFrames', []):
+                full_head = Image.new('RGBA', canvas)
+                full_head.paste(Image.fromarray(rgba).crop((left, top, left + SIZE[0], top + SIZE[1])), (left, top))
+        if str(number) in settings.get('weightFrames', {}):
+            weight = Image.open(ROOT / settings['weightReference']).convert('RGBA')
+            cx, cy = settings['weightFrames'][str(number)]
+            underlay.alpha_composite(weight, (round(left + cx - weight.width / 2), round(top + cy - weight.height / 2)))
+        rgba = np.array(underlay)
+        rgba[top:top + SIZE[1], left:left + SIZE[0], 3] = 0
+        underlay = Image.fromarray(rgba)
+        added = int(np.count_nonzero(rgba[:, :, 3]))
+        underlay.alpha_composite(frame, (left, top))
+        if full_head is not None:
+            underlay.alpha_composite(full_head)
+        output.append(underlay)
+        stats.append(dict(frame=number, completedWeaponPixels=added,
+                          replacedDamagedHead=full_head is not None))
+    return output, dict(reference=settings['reference'], referenceSha256=settings['referenceSha256'],
+                        referenceSourceFrame=settings['referenceSourceFrame'], padding=settings['padding'],
+                        nativeCanvas=list(SIZE), method=settings['method'], fullHeadFrames=settings.get('fullHeadFrames', []), perFrame=stats,
+                        completedFrames=sum(entry['completedWeaponPixels'] > 0 for entry in stats))
+
+
 def harden(rgb, prepared):
     from scipy import ndimage
 
@@ -275,7 +674,20 @@ def main():
         if blight_spin:
             frames, alpha_cleanup = cleanup_blight_floor(frames)
             meta['alphaCleanup'] = alpha_cleanup
-            meta['edit'] += '; feathered alpha-only cleanup of isolated weak dark floor haze'
+            frames, cloak_repair = repair_blight_cloak(frames)
+            meta['cloakRepair'] = cloak_repair
+            meta['edit'] += '; feathered alpha-only cleanup of isolated weak dark floor haze; frame-31 lower and side/back cloak underlays; frame-32 exterior right-foot cloak flap; protected alpha-edge antialiasing'
+        if name == 'bloom-traveler-big':
+            frames, final_win_repair = repair_final_win(frames, original[first:first + len(frames)], name)
+            meta['finalWinRepair'] = final_win_repair
+            meta['edit'] += '; reviewed all 120 frames; source-backed tool/staff/hand alpha repairs; source-black matte, detached fragment and weak exterior/floor cleanup'
+        if name == 'blight-keeper-big':
+            frames, final_win_repair = repair_final_win(frames, original[first:first + len(frames)], name, semantic)
+            meta['finalWinRepair'] = final_win_repair
+            plan = json.loads((ROOT / 'art' / f'{name}-repairs.json').read_text(encoding='utf-8'))
+            frames, completion = complete_blight_weapon(frames, plan['weaponCompletion'])
+            meta['weaponCompletion'] = completion
+            meta['edit'] += '; reviewed all 120 frames; matching-source mace/shaft/chain/foot and cloth repairs; neutral energy/floor background cleanup; cropped weapon completed from intact native artwork on a symmetrically extended transparent canvas'
         for index, frame in enumerate(frames):
             frame.save(work / f'frame-{index:03d}.png')
         room = Image.open(ROOT / 'static' / 'art' / ('bloom-room.webp' if name.startswith('bloom') else 'blight-room.webp'))
@@ -285,7 +697,7 @@ def main():
                     frames=len(frames), fps=fps, sourceFrameIndices=[first + i for i in indices])
         if not args.preview_only:
             output = ROOT / 'static' / 'art' / f'{name}.webm'
-            lossless = corrected or blight_spin
+            lossless = corrected or blight_spin or name.endswith('-big')
             quality = ['-lossless', '1'] if lossless else ['-crf', '25']
             # Convert color separately: swscale's RGBA-to-YUVA path rounds
             # alpha values 128..254 upward. Reattach the untouched alpha plane.

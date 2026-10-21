@@ -1,0 +1,69 @@
+{
+  "generator": "Built-in imagegen",
+  "use": "Full-screen free-spin award: independently animated lid and base from transparent atlases. Originals are copied unchanged from imagegen output.",
+  "dimensions": [
+    1254,
+    1254
+  ],
+  "sharedPrompt": "Use case: stylized-concept. Asset type: production 2D game sprite atlas for The Last Petal. Generate a genuinely transparent square 1024x1024 PNG atlas with exactly two disconnected painted gift-box pieces for animation. A beautiful cube gift box with a large looping ribbon bow, three-quarter isometric view with front and right sides visible, camera slightly above. Hand-painted illustrated fantasy game art with soft textured brushwork, crisp silhouette, restrained highlights and warm brown edge shading; cozy illustrated forest storybook, not glossy photorealistic plastic or flat vector. Keep the band y420..520 transparent. Top half x100..924,y30..400: one detached lid with complete ribbon bow and tails, centered x512, about800px wide, horizontal and unrotated. Bottom half x100..924,y540..980: open cube base with top rim and dark empty interior exposed, centered x512, about760px wide, vertical ribbon strips down the front and right walls. Lid and base must have compatible diamond angles, perspective and centerline for closing by vertical translation. Complete pieces, no clipping, no ground shadow, background, text, numbers, characters, sparkles, glow, particles or watermark.",
+  "variants": [
+    {
+      "world": "BLOOM",
+      "file": "static/art/bloom-free-spins-gift.png",
+      "palettePrompt": "Forest green and muted sage painted paper (#466443 / #71805a), parchment ivory (#e5d8b7) and aged warm gold ribbon (#dac28b). Delicate small botanical embossed details, gentle storybook magic.",
+      "lidRegionPercent": [
+        0,
+        0,
+        100,
+        47.7
+      ],
+      "baseRegionPercent": [
+        0,
+        51.65,
+        100,
+        100
+      ]
+    },
+    {
+      "world": "BLIGHT",
+      "file": "static/art/blight-free-spins-gift.png",
+      "palettePrompt": "Deep umber painted paper (#493d32), weathered bone parchment accents (#d0baa0) and muted copper satin ribbon (#ba7b5e). Subtle worn leaf embossing, dark woodland fairytale mood.",
+      "lidRegionPercent": [
+        0,
+        0,
+        100,
+        46.85
+      ],
+      "baseRegionPercent": [
+        0,
+        47.3,
+        100,
+        98.4
+      ]
+    }
+  ],
+  "presenter": {
+    "world": "BLIGHT",
+    "source": "art/sources/blight-gift-presenter.png",
+    "sourceSha256": "d1632e26f48e13419f82d500e05a5801a105010d4bd1095683ba00eca8f6c2d0",
+    "file": "static/art/blight-gift-presenter.webp",
+    "dimensions": [
+      780,
+      1300
+    ],
+    "trimBounds": [
+      492,
+      443,
+      2467,
+      3735
+    ],
+    "edit": "User-supplied transparent artwork; trimmed empty margins and resized for display; no redraw"
+  },
+  "timing": {
+    "lidDelayMs": 550,
+    "lidDurationMs": 1400,
+    "rewardDelayMs": 1100,
+    "rewardDurationMs": 1000,
+    "revealFallbackMs": 2250
+  }
+}

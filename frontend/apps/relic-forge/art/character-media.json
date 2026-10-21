@@ -738,7 +738,7 @@
     "sourceEndSeconds": 0.5,
     "sourceFps": 24,
     "sourceKind": "supplied-original-rgb-clip",
-    "edit": "semantic alpha support; original RGB poses; nearest frames; cosine-paced forward/return; feathered alpha-only cleanup of isolated weak dark floor haze",
+    "edit": "semantic alpha support; original RGB poses; nearest frames; cosine-paced forward/return; feathered alpha-only cleanup of isolated weak dark floor haze; frame-31 lower and side/back cloak underlays; frame-32 exterior right-foot cloak flap; protected alpha-edge antialiasing",
     "matteThreshold": null,
     "filledHoleMaximumPixels": 0,
     "minimumComponentPixels": 120,
@@ -1627,6 +1627,904 @@
         "removedAlpha": 18425704
       }
     },
+    "cloakRepair": {
+      "reference": "art/sources/blight-cloak-reference.png",
+      "referenceSha256": "eb85862e911728ceeeb0703b88a8cda42192baaf2a4243f90def5ec14d132ac8",
+      "referenceOutputFrame": 31,
+      "referenceOriginalSourceFrame": 5,
+      "referenceRuntimeSha256": "fa6f54ac874baf8598a36ecf3303df5f128759ccffeccc8522884eaf1a3a550b",
+      "extraction": "ffmpeg -c:v libvpx-vp9 -i static/art/blight-keeper-spin.webm -pix_fmt rgba spin-frames/frame_%04d.png",
+      "method": "reference lower cloak, side/back panel and exterior right-foot flap RGBA underlays behind each original frame; fixed native-canvas registration; preserve original opaque foreground RGB",
+      "polygon": [
+        [
+          196,
+          500
+        ],
+        [
+          315,
+          500
+        ],
+        [
+          332,
+          545
+        ],
+        [
+          349,
+          612
+        ],
+        [
+          364,
+          700
+        ],
+        [
+          364,
+          810
+        ],
+        [
+          96,
+          810
+        ],
+        [
+          96,
+          781
+        ],
+        [
+          135,
+          764
+        ],
+        [
+          172,
+          744
+        ],
+        [
+          193,
+          721
+        ],
+        [
+          201,
+          692
+        ],
+        [
+          190,
+          640
+        ],
+        [
+          177,
+          595
+        ],
+        [
+          171,
+          550
+        ]
+      ],
+      "maskSupersampling": 4,
+      "maskFeatherPixels": 0.8,
+      "backPanelPolygon": [
+        [
+          327,
+          265
+        ],
+        [
+          372,
+          265
+        ],
+        [
+          380,
+          276
+        ],
+        [
+          391,
+          300
+        ],
+        [
+          394,
+          325
+        ],
+        [
+          396,
+          350
+        ],
+        [
+          394,
+          375
+        ],
+        [
+          416,
+          400
+        ],
+        [
+          412,
+          425
+        ],
+        [
+          401,
+          450
+        ],
+        [
+          389,
+          465
+        ],
+        [
+          373,
+          480
+        ],
+        [
+          352,
+          468
+        ],
+        [
+          345,
+          435
+        ],
+        [
+          338,
+          390
+        ],
+        [
+          330,
+          330
+        ]
+      ],
+      "backPanelMaskFeatherPixels": 0.65,
+      "footPanel": {
+        "reference": "art/sources/blight-foot-cloak-reference.png",
+        "referenceSha256": "92558d2189c1da1aa27f1de6c22477bc57ed2e9650c464aaa95fee2ac7a54a45",
+        "referenceOutputFrame": 32,
+        "referenceOriginalSourceFrame": 6,
+        "referenceRuntimeSha256": "fa6f54ac874baf8598a36ecf3303df5f128759ccffeccc8522884eaf1a3a550b",
+        "polygon": [
+          [
+            142,
+            568
+          ],
+          [
+            148,
+            575
+          ],
+          [
+            151,
+            590
+          ],
+          [
+            153,
+            600
+          ],
+          [
+            158,
+            620
+          ],
+          [
+            160,
+            634
+          ],
+          [
+            160,
+            650
+          ],
+          [
+            162,
+            665
+          ],
+          [
+            160,
+            680
+          ],
+          [
+            155,
+            690
+          ],
+          [
+            151,
+            700
+          ],
+          [
+            143,
+            715
+          ],
+          [
+            127,
+            730
+          ],
+          [
+            108,
+            740
+          ],
+          [
+            86,
+            744
+          ],
+          [
+            80,
+            744
+          ],
+          [
+            82,
+            724
+          ],
+          [
+            92,
+            700
+          ],
+          [
+            108,
+            675
+          ],
+          [
+            119,
+            650
+          ],
+          [
+            126,
+            625
+          ],
+          [
+            131,
+            600
+          ],
+          [
+            136,
+            577
+          ]
+        ],
+        "maskSupersampling": 4,
+        "maskFeatherPixels": 0.5,
+        "alphaRemap": {
+          "transparentMaximum": 64,
+          "opaqueMinimum": 192,
+          "method": "linear clamped remap before masking; preserve reference RGB"
+        }
+      },
+      "preservedFingerOpening": [
+        387,
+        485,
+        410,
+        535
+      ],
+      "edgeSmoothing": {
+        "method": "Gaussian alpha antialiasing; retain RGB detail and extend nearest foreground RGB only at newly softened exterior pixels",
+        "sigmaPixels": 0.55,
+        "minimumAlpha": 4,
+        "snapOpaqueMinimumAlpha": 252,
+        "protectedRegions": [
+          [
+            0,
+            120,
+            185,
+            470
+          ],
+          [
+            220,
+            105,
+            335,
+            185
+          ],
+          [
+            376,
+            430,
+            449,
+            576
+          ]
+        ]
+      },
+      "addedCloakAlphaPixelsByFrame": [
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        45627,
+        45627,
+        45627,
+        45627,
+        45627,
+        45627,
+        39788,
+        39788,
+        39788,
+        39788,
+        32172,
+        32172,
+        32172,
+        32172,
+        11220,
+        11220,
+        11220,
+        11220,
+        5889,
+        5889,
+        5889,
+        5889,
+        1372,
+        1372,
+        1372,
+        5743,
+        5743,
+        5743,
+        5743,
+        6522,
+        6522,
+        6522,
+        6522,
+        8938,
+        8938,
+        8938,
+        8938,
+        10902,
+        10902,
+        10902,
+        10902,
+        10902,
+        10902,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        12364,
+        10902,
+        10902,
+        10902,
+        10902,
+        10902,
+        10902,
+        8938,
+        8938,
+        8938,
+        8938,
+        6522,
+        6522,
+        6522,
+        6522,
+        5743,
+        5743,
+        5743,
+        5743,
+        1372,
+        1372,
+        1372,
+        1372,
+        5889,
+        5889,
+        5889,
+        11220,
+        11220,
+        11220,
+        11220,
+        32172,
+        32172,
+        32172,
+        32172,
+        39788,
+        39788,
+        39788,
+        39788,
+        45627,
+        45627,
+        45627,
+        45627,
+        45627,
+        45627,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607,
+        50607
+      ],
+      "addedBackPanelAlphaPixelsByFrame": [
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        6918,
+        6918,
+        6918,
+        6918,
+        6918,
+        6918,
+        5911,
+        5911,
+        5911,
+        5911,
+        7355,
+        7355,
+        7355,
+        7355,
+        724,
+        724,
+        724,
+        724,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1686,
+        1686,
+        1686,
+        1686,
+        3584,
+        3584,
+        3584,
+        3584,
+        3938,
+        3938,
+        3938,
+        3938,
+        5976,
+        5976,
+        5976,
+        5976,
+        5976,
+        5976,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        7461,
+        5976,
+        5976,
+        5976,
+        5976,
+        5976,
+        5976,
+        3938,
+        3938,
+        3938,
+        3938,
+        3584,
+        3584,
+        3584,
+        3584,
+        1686,
+        1686,
+        1686,
+        1686,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        724,
+        724,
+        724,
+        724,
+        7355,
+        7355,
+        7355,
+        7355,
+        5911,
+        5911,
+        5911,
+        5911,
+        6918,
+        6918,
+        6918,
+        6918,
+        6918,
+        6918,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262,
+        7262
+      ],
+      "addedFootPanelAlphaPixelsByFrame": [
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4914,
+        4914,
+        4914,
+        4914,
+        4914,
+        4914,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4908,
+        4908,
+        4908,
+        4908,
+        4906,
+        4906,
+        4906,
+        4906,
+        355,
+        355,
+        355,
+        3298,
+        3298,
+        3298,
+        3298,
+        2695,
+        2695,
+        2695,
+        2695,
+        4842,
+        4842,
+        4842,
+        4842,
+        4870,
+        4870,
+        4870,
+        4870,
+        4870,
+        4870,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4880,
+        4870,
+        4870,
+        4870,
+        4870,
+        4870,
+        4870,
+        4842,
+        4842,
+        4842,
+        4842,
+        2695,
+        2695,
+        2695,
+        2695,
+        3298,
+        3298,
+        3298,
+        3298,
+        355,
+        355,
+        355,
+        355,
+        4906,
+        4906,
+        4906,
+        4908,
+        4908,
+        4908,
+        4908,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4912,
+        4914,
+        4914,
+        4914,
+        4914,
+        4914,
+        4914,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917,
+        4917
+      ],
+      "smoothedAlphaPixelsByFrame": [
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        13773,
+        13773,
+        13773,
+        13773,
+        13773,
+        13773,
+        13651,
+        13651,
+        13651,
+        13651,
+        13810,
+        13810,
+        13810,
+        13810,
+        13615,
+        13615,
+        13615,
+        13615,
+        12173,
+        12173,
+        12173,
+        12173,
+        11560,
+        11560,
+        11560,
+        12445,
+        12445,
+        12445,
+        12445,
+        12415,
+        12415,
+        12415,
+        12415,
+        13360,
+        13360,
+        13360,
+        13360,
+        14231,
+        14231,
+        14231,
+        14231,
+        14231,
+        14231,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14287,
+        14231,
+        14231,
+        14231,
+        14231,
+        14231,
+        14231,
+        13360,
+        13360,
+        13360,
+        13360,
+        12415,
+        12415,
+        12415,
+        12415,
+        12445,
+        12445,
+        12445,
+        12445,
+        11560,
+        11560,
+        11560,
+        11560,
+        12173,
+        12173,
+        12173,
+        13615,
+        13615,
+        13615,
+        13615,
+        13810,
+        13810,
+        13810,
+        13810,
+        13651,
+        13651,
+        13651,
+        13651,
+        13773,
+        13773,
+        13773,
+        13773,
+        13773,
+        13773,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163,
+        14163
+      ],
+      "changedRgbPixelsByFrame": [
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        40876,
+        40876,
+        40876,
+        40876,
+        40876,
+        40876,
+        35320,
+        35320,
+        35320,
+        35320,
+        28533,
+        28533,
+        28533,
+        28533,
+        9396,
+        9396,
+        9396,
+        9396,
+        4664,
+        4664,
+        4664,
+        4664,
+        505,
+        505,
+        505,
+        4246,
+        4246,
+        4246,
+        4246,
+        5674,
+        5674,
+        5674,
+        5674,
+        7472,
+        7472,
+        7472,
+        7472,
+        9973,
+        9973,
+        9973,
+        9973,
+        9973,
+        9973,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        11455,
+        9973,
+        9973,
+        9973,
+        9973,
+        9973,
+        9973,
+        7472,
+        7472,
+        7472,
+        7472,
+        5674,
+        5674,
+        5674,
+        5674,
+        4246,
+        4246,
+        4246,
+        4246,
+        505,
+        505,
+        505,
+        505,
+        4664,
+        4664,
+        4664,
+        9396,
+        9396,
+        9396,
+        9396,
+        28533,
+        28533,
+        28533,
+        28533,
+        35320,
+        35320,
+        35320,
+        35320,
+        40876,
+        40876,
+        40876,
+        40876,
+        40876,
+        40876,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478,
+        45478
+      ],
+      "uniqueInputPoses": 12,
+      "totals": {
+        "addedCloakAlphaPixels": 2634746,
+        "addedBackPanelAlphaPixels": 590603,
+        "addedFootPanelAlphaPixels": 525320,
+        "smoothedAlphaPixels": 1620197,
+        "changedRgbPixels": 2339360
+      }
+    },
     "crop": [
       64,
       8,
@@ -1762,7 +2660,7 @@
       0,
       0
     ],
-    "sha256": "fa6f54ac874baf8598a36ecf3303df5f128759ccffeccc8522884eaf1a3a550b"
+    "sha256": "7e6d3f30f73b0ec0343ffd70f8f2ee498b66362824c5b74727d98ded877bc8bc"
   },
   "bloom-traveler-big": {
     "source": "art/sources/2026-10-15_21-23-21_Lumina_1.mp4",
@@ -1773,12 +2671,1230 @@
     "sourceEndSeconds": 5.0,
     "sourceFps": 24,
     "sourceKind": "supplied-original-rgb-clip",
-    "edit": "preserved semantic alpha; eroded interior hardening; original RGB and frame order",
+    "edit": "preserved semantic alpha; eroded interior hardening; original RGB and frame order; reviewed all 120 frames; source-backed tool/staff/hand alpha repairs; source-black matte, detached fragment and weak exterior/floor cleanup",
     "matteThreshold": null,
     "filledHoleMaximumPixels": 0,
     "minimumComponentPixels": 120,
     "opaqueInteriorAlphaThreshold": 64,
     "opaqueInteriorErosionPixels": 2,
+    "finalWinRepair": {
+      "plan": "art/bloom-traveler-big-repairs.json",
+      "planSha256": "c48ee05ae75f946c5c51b86bf0b99b6205a0a547189e41c9582d1c3a506d41a1",
+      "method": "raise alpha from same-frame source RGB only inside reviewed tool, staff, hand, lantern and inner-coattail contours; replace RGB only where alpha increases; retain original opaque pixels, poses and source motion blur; reviewed source-black background removal and conservative exterior/floor cleanup",
+      "reviewedFrames": 120,
+      "frameNumbering": "one-based extracted PNG filenames; source index is frame minus one",
+      "perFrame": [
+        {
+          "frame": 1,
+          "restoredSourcePixels": 4,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1828,
+          "removedDetachedPixels": 97,
+          "cleanedFloorPixels": 74,
+          "changedAlphaPixels": 1965,
+          "changedRgbPixels": 4
+        },
+        {
+          "frame": 2,
+          "restoredSourcePixels": 1,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2011,
+          "removedDetachedPixels": 93,
+          "cleanedFloorPixels": 77,
+          "changedAlphaPixels": 2145,
+          "changedRgbPixels": 1
+        },
+        {
+          "frame": 3,
+          "restoredSourcePixels": 1,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2442,
+          "removedDetachedPixels": 68,
+          "cleanedFloorPixels": 76,
+          "changedAlphaPixels": 2553,
+          "changedRgbPixels": 1
+        },
+        {
+          "frame": 4,
+          "restoredSourcePixels": 3,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2430,
+          "removedDetachedPixels": 82,
+          "cleanedFloorPixels": 76,
+          "changedAlphaPixels": 2544,
+          "changedRgbPixels": 3
+        },
+        {
+          "frame": 5,
+          "restoredSourcePixels": 1,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2590,
+          "removedDetachedPixels": 69,
+          "cleanedFloorPixels": 75,
+          "changedAlphaPixels": 2698,
+          "changedRgbPixels": 1
+        },
+        {
+          "frame": 6,
+          "restoredSourcePixels": 3,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2603,
+          "removedDetachedPixels": 87,
+          "cleanedFloorPixels": 76,
+          "changedAlphaPixels": 2729,
+          "changedRgbPixels": 3
+        },
+        {
+          "frame": 7,
+          "restoredSourcePixels": 2,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2911,
+          "removedDetachedPixels": 95,
+          "cleanedFloorPixels": 73,
+          "changedAlphaPixels": 3043,
+          "changedRgbPixels": 2
+        },
+        {
+          "frame": 8,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3221,
+          "removedDetachedPixels": 86,
+          "cleanedFloorPixels": 85,
+          "changedAlphaPixels": 3355,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 9,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2986,
+          "removedDetachedPixels": 92,
+          "cleanedFloorPixels": 75,
+          "changedAlphaPixels": 3108,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 10,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3627,
+          "removedDetachedPixels": 128,
+          "cleanedFloorPixels": 71,
+          "changedAlphaPixels": 3774,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 11,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3212,
+          "removedDetachedPixels": 56,
+          "cleanedFloorPixels": 53,
+          "changedAlphaPixels": 3300,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 12,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3350,
+          "removedDetachedPixels": 99,
+          "cleanedFloorPixels": 60,
+          "changedAlphaPixels": 3470,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 13,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3374,
+          "removedDetachedPixels": 98,
+          "cleanedFloorPixels": 19,
+          "changedAlphaPixels": 3470,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 14,
+          "restoredSourcePixels": 13,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3393,
+          "removedDetachedPixels": 68,
+          "cleanedFloorPixels": 24,
+          "changedAlphaPixels": 3476,
+          "changedRgbPixels": 13
+        },
+        {
+          "frame": 15,
+          "restoredSourcePixels": 12,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3538,
+          "removedDetachedPixels": 90,
+          "cleanedFloorPixels": 24,
+          "changedAlphaPixels": 3633,
+          "changedRgbPixels": 12
+        },
+        {
+          "frame": 16,
+          "restoredSourcePixels": 131,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3740,
+          "removedDetachedPixels": 123,
+          "cleanedFloorPixels": 23,
+          "changedAlphaPixels": 3992,
+          "changedRgbPixels": 131
+        },
+        {
+          "frame": 17,
+          "restoredSourcePixels": 140,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3158,
+          "removedDetachedPixels": 158,
+          "cleanedFloorPixels": 18,
+          "changedAlphaPixels": 3442,
+          "changedRgbPixels": 140
+        },
+        {
+          "frame": 18,
+          "restoredSourcePixels": 91,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3291,
+          "removedDetachedPixels": 90,
+          "cleanedFloorPixels": 13,
+          "changedAlphaPixels": 3470,
+          "changedRgbPixels": 91
+        },
+        {
+          "frame": 19,
+          "restoredSourcePixels": 2,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3337,
+          "removedDetachedPixels": 140,
+          "cleanedFloorPixels": 27,
+          "changedAlphaPixels": 3478,
+          "changedRgbPixels": 2
+        },
+        {
+          "frame": 20,
+          "restoredSourcePixels": 41,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3914,
+          "removedDetachedPixels": 112,
+          "cleanedFloorPixels": 28,
+          "changedAlphaPixels": 4068,
+          "changedRgbPixels": 41
+        },
+        {
+          "frame": 21,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3509,
+          "removedDetachedPixels": 128,
+          "cleanedFloorPixels": 21,
+          "changedAlphaPixels": 3629,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 22,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4004,
+          "removedDetachedPixels": 55,
+          "cleanedFloorPixels": 118,
+          "changedAlphaPixels": 4112,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 23,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3603,
+          "removedDetachedPixels": 135,
+          "cleanedFloorPixels": 84,
+          "changedAlphaPixels": 3794,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 24,
+          "restoredSourcePixels": 90,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3243,
+          "removedDetachedPixels": 123,
+          "cleanedFloorPixels": 96,
+          "changedAlphaPixels": 3489,
+          "changedRgbPixels": 90
+        },
+        {
+          "frame": 25,
+          "restoredSourcePixels": 102,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3484,
+          "removedDetachedPixels": 88,
+          "cleanedFloorPixels": 106,
+          "changedAlphaPixels": 3705,
+          "changedRgbPixels": 102
+        },
+        {
+          "frame": 26,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4175,
+          "removedDetachedPixels": 103,
+          "cleanedFloorPixels": 105,
+          "changedAlphaPixels": 4305,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 27,
+          "restoredSourcePixels": 16,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3520,
+          "removedDetachedPixels": 154,
+          "cleanedFloorPixels": 99,
+          "changedAlphaPixels": 3707,
+          "changedRgbPixels": 16
+        },
+        {
+          "frame": 28,
+          "restoredSourcePixels": 41,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3621,
+          "removedDetachedPixels": 185,
+          "cleanedFloorPixels": 106,
+          "changedAlphaPixels": 3879,
+          "changedRgbPixels": 41
+        },
+        {
+          "frame": 29,
+          "restoredSourcePixels": 35,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4133,
+          "removedDetachedPixels": 178,
+          "cleanedFloorPixels": 104,
+          "changedAlphaPixels": 4371,
+          "changedRgbPixels": 35
+        },
+        {
+          "frame": 30,
+          "restoredSourcePixels": 34,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4472,
+          "removedDetachedPixels": 143,
+          "cleanedFloorPixels": 108,
+          "changedAlphaPixels": 4670,
+          "changedRgbPixels": 34
+        },
+        {
+          "frame": 31,
+          "restoredSourcePixels": 32,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3167,
+          "removedDetachedPixels": 177,
+          "cleanedFloorPixels": 100,
+          "changedAlphaPixels": 3406,
+          "changedRgbPixels": 32
+        },
+        {
+          "frame": 32,
+          "restoredSourcePixels": 275,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3321,
+          "removedDetachedPixels": 207,
+          "cleanedFloorPixels": 130,
+          "changedAlphaPixels": 3842,
+          "changedRgbPixels": 275
+        },
+        {
+          "frame": 33,
+          "restoredSourcePixels": 122,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2456,
+          "removedDetachedPixels": 135,
+          "cleanedFloorPixels": 88,
+          "changedAlphaPixels": 2767,
+          "changedRgbPixels": 122
+        },
+        {
+          "frame": 34,
+          "restoredSourcePixels": 116,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2912,
+          "removedDetachedPixels": 170,
+          "cleanedFloorPixels": 56,
+          "changedAlphaPixels": 3216,
+          "changedRgbPixels": 116
+        },
+        {
+          "frame": 35,
+          "restoredSourcePixels": 112,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3247,
+          "removedDetachedPixels": 72,
+          "cleanedFloorPixels": 27,
+          "changedAlphaPixels": 3430,
+          "changedRgbPixels": 112
+        },
+        {
+          "frame": 36,
+          "restoredSourcePixels": 179,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3333,
+          "removedDetachedPixels": 77,
+          "cleanedFloorPixels": 38,
+          "changedAlphaPixels": 3606,
+          "changedRgbPixels": 179
+        },
+        {
+          "frame": 37,
+          "restoredSourcePixels": 263,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3244,
+          "removedDetachedPixels": 145,
+          "cleanedFloorPixels": 49,
+          "changedAlphaPixels": 3658,
+          "changedRgbPixels": 263
+        },
+        {
+          "frame": 38,
+          "restoredSourcePixels": 256,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3453,
+          "removedDetachedPixels": 161,
+          "cleanedFloorPixels": 44,
+          "changedAlphaPixels": 3872,
+          "changedRgbPixels": 255
+        },
+        {
+          "frame": 39,
+          "restoredSourcePixels": 136,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4020,
+          "removedDetachedPixels": 169,
+          "cleanedFloorPixels": 40,
+          "changedAlphaPixels": 4339,
+          "changedRgbPixels": 136
+        },
+        {
+          "frame": 40,
+          "restoredSourcePixels": 146,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4247,
+          "removedDetachedPixels": 117,
+          "cleanedFloorPixels": 43,
+          "changedAlphaPixels": 4520,
+          "changedRgbPixels": 146
+        },
+        {
+          "frame": 41,
+          "restoredSourcePixels": 52,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3191,
+          "removedDetachedPixels": 163,
+          "cleanedFloorPixels": 65,
+          "changedAlphaPixels": 3445,
+          "changedRgbPixels": 52
+        },
+        {
+          "frame": 42,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3909,
+          "removedDetachedPixels": 176,
+          "cleanedFloorPixels": 86,
+          "changedAlphaPixels": 4131,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 43,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3293,
+          "removedDetachedPixels": 169,
+          "cleanedFloorPixels": 84,
+          "changedAlphaPixels": 3504,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 44,
+          "restoredSourcePixels": 108,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4140,
+          "removedDetachedPixels": 168,
+          "cleanedFloorPixels": 101,
+          "changedAlphaPixels": 4444,
+          "changedRgbPixels": 108
+        },
+        {
+          "frame": 45,
+          "restoredSourcePixels": 10,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3655,
+          "removedDetachedPixels": 135,
+          "cleanedFloorPixels": 106,
+          "changedAlphaPixels": 3830,
+          "changedRgbPixels": 10
+        },
+        {
+          "frame": 46,
+          "restoredSourcePixels": 14,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4081,
+          "removedDetachedPixels": 182,
+          "cleanedFloorPixels": 115,
+          "changedAlphaPixels": 4308,
+          "changedRgbPixels": 14
+        },
+        {
+          "frame": 47,
+          "restoredSourcePixels": 12,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2935,
+          "removedDetachedPixels": 142,
+          "cleanedFloorPixels": 87,
+          "changedAlphaPixels": 3088,
+          "changedRgbPixels": 12
+        },
+        {
+          "frame": 48,
+          "restoredSourcePixels": 10,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3869,
+          "removedDetachedPixels": 116,
+          "cleanedFloorPixels": 96,
+          "changedAlphaPixels": 4019,
+          "changedRgbPixels": 10
+        },
+        {
+          "frame": 49,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2766,
+          "removedDetachedPixels": 78,
+          "cleanedFloorPixels": 98,
+          "changedAlphaPixels": 2878,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 50,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3907,
+          "removedDetachedPixels": 115,
+          "cleanedFloorPixels": 187,
+          "changedAlphaPixels": 4105,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 51,
+          "restoredSourcePixels": 0,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3448,
+          "removedDetachedPixels": 102,
+          "cleanedFloorPixels": 159,
+          "changedAlphaPixels": 3628,
+          "changedRgbPixels": 0
+        },
+        {
+          "frame": 52,
+          "restoredSourcePixels": 324,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5162,
+          "removedDetachedPixels": 144,
+          "cleanedFloorPixels": 145,
+          "changedAlphaPixels": 5675,
+          "changedRgbPixels": 324
+        },
+        {
+          "frame": 53,
+          "restoredSourcePixels": 173,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5979,
+          "removedDetachedPixels": 161,
+          "cleanedFloorPixels": 168,
+          "changedAlphaPixels": 6369,
+          "changedRgbPixels": 173
+        },
+        {
+          "frame": 54,
+          "restoredSourcePixels": 529,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4283,
+          "removedDetachedPixels": 127,
+          "cleanedFloorPixels": 74,
+          "changedAlphaPixels": 4976,
+          "changedRgbPixels": 529
+        },
+        {
+          "frame": 55,
+          "restoredSourcePixels": 1524,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4167,
+          "removedDetachedPixels": 52,
+          "cleanedFloorPixels": 10,
+          "changedAlphaPixels": 5741,
+          "changedRgbPixels": 1524
+        },
+        {
+          "frame": 56,
+          "restoredSourcePixels": 1562,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4015,
+          "removedDetachedPixels": 79,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 5640,
+          "changedRgbPixels": 1562
+        },
+        {
+          "frame": 57,
+          "restoredSourcePixels": 1767,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2294,
+          "removedDetachedPixels": 125,
+          "cleanedFloorPixels": 24,
+          "changedAlphaPixels": 4187,
+          "changedRgbPixels": 1767
+        },
+        {
+          "frame": 58,
+          "restoredSourcePixels": 8321,
+          "removedBlackMattePixels": 6148,
+          "cleanedWeakExteriorPixels": 1972,
+          "removedDetachedPixels": 194,
+          "cleanedFloorPixels": 73,
+          "changedAlphaPixels": 16578,
+          "changedRgbPixels": 8321
+        },
+        {
+          "frame": 59,
+          "restoredSourcePixels": 1678,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2686,
+          "removedDetachedPixels": 77,
+          "cleanedFloorPixels": 51,
+          "changedAlphaPixels": 4460,
+          "changedRgbPixels": 1678
+        },
+        {
+          "frame": 60,
+          "restoredSourcePixels": 1828,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2975,
+          "removedDetachedPixels": 123,
+          "cleanedFloorPixels": 67,
+          "changedAlphaPixels": 4959,
+          "changedRgbPixels": 1828
+        },
+        {
+          "frame": 61,
+          "restoredSourcePixels": 1318,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2273,
+          "removedDetachedPixels": 156,
+          "cleanedFloorPixels": 47,
+          "changedAlphaPixels": 3766,
+          "changedRgbPixels": 1318
+        },
+        {
+          "frame": 62,
+          "restoredSourcePixels": 1257,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2890,
+          "removedDetachedPixels": 87,
+          "cleanedFloorPixels": 57,
+          "changedAlphaPixels": 4265,
+          "changedRgbPixels": 1257
+        },
+        {
+          "frame": 63,
+          "restoredSourcePixels": 1220,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3006,
+          "removedDetachedPixels": 162,
+          "cleanedFloorPixels": 50,
+          "changedAlphaPixels": 4395,
+          "changedRgbPixels": 1220
+        },
+        {
+          "frame": 64,
+          "restoredSourcePixels": 1287,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3073,
+          "removedDetachedPixels": 106,
+          "cleanedFloorPixels": 54,
+          "changedAlphaPixels": 4503,
+          "changedRgbPixels": 1287
+        },
+        {
+          "frame": 65,
+          "restoredSourcePixels": 1332,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2471,
+          "removedDetachedPixels": 201,
+          "cleanedFloorPixels": 74,
+          "changedAlphaPixels": 4066,
+          "changedRgbPixels": 1332
+        },
+        {
+          "frame": 66,
+          "restoredSourcePixels": 1374,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2479,
+          "removedDetachedPixels": 318,
+          "cleanedFloorPixels": 56,
+          "changedAlphaPixels": 4202,
+          "changedRgbPixels": 1374
+        },
+        {
+          "frame": 67,
+          "restoredSourcePixels": 13738,
+          "removedBlackMattePixels": 2449,
+          "cleanedWeakExteriorPixels": 2421,
+          "removedDetachedPixels": 76,
+          "cleanedFloorPixels": 101,
+          "changedAlphaPixels": 18766,
+          "changedRgbPixels": 13738
+        },
+        {
+          "frame": 68,
+          "restoredSourcePixels": 28752,
+          "removedBlackMattePixels": 601,
+          "cleanedWeakExteriorPixels": 2343,
+          "removedDetachedPixels": 35,
+          "cleanedFloorPixels": 140,
+          "changedAlphaPixels": 31846,
+          "changedRgbPixels": 28752
+        },
+        {
+          "frame": 69,
+          "restoredSourcePixels": 473,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3041,
+          "removedDetachedPixels": 315,
+          "cleanedFloorPixels": 135,
+          "changedAlphaPixels": 3944,
+          "changedRgbPixels": 473
+        },
+        {
+          "frame": 70,
+          "restoredSourcePixels": 506,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2916,
+          "removedDetachedPixels": 232,
+          "cleanedFloorPixels": 103,
+          "changedAlphaPixels": 3728,
+          "changedRgbPixels": 506
+        },
+        {
+          "frame": 71,
+          "restoredSourcePixels": 86,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2693,
+          "removedDetachedPixels": 331,
+          "cleanedFloorPixels": 129,
+          "changedAlphaPixels": 3225,
+          "changedRgbPixels": 86
+        },
+        {
+          "frame": 72,
+          "restoredSourcePixels": 184,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2125,
+          "removedDetachedPixels": 233,
+          "cleanedFloorPixels": 130,
+          "changedAlphaPixels": 2645,
+          "changedRgbPixels": 184
+        },
+        {
+          "frame": 73,
+          "restoredSourcePixels": 287,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1693,
+          "removedDetachedPixels": 241,
+          "cleanedFloorPixels": 119,
+          "changedAlphaPixels": 2325,
+          "changedRgbPixels": 287
+        },
+        {
+          "frame": 74,
+          "restoredSourcePixels": 3579,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2439,
+          "removedDetachedPixels": 188,
+          "cleanedFloorPixels": 59,
+          "changedAlphaPixels": 6236,
+          "changedRgbPixels": 3579
+        },
+        {
+          "frame": 75,
+          "restoredSourcePixels": 2801,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3221,
+          "removedDetachedPixels": 233,
+          "cleanedFloorPixels": 63,
+          "changedAlphaPixels": 6298,
+          "changedRgbPixels": 2801
+        },
+        {
+          "frame": 76,
+          "restoredSourcePixels": 290,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 10130,
+          "removedDetachedPixels": 215,
+          "cleanedFloorPixels": 117,
+          "changedAlphaPixels": 10729,
+          "changedRgbPixels": 290
+        },
+        {
+          "frame": 77,
+          "restoredSourcePixels": 107,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4491,
+          "removedDetachedPixels": 191,
+          "cleanedFloorPixels": 83,
+          "changedAlphaPixels": 4842,
+          "changedRgbPixels": 107
+        },
+        {
+          "frame": 78,
+          "restoredSourcePixels": 131,
+          "removedBlackMattePixels": 3617,
+          "cleanedWeakExteriorPixels": 2853,
+          "removedDetachedPixels": 272,
+          "cleanedFloorPixels": 119,
+          "changedAlphaPixels": 6956,
+          "changedRgbPixels": 131
+        },
+        {
+          "frame": 79,
+          "restoredSourcePixels": 2099,
+          "removedBlackMattePixels": 37646,
+          "cleanedWeakExteriorPixels": 2551,
+          "removedDetachedPixels": 168,
+          "cleanedFloorPixels": 141,
+          "changedAlphaPixels": 42574,
+          "changedRgbPixels": 2099
+        },
+        {
+          "frame": 80,
+          "restoredSourcePixels": 1444,
+          "removedBlackMattePixels": 23705,
+          "cleanedWeakExteriorPixels": 3248,
+          "removedDetachedPixels": 367,
+          "cleanedFloorPixels": 168,
+          "changedAlphaPixels": 28904,
+          "changedRgbPixels": 1444
+        },
+        {
+          "frame": 81,
+          "restoredSourcePixels": 559,
+          "removedBlackMattePixels": 6502,
+          "cleanedWeakExteriorPixels": 2246,
+          "removedDetachedPixels": 341,
+          "cleanedFloorPixels": 120,
+          "changedAlphaPixels": 9754,
+          "changedRgbPixels": 559
+        },
+        {
+          "frame": 82,
+          "restoredSourcePixels": 1685,
+          "removedBlackMattePixels": 33988,
+          "cleanedWeakExteriorPixels": 2597,
+          "removedDetachedPixels": 279,
+          "cleanedFloorPixels": 116,
+          "changedAlphaPixels": 38543,
+          "changedRgbPixels": 1685
+        },
+        {
+          "frame": 83,
+          "restoredSourcePixels": 1317,
+          "removedBlackMattePixels": 2689,
+          "cleanedWeakExteriorPixels": 4014,
+          "removedDetachedPixels": 262,
+          "cleanedFloorPixels": 135,
+          "changedAlphaPixels": 8382,
+          "changedRgbPixels": 1317
+        },
+        {
+          "frame": 84,
+          "restoredSourcePixels": 1844,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4569,
+          "removedDetachedPixels": 270,
+          "cleanedFloorPixels": 166,
+          "changedAlphaPixels": 6830,
+          "changedRgbPixels": 1844
+        },
+        {
+          "frame": 85,
+          "restoredSourcePixels": 1454,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 7076,
+          "removedDetachedPixels": 326,
+          "cleanedFloorPixels": 154,
+          "changedAlphaPixels": 8972,
+          "changedRgbPixels": 1454
+        },
+        {
+          "frame": 86,
+          "restoredSourcePixels": 1173,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4901,
+          "removedDetachedPixels": 346,
+          "cleanedFloorPixels": 144,
+          "changedAlphaPixels": 6535,
+          "changedRgbPixels": 1173
+        },
+        {
+          "frame": 87,
+          "restoredSourcePixels": 44,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4055,
+          "removedDetachedPixels": 205,
+          "cleanedFloorPixels": 123,
+          "changedAlphaPixels": 4414,
+          "changedRgbPixels": 44
+        },
+        {
+          "frame": 88,
+          "restoredSourcePixels": 60,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2814,
+          "removedDetachedPixels": 301,
+          "cleanedFloorPixels": 131,
+          "changedAlphaPixels": 3281,
+          "changedRgbPixels": 60
+        },
+        {
+          "frame": 89,
+          "restoredSourcePixels": 66,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2744,
+          "removedDetachedPixels": 188,
+          "cleanedFloorPixels": 143,
+          "changedAlphaPixels": 3105,
+          "changedRgbPixels": 66
+        },
+        {
+          "frame": 90,
+          "restoredSourcePixels": 77,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2774,
+          "removedDetachedPixels": 223,
+          "cleanedFloorPixels": 145,
+          "changedAlphaPixels": 3183,
+          "changedRgbPixels": 77
+        },
+        {
+          "frame": 91,
+          "restoredSourcePixels": 72,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1750,
+          "removedDetachedPixels": 221,
+          "cleanedFloorPixels": 129,
+          "changedAlphaPixels": 2142,
+          "changedRgbPixels": 72
+        },
+        {
+          "frame": 92,
+          "restoredSourcePixels": 69,
+          "removedBlackMattePixels": 9657,
+          "cleanedWeakExteriorPixels": 1390,
+          "removedDetachedPixels": 105,
+          "cleanedFloorPixels": 171,
+          "changedAlphaPixels": 11378,
+          "changedRgbPixels": 69
+        },
+        {
+          "frame": 93,
+          "restoredSourcePixels": 86,
+          "removedBlackMattePixels": 10629,
+          "cleanedWeakExteriorPixels": 2133,
+          "removedDetachedPixels": 387,
+          "cleanedFloorPixels": 132,
+          "changedAlphaPixels": 13352,
+          "changedRgbPixels": 86
+        },
+        {
+          "frame": 94,
+          "restoredSourcePixels": 2483,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5201,
+          "removedDetachedPixels": 231,
+          "cleanedFloorPixels": 147,
+          "changedAlphaPixels": 8050,
+          "changedRgbPixels": 2483
+        },
+        {
+          "frame": 95,
+          "restoredSourcePixels": 320,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3932,
+          "removedDetachedPixels": 272,
+          "cleanedFloorPixels": 140,
+          "changedAlphaPixels": 4642,
+          "changedRgbPixels": 320
+        },
+        {
+          "frame": 96,
+          "restoredSourcePixels": 162,
+          "removedBlackMattePixels": 6175,
+          "cleanedWeakExteriorPixels": 2650,
+          "removedDetachedPixels": 291,
+          "cleanedFloorPixels": 142,
+          "changedAlphaPixels": 9386,
+          "changedRgbPixels": 162
+        },
+        {
+          "frame": 97,
+          "restoredSourcePixels": 459,
+          "removedBlackMattePixels": 17234,
+          "cleanedWeakExteriorPixels": 6391,
+          "removedDetachedPixels": 294,
+          "cleanedFloorPixels": 74,
+          "changedAlphaPixels": 24447,
+          "changedRgbPixels": 459
+        },
+        {
+          "frame": 98,
+          "restoredSourcePixels": 172,
+          "removedBlackMattePixels": 29276,
+          "cleanedWeakExteriorPixels": 4000,
+          "removedDetachedPixels": 160,
+          "cleanedFloorPixels": 74,
+          "changedAlphaPixels": 33638,
+          "changedRgbPixels": 172
+        },
+        {
+          "frame": 99,
+          "restoredSourcePixels": 145,
+          "removedBlackMattePixels": 31062,
+          "cleanedWeakExteriorPixels": 2929,
+          "removedDetachedPixels": 118,
+          "cleanedFloorPixels": 73,
+          "changedAlphaPixels": 34297,
+          "changedRgbPixels": 145
+        },
+        {
+          "frame": 100,
+          "restoredSourcePixels": 316,
+          "removedBlackMattePixels": 29970,
+          "cleanedWeakExteriorPixels": 2323,
+          "removedDetachedPixels": 139,
+          "cleanedFloorPixels": 65,
+          "changedAlphaPixels": 32770,
+          "changedRgbPixels": 316
+        },
+        {
+          "frame": 101,
+          "restoredSourcePixels": 958,
+          "removedBlackMattePixels": 12109,
+          "cleanedWeakExteriorPixels": 1934,
+          "removedDetachedPixels": 236,
+          "cleanedFloorPixels": 48,
+          "changedAlphaPixels": 15278,
+          "changedRgbPixels": 958
+        },
+        {
+          "frame": 102,
+          "restoredSourcePixels": 228,
+          "removedBlackMattePixels": 3469,
+          "cleanedWeakExteriorPixels": 7740,
+          "removedDetachedPixels": 284,
+          "cleanedFloorPixels": 64,
+          "changedAlphaPixels": 11775,
+          "changedRgbPixels": 228
+        },
+        {
+          "frame": 103,
+          "restoredSourcePixels": 399,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3591,
+          "removedDetachedPixels": 257,
+          "cleanedFloorPixels": 74,
+          "changedAlphaPixels": 4303,
+          "changedRgbPixels": 399
+        },
+        {
+          "frame": 104,
+          "restoredSourcePixels": 99,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4829,
+          "removedDetachedPixels": 411,
+          "cleanedFloorPixels": 92,
+          "changedAlphaPixels": 5386,
+          "changedRgbPixels": 99
+        },
+        {
+          "frame": 105,
+          "restoredSourcePixels": 49,
+          "removedBlackMattePixels": 8675,
+          "cleanedWeakExteriorPixels": 2090,
+          "removedDetachedPixels": 128,
+          "cleanedFloorPixels": 108,
+          "changedAlphaPixels": 11046,
+          "changedRgbPixels": 49
+        },
+        {
+          "frame": 106,
+          "restoredSourcePixels": 2024,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3521,
+          "removedDetachedPixels": 225,
+          "cleanedFloorPixels": 111,
+          "changedAlphaPixels": 5873,
+          "changedRgbPixels": 2024
+        },
+        {
+          "frame": 107,
+          "restoredSourcePixels": 122,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2589,
+          "removedDetachedPixels": 153,
+          "cleanedFloorPixels": 85,
+          "changedAlphaPixels": 2930,
+          "changedRgbPixels": 122
+        },
+        {
+          "frame": 108,
+          "restoredSourcePixels": 64,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2473,
+          "removedDetachedPixels": 166,
+          "cleanedFloorPixels": 87,
+          "changedAlphaPixels": 2764,
+          "changedRgbPixels": 64
+        },
+        {
+          "frame": 109,
+          "restoredSourcePixels": 52,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2098,
+          "removedDetachedPixels": 213,
+          "cleanedFloorPixels": 84,
+          "changedAlphaPixels": 2416,
+          "changedRgbPixels": 52
+        },
+        {
+          "frame": 110,
+          "restoredSourcePixels": 59,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2590,
+          "removedDetachedPixels": 248,
+          "cleanedFloorPixels": 87,
+          "changedAlphaPixels": 2970,
+          "changedRgbPixels": 59
+        },
+        {
+          "frame": 111,
+          "restoredSourcePixels": 64,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2302,
+          "removedDetachedPixels": 281,
+          "cleanedFloorPixels": 102,
+          "changedAlphaPixels": 2729,
+          "changedRgbPixels": 64
+        },
+        {
+          "frame": 112,
+          "restoredSourcePixels": 73,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2556,
+          "removedDetachedPixels": 386,
+          "cleanedFloorPixels": 111,
+          "changedAlphaPixels": 3111,
+          "changedRgbPixels": 73
+        },
+        {
+          "frame": 113,
+          "restoredSourcePixels": 69,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1856,
+          "removedDetachedPixels": 279,
+          "cleanedFloorPixels": 130,
+          "changedAlphaPixels": 2321,
+          "changedRgbPixels": 69
+        },
+        {
+          "frame": 114,
+          "restoredSourcePixels": 73,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3295,
+          "removedDetachedPixels": 266,
+          "cleanedFloorPixels": 182,
+          "changedAlphaPixels": 3793,
+          "changedRgbPixels": 73
+        },
+        {
+          "frame": 115,
+          "restoredSourcePixels": 63,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3346,
+          "removedDetachedPixels": 199,
+          "cleanedFloorPixels": 155,
+          "changedAlphaPixels": 3753,
+          "changedRgbPixels": 63
+        },
+        {
+          "frame": 116,
+          "restoredSourcePixels": 1314,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5282,
+          "removedDetachedPixels": 228,
+          "cleanedFloorPixels": 174,
+          "changedAlphaPixels": 6986,
+          "changedRgbPixels": 1314
+        },
+        {
+          "frame": 117,
+          "restoredSourcePixels": 1806,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3283,
+          "removedDetachedPixels": 281,
+          "cleanedFloorPixels": 149,
+          "changedAlphaPixels": 5485,
+          "changedRgbPixels": 1806
+        },
+        {
+          "frame": 118,
+          "restoredSourcePixels": 682,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3183,
+          "removedDetachedPixels": 175,
+          "cleanedFloorPixels": 156,
+          "changedAlphaPixels": 4169,
+          "changedRgbPixels": 682
+        },
+        {
+          "frame": 119,
+          "restoredSourcePixels": 1749,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3131,
+          "removedDetachedPixels": 424,
+          "cleanedFloorPixels": 99,
+          "changedAlphaPixels": 5367,
+          "changedRgbPixels": 1749
+        },
+        {
+          "frame": 120,
+          "restoredSourcePixels": 321,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5397,
+          "removedDetachedPixels": 317,
+          "cleanedFloorPixels": 184,
+          "changedAlphaPixels": 6195,
+          "changedRgbPixels": 321
+        }
+      ],
+      "totals": {
+        "restoredSourcePixels": 105408,
+        "removedBlackMattePixels": 275601,
+        "cleanedWeakExteriorPixels": 404779,
+        "removedDetachedPixels": 21524,
+        "cleanedFloorPixels": 11156,
+        "changedAlphaPixels": 813961,
+        "changedRgbPixels": 105407
+      }
+    },
     "crop": [
       0,
       0,
@@ -1914,7 +4030,7 @@
       118,
       119
     ],
-    "sha256": "f0b0e392b0dc85349005c4157082408550762a7dad45787b6bc5c5390546cc50"
+    "sha256": "c49e5aad436538426dbc92da8f304b115a845738345e130273763c4e85368c65"
   },
   "blight-keeper-big": {
     "source": "art/sources/2026-10-15_21-29-23_Lumina_1.mp4",
@@ -1925,12 +4041,2257 @@
     "sourceEndSeconds": 5.0,
     "sourceFps": 24,
     "sourceKind": "supplied-original-rgb-clip",
-    "edit": "preserved semantic alpha; eroded interior hardening; original RGB and frame order",
+    "edit": "preserved semantic alpha; eroded interior hardening; original RGB and frame order; reviewed all 120 frames; matching-source mace/shaft/chain/foot and cloth repairs; neutral energy/floor background cleanup; cropped weapon completed from intact native artwork on a symmetrically extended transparent canvas",
     "matteThreshold": null,
     "filledHoleMaximumPixels": 0,
     "minimumComponentPixels": 120,
     "opaqueInteriorAlphaThreshold": 64,
     "opaqueInteriorErosionPixels": 2,
+    "finalWinRepair": {
+      "plan": "art/blight-keeper-big-repairs.json",
+      "planSha256": "5a61f6429ef51498648fe41e8c96f64de31b44aed6fe5578a7665cefc935cf67",
+      "method": "Reviewed matching-frame RGB restores for mace spikes, metal shaft, chain, pendant and planted foot; source-semantic garment support preserves genuine tears; native intact weapon plates complete original canvas clipping; reviewed source-black background removal and conservative exterior/floor cleanup",
+      "reviewedFrames": 120,
+      "frameNumbering": "one-based, original source frames 1 through120 in unchanged order",
+      "perFrame": [
+        {
+          "frame": 1,
+          "restoredSourcePixels": 11129,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4698,
+          "removedDetachedPixels": 0,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 32944,
+          "changedRgbPixels": 11110,
+          "restoredClothPixels": 10982,
+          "dehazedClothPixels": 298,
+          "cleanedNeutralBackgroundPixels": 17175
+        },
+        {
+          "frame": 2,
+          "restoredSourcePixels": 10415,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4712,
+          "removedDetachedPixels": 24,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 44433,
+          "changedRgbPixels": 10501,
+          "restoredClothPixels": 10235,
+          "dehazedClothPixels": 385,
+          "cleanedNeutralBackgroundPixels": 29377
+        },
+        {
+          "frame": 3,
+          "restoredSourcePixels": 9802,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3985,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 1,
+          "changedAlphaPixels": 51373,
+          "changedRgbPixels": 9936,
+          "restoredClothPixels": 9597,
+          "dehazedClothPixels": 367,
+          "cleanedNeutralBackgroundPixels": 37683
+        },
+        {
+          "frame": 4,
+          "restoredSourcePixels": 10216,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4043,
+          "removedDetachedPixels": 0,
+          "cleanedFloorPixels": 1,
+          "changedAlphaPixels": 49136,
+          "changedRgbPixels": 10339,
+          "restoredClothPixels": 10090,
+          "dehazedClothPixels": 396,
+          "cleanedNeutralBackgroundPixels": 34938
+        },
+        {
+          "frame": 5,
+          "restoredSourcePixels": 4398,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2967,
+          "removedDetachedPixels": 0,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 33756,
+          "changedRgbPixels": 4719,
+          "restoredClothPixels": 4266,
+          "dehazedClothPixels": 507,
+          "cleanedNeutralBackgroundPixels": 26432
+        },
+        {
+          "frame": 6,
+          "restoredSourcePixels": 2371,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3014,
+          "removedDetachedPixels": 1,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 33405,
+          "changedRgbPixels": 2764,
+          "restoredClothPixels": 2213,
+          "dehazedClothPixels": 533,
+          "cleanedNeutralBackgroundPixels": 28068
+        },
+        {
+          "frame": 7,
+          "restoredSourcePixels": 2155,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2735,
+          "removedDetachedPixels": 4,
+          "cleanedFloorPixels": 1,
+          "changedAlphaPixels": 40167,
+          "changedRgbPixels": 2596,
+          "restoredClothPixels": 2049,
+          "dehazedClothPixels": 581,
+          "cleanedNeutralBackgroundPixels": 35332
+        },
+        {
+          "frame": 8,
+          "restoredSourcePixels": 2892,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2917,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 39298,
+          "changedRgbPixels": 3359,
+          "restoredClothPixels": 2754,
+          "dehazedClothPixels": 609,
+          "cleanedNeutralBackgroundPixels": 33511
+        },
+        {
+          "frame": 9,
+          "restoredSourcePixels": 3002,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4385,
+          "removedDetachedPixels": 1,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 39632,
+          "changedRgbPixels": 3449,
+          "restoredClothPixels": 2830,
+          "dehazedClothPixels": 617,
+          "cleanedNeutralBackgroundPixels": 32297
+        },
+        {
+          "frame": 10,
+          "restoredSourcePixels": 3114,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4489,
+          "removedDetachedPixels": 6,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40500,
+          "changedRgbPixels": 3571,
+          "restoredClothPixels": 2985,
+          "dehazedClothPixels": 632,
+          "cleanedNeutralBackgroundPixels": 32963
+        },
+        {
+          "frame": 11,
+          "restoredSourcePixels": 3254,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4149,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 39781,
+          "changedRgbPixels": 3581,
+          "restoredClothPixels": 3113,
+          "dehazedClothPixels": 578,
+          "cleanedNeutralBackgroundPixels": 32407
+        },
+        {
+          "frame": 12,
+          "restoredSourcePixels": 3567,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3900,
+          "removedDetachedPixels": 9,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 41618,
+          "changedRgbPixels": 3890,
+          "restoredClothPixels": 3437,
+          "dehazedClothPixels": 536,
+          "cleanedNeutralBackgroundPixels": 34170
+        },
+        {
+          "frame": 13,
+          "restoredSourcePixels": 3063,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3320,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 39475,
+          "changedRgbPixels": 3358,
+          "restoredClothPixels": 3028,
+          "dehazedClothPixels": 519,
+          "cleanedNeutralBackgroundPixels": 33133
+        },
+        {
+          "frame": 14,
+          "restoredSourcePixels": 2852,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3232,
+          "removedDetachedPixels": 8,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 39509,
+          "changedRgbPixels": 3137,
+          "restoredClothPixels": 2808,
+          "dehazedClothPixels": 463,
+          "cleanedNeutralBackgroundPixels": 33457
+        },
+        {
+          "frame": 15,
+          "restoredSourcePixels": 1570,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1881,
+          "removedDetachedPixels": 4,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 32402,
+          "changedRgbPixels": 1885,
+          "restoredClothPixels": 1522,
+          "dehazedClothPixels": 411,
+          "cleanedNeutralBackgroundPixels": 29006
+        },
+        {
+          "frame": 16,
+          "restoredSourcePixels": 4019,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2627,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 41440,
+          "changedRgbPixels": 4166,
+          "restoredClothPixels": 3968,
+          "dehazedClothPixels": 357,
+          "cleanedNeutralBackgroundPixels": 34816
+        },
+        {
+          "frame": 17,
+          "restoredSourcePixels": 3919,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4215,
+          "removedDetachedPixels": 1,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 45265,
+          "changedRgbPixels": 4002,
+          "restoredClothPixels": 3782,
+          "dehazedClothPixels": 331,
+          "cleanedNeutralBackgroundPixels": 37173
+        },
+        {
+          "frame": 18,
+          "restoredSourcePixels": 8019,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2770,
+          "removedDetachedPixels": 10,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 54843,
+          "changedRgbPixels": 8018,
+          "restoredClothPixels": 7844,
+          "dehazedClothPixels": 319,
+          "cleanedNeutralBackgroundPixels": 44053
+        },
+        {
+          "frame": 19,
+          "restoredSourcePixels": 4022,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2851,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 42977,
+          "changedRgbPixels": 4054,
+          "restoredClothPixels": 3970,
+          "dehazedClothPixels": 246,
+          "cleanedNeutralBackgroundPixels": 36114
+        },
+        {
+          "frame": 20,
+          "restoredSourcePixels": 4777,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2616,
+          "removedDetachedPixels": 10,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 46802,
+          "changedRgbPixels": 4752,
+          "restoredClothPixels": 4676,
+          "dehazedClothPixels": 236,
+          "cleanedNeutralBackgroundPixels": 39433
+        },
+        {
+          "frame": 21,
+          "restoredSourcePixels": 3649,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3501,
+          "removedDetachedPixels": 4,
+          "cleanedFloorPixels": 1,
+          "changedAlphaPixels": 40840,
+          "changedRgbPixels": 3659,
+          "restoredClothPixels": 3585,
+          "dehazedClothPixels": 239,
+          "cleanedNeutralBackgroundPixels": 33701
+        },
+        {
+          "frame": 22,
+          "restoredSourcePixels": 3481,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2436,
+          "removedDetachedPixels": 12,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40487,
+          "changedRgbPixels": 3534,
+          "restoredClothPixels": 3434,
+          "dehazedClothPixels": 254,
+          "cleanedNeutralBackgroundPixels": 34573
+        },
+        {
+          "frame": 23,
+          "restoredSourcePixels": 3490,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2411,
+          "removedDetachedPixels": 14,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40732,
+          "changedRgbPixels": 3512,
+          "restoredClothPixels": 3437,
+          "dehazedClothPixels": 238,
+          "cleanedNeutralBackgroundPixels": 34842
+        },
+        {
+          "frame": 24,
+          "restoredSourcePixels": 3399,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2554,
+          "removedDetachedPixels": 9,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40839,
+          "changedRgbPixels": 3427,
+          "restoredClothPixels": 3369,
+          "dehazedClothPixels": 257,
+          "cleanedNeutralBackgroundPixels": 34896
+        },
+        {
+          "frame": 25,
+          "restoredSourcePixels": 3496,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3243,
+          "removedDetachedPixels": 1,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 39869,
+          "changedRgbPixels": 3525,
+          "restoredClothPixels": 3486,
+          "dehazedClothPixels": 314,
+          "cleanedNeutralBackgroundPixels": 33141
+        },
+        {
+          "frame": 26,
+          "restoredSourcePixels": 3371,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3673,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 42620,
+          "changedRgbPixels": 3395,
+          "restoredClothPixels": 3292,
+          "dehazedClothPixels": 233,
+          "cleanedNeutralBackgroundPixels": 35582
+        },
+        {
+          "frame": 27,
+          "restoredSourcePixels": 3450,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2350,
+          "removedDetachedPixels": 9,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40034,
+          "changedRgbPixels": 3476,
+          "restoredClothPixels": 3328,
+          "dehazedClothPixels": 259,
+          "cleanedNeutralBackgroundPixels": 34232
+        },
+        {
+          "frame": 28,
+          "restoredSourcePixels": 3474,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3806,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 41246,
+          "changedRgbPixels": 3479,
+          "restoredClothPixels": 3342,
+          "dehazedClothPixels": 239,
+          "cleanedNeutralBackgroundPixels": 33966
+        },
+        {
+          "frame": 29,
+          "restoredSourcePixels": 3288,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4049,
+          "removedDetachedPixels": 4,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40585,
+          "changedRgbPixels": 3338,
+          "restoredClothPixels": 3142,
+          "dehazedClothPixels": 236,
+          "cleanedNeutralBackgroundPixels": 33245
+        },
+        {
+          "frame": 30,
+          "restoredSourcePixels": 3424,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4334,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 41446,
+          "changedRgbPixels": 3477,
+          "restoredClothPixels": 3272,
+          "dehazedClothPixels": 256,
+          "cleanedNeutralBackgroundPixels": 33683
+        },
+        {
+          "frame": 31,
+          "restoredSourcePixels": 6854,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5281,
+          "removedDetachedPixels": 1,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 42648,
+          "changedRgbPixels": 6898,
+          "restoredClothPixels": 3118,
+          "dehazedClothPixels": 192,
+          "cleanedNeutralBackgroundPixels": 30595
+        },
+        {
+          "frame": 32,
+          "restoredSourcePixels": 6298,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4120,
+          "removedDetachedPixels": 1,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 43016,
+          "changedRgbPixels": 6389,
+          "restoredClothPixels": 3006,
+          "dehazedClothPixels": 215,
+          "cleanedNeutralBackgroundPixels": 32730
+        },
+        {
+          "frame": 33,
+          "restoredSourcePixels": 5864,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3777,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40691,
+          "changedRgbPixels": 5966,
+          "restoredClothPixels": 2857,
+          "dehazedClothPixels": 248,
+          "cleanedNeutralBackgroundPixels": 31205
+        },
+        {
+          "frame": 34,
+          "restoredSourcePixels": 6229,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3023,
+          "removedDetachedPixels": 6,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40994,
+          "changedRgbPixels": 6276,
+          "restoredClothPixels": 2743,
+          "dehazedClothPixels": 208,
+          "cleanedNeutralBackgroundPixels": 31962
+        },
+        {
+          "frame": 35,
+          "restoredSourcePixels": 5670,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3562,
+          "removedDetachedPixels": 6,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 42528,
+          "changedRgbPixels": 5732,
+          "restoredClothPixels": 2559,
+          "dehazedClothPixels": 207,
+          "cleanedNeutralBackgroundPixels": 33569
+        },
+        {
+          "frame": 36,
+          "restoredSourcePixels": 5619,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4521,
+          "removedDetachedPixels": 8,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 45303,
+          "changedRgbPixels": 5685,
+          "restoredClothPixels": 2621,
+          "dehazedClothPixels": 197,
+          "cleanedNeutralBackgroundPixels": 35412
+        },
+        {
+          "frame": 37,
+          "restoredSourcePixels": 7017,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3259,
+          "removedDetachedPixels": 11,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 46280,
+          "changedRgbPixels": 7016,
+          "restoredClothPixels": 3982,
+          "dehazedClothPixels": 187,
+          "cleanedNeutralBackgroundPixels": 36305
+        },
+        {
+          "frame": 38,
+          "restoredSourcePixels": 5759,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4570,
+          "removedDetachedPixels": 6,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 45595,
+          "changedRgbPixels": 5786,
+          "restoredClothPixels": 3002,
+          "dehazedClothPixels": 198,
+          "cleanedNeutralBackgroundPixels": 35446
+        },
+        {
+          "frame": 39,
+          "restoredSourcePixels": 5432,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2888,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 40793,
+          "changedRgbPixels": 5643,
+          "restoredClothPixels": 2456,
+          "dehazedClothPixels": 356,
+          "cleanedNeutralBackgroundPixels": 32800
+        },
+        {
+          "frame": 40,
+          "restoredSourcePixels": 5689,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1786,
+          "removedDetachedPixels": 7,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 43225,
+          "changedRgbPixels": 5964,
+          "restoredClothPixels": 2395,
+          "dehazedClothPixels": 414,
+          "cleanedNeutralBackgroundPixels": 35755
+        },
+        {
+          "frame": 41,
+          "restoredSourcePixels": 5329,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2653,
+          "removedDetachedPixels": 5,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 36833,
+          "changedRgbPixels": 5505,
+          "restoredClothPixels": 2659,
+          "dehazedClothPixels": 333,
+          "cleanedNeutralBackgroundPixels": 28866
+        },
+        {
+          "frame": 42,
+          "restoredSourcePixels": 2895,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2689,
+          "removedDetachedPixels": 2,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 37532,
+          "changedRgbPixels": 3179,
+          "restoredClothPixels": 2798,
+          "dehazedClothPixels": 442,
+          "cleanedNeutralBackgroundPixels": 32283
+        },
+        {
+          "frame": 43,
+          "restoredSourcePixels": 8130,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4867,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 44590,
+          "changedRgbPixels": 8421,
+          "restoredClothPixels": 2955,
+          "dehazedClothPixels": 455,
+          "cleanedNeutralBackgroundPixels": 32063
+        },
+        {
+          "frame": 44,
+          "restoredSourcePixels": 15660,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4958,
+          "removedDetachedPixels": 14,
+          "cleanedFloorPixels": 0,
+          "changedAlphaPixels": 67699,
+          "changedRgbPixels": 16045,
+          "restoredClothPixels": 3085,
+          "dehazedClothPixels": 521,
+          "cleanedNeutralBackgroundPixels": 48107
+        },
+        {
+          "frame": 45,
+          "restoredSourcePixels": 18872,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4848,
+          "removedDetachedPixels": 77,
+          "cleanedFloorPixels": 2060,
+          "changedAlphaPixels": 66997,
+          "changedRgbPixels": 19174,
+          "restoredClothPixels": 17137,
+          "dehazedClothPixels": 513,
+          "cleanedNeutralBackgroundPixels": 42381
+        },
+        {
+          "frame": 46,
+          "restoredSourcePixels": 3375,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1661,
+          "removedDetachedPixels": 426,
+          "cleanedFloorPixels": 966,
+          "changedAlphaPixels": 43866,
+          "changedRgbPixels": 4351,
+          "restoredClothPixels": 2219,
+          "dehazedClothPixels": 1105,
+          "cleanedNeutralBackgroundPixels": 38375
+        },
+        {
+          "frame": 47,
+          "restoredSourcePixels": 12791,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1675,
+          "removedDetachedPixels": 38,
+          "cleanedFloorPixels": 428,
+          "changedAlphaPixels": 31118,
+          "changedRgbPixels": 13426,
+          "restoredClothPixels": 10128,
+          "dehazedClothPixels": 823,
+          "cleanedNeutralBackgroundPixels": 16622
+        },
+        {
+          "frame": 48,
+          "restoredSourcePixels": 14403,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3371,
+          "removedDetachedPixels": 43,
+          "cleanedFloorPixels": 78,
+          "changedAlphaPixels": 33977,
+          "changedRgbPixels": 15071,
+          "restoredClothPixels": 11770,
+          "dehazedClothPixels": 930,
+          "cleanedNeutralBackgroundPixels": 16636
+        },
+        {
+          "frame": 49,
+          "restoredSourcePixels": 14374,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2391,
+          "removedDetachedPixels": 116,
+          "cleanedFloorPixels": 14,
+          "changedAlphaPixels": 26862,
+          "changedRgbPixels": 14716,
+          "restoredClothPixels": 10316,
+          "dehazedClothPixels": 766,
+          "cleanedNeutralBackgroundPixels": 10431
+        },
+        {
+          "frame": 50,
+          "restoredSourcePixels": 21804,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1812,
+          "removedDetachedPixels": 48,
+          "cleanedFloorPixels": 134,
+          "changedAlphaPixels": 36246,
+          "changedRgbPixels": 22108,
+          "restoredClothPixels": 13004,
+          "dehazedClothPixels": 734,
+          "cleanedNeutralBackgroundPixels": 13135
+        },
+        {
+          "frame": 51,
+          "restoredSourcePixels": 13210,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1584,
+          "removedDetachedPixels": 35,
+          "cleanedFloorPixels": 331,
+          "changedAlphaPixels": 26387,
+          "changedRgbPixels": 13445,
+          "restoredClothPixels": 10458,
+          "dehazedClothPixels": 636,
+          "cleanedNeutralBackgroundPixels": 11707
+        },
+        {
+          "frame": 52,
+          "restoredSourcePixels": 21173,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1342,
+          "removedDetachedPixels": 40,
+          "cleanedFloorPixels": 118,
+          "changedAlphaPixels": 35365,
+          "changedRgbPixels": 21475,
+          "restoredClothPixels": 13409,
+          "dehazedClothPixels": 672,
+          "cleanedNeutralBackgroundPixels": 13275
+        },
+        {
+          "frame": 53,
+          "restoredSourcePixels": 15250,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1930,
+          "removedDetachedPixels": 137,
+          "cleanedFloorPixels": 122,
+          "changedAlphaPixels": 34231,
+          "changedRgbPixels": 15723,
+          "restoredClothPixels": 14067,
+          "dehazedClothPixels": 943,
+          "cleanedNeutralBackgroundPixels": 17101
+        },
+        {
+          "frame": 54,
+          "restoredSourcePixels": 16375,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2059,
+          "removedDetachedPixels": 20,
+          "cleanedFloorPixels": 115,
+          "changedAlphaPixels": 33218,
+          "changedRgbPixels": 16821,
+          "restoredClothPixels": 15032,
+          "dehazedClothPixels": 927,
+          "cleanedNeutralBackgroundPixels": 14922
+        },
+        {
+          "frame": 55,
+          "restoredSourcePixels": 6380,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2097,
+          "removedDetachedPixels": 15,
+          "cleanedFloorPixels": 103,
+          "changedAlphaPixels": 24838,
+          "changedRgbPixels": 7345,
+          "restoredClothPixels": 6173,
+          "dehazedClothPixels": 1541,
+          "cleanedNeutralBackgroundPixels": 16383
+        },
+        {
+          "frame": 56,
+          "restoredSourcePixels": 8251,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2665,
+          "removedDetachedPixels": 43,
+          "cleanedFloorPixels": 213,
+          "changedAlphaPixels": 27497,
+          "changedRgbPixels": 9090,
+          "restoredClothPixels": 7789,
+          "dehazedClothPixels": 1307,
+          "cleanedNeutralBackgroundPixels": 16519
+        },
+        {
+          "frame": 57,
+          "restoredSourcePixels": 8400,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1781,
+          "removedDetachedPixels": 310,
+          "cleanedFloorPixels": 1795,
+          "changedAlphaPixels": 38893,
+          "changedRgbPixels": 8840,
+          "restoredClothPixels": 7879,
+          "dehazedClothPixels": 1071,
+          "cleanedNeutralBackgroundPixels": 27334
+        },
+        {
+          "frame": 58,
+          "restoredSourcePixels": 9141,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2435,
+          "removedDetachedPixels": 131,
+          "cleanedFloorPixels": 840,
+          "changedAlphaPixels": 42447,
+          "changedRgbPixels": 10285,
+          "restoredClothPixels": 8810,
+          "dehazedClothPixels": 1653,
+          "cleanedNeutralBackgroundPixels": 30553
+        },
+        {
+          "frame": 59,
+          "restoredSourcePixels": 12467,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5538,
+          "removedDetachedPixels": 211,
+          "cleanedFloorPixels": 3916,
+          "changedAlphaPixels": 62133,
+          "changedRgbPixels": 12875,
+          "restoredClothPixels": 11589,
+          "dehazedClothPixels": 1083,
+          "cleanedNeutralBackgroundPixels": 41641
+        },
+        {
+          "frame": 60,
+          "restoredSourcePixels": 19701,
+          "removedBlackMattePixels": 4058,
+          "cleanedWeakExteriorPixels": 5539,
+          "removedDetachedPixels": 451,
+          "cleanedFloorPixels": 1318,
+          "changedAlphaPixels": 57261,
+          "changedRgbPixels": 19979,
+          "restoredClothPixels": 12190,
+          "dehazedClothPixels": 856,
+          "cleanedNeutralBackgroundPixels": 27835
+        },
+        {
+          "frame": 61,
+          "restoredSourcePixels": 11218,
+          "removedBlackMattePixels": 167,
+          "cleanedWeakExteriorPixels": 2448,
+          "removedDetachedPixels": 94,
+          "cleanedFloorPixels": 172,
+          "changedAlphaPixels": 34501,
+          "changedRgbPixels": 11533,
+          "restoredClothPixels": 8343,
+          "dehazedClothPixels": 864,
+          "cleanedNeutralBackgroundPixels": 20827
+        },
+        {
+          "frame": 62,
+          "restoredSourcePixels": 16176,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2398,
+          "removedDetachedPixels": 151,
+          "cleanedFloorPixels": 374,
+          "changedAlphaPixels": 48247,
+          "changedRgbPixels": 16427,
+          "restoredClothPixels": 10549,
+          "dehazedClothPixels": 1008,
+          "cleanedNeutralBackgroundPixels": 29557
+        },
+        {
+          "frame": 63,
+          "restoredSourcePixels": 8347,
+          "removedBlackMattePixels": 5881,
+          "cleanedWeakExteriorPixels": 2517,
+          "removedDetachedPixels": 342,
+          "cleanedFloorPixels": 539,
+          "changedAlphaPixels": 55024,
+          "changedRgbPixels": 8822,
+          "restoredClothPixels": 7619,
+          "dehazedClothPixels": 915,
+          "cleanedNeutralBackgroundPixels": 40032
+        },
+        {
+          "frame": 64,
+          "restoredSourcePixels": 3751,
+          "removedBlackMattePixels": 6191,
+          "cleanedWeakExteriorPixels": 1170,
+          "removedDetachedPixels": 419,
+          "cleanedFloorPixels": 510,
+          "changedAlphaPixels": 48651,
+          "changedRgbPixels": 4434,
+          "restoredClothPixels": 3490,
+          "dehazedClothPixels": 986,
+          "cleanedNeutralBackgroundPixels": 39531
+        },
+        {
+          "frame": 65,
+          "restoredSourcePixels": 4911,
+          "removedBlackMattePixels": 5143,
+          "cleanedWeakExteriorPixels": 3276,
+          "removedDetachedPixels": 317,
+          "cleanedFloorPixels": 632,
+          "changedAlphaPixels": 52004,
+          "changedRgbPixels": 5464,
+          "restoredClothPixels": 4519,
+          "dehazedClothPixels": 976,
+          "cleanedNeutralBackgroundPixels": 40276
+        },
+        {
+          "frame": 66,
+          "restoredSourcePixels": 9751,
+          "removedBlackMattePixels": 2063,
+          "cleanedWeakExteriorPixels": 10549,
+          "removedDetachedPixels": 108,
+          "cleanedFloorPixels": 508,
+          "changedAlphaPixels": 62600,
+          "changedRgbPixels": 10453,
+          "restoredClothPixels": 8799,
+          "dehazedClothPixels": 1252,
+          "cleanedNeutralBackgroundPixels": 41153
+        },
+        {
+          "frame": 67,
+          "restoredSourcePixels": 18533,
+          "removedBlackMattePixels": 191,
+          "cleanedWeakExteriorPixels": 3997,
+          "removedDetachedPixels": 251,
+          "cleanedFloorPixels": 465,
+          "changedAlphaPixels": 47949,
+          "changedRgbPixels": 18863,
+          "restoredClothPixels": 17077,
+          "dehazedClothPixels": 855,
+          "cleanedNeutralBackgroundPixels": 25027
+        },
+        {
+          "frame": 68,
+          "restoredSourcePixels": 23339,
+          "removedBlackMattePixels": 101,
+          "cleanedWeakExteriorPixels": 2609,
+          "removedDetachedPixels": 258,
+          "cleanedFloorPixels": 456,
+          "changedAlphaPixels": 54023,
+          "changedRgbPixels": 23745,
+          "restoredClothPixels": 19783,
+          "dehazedClothPixels": 933,
+          "cleanedNeutralBackgroundPixels": 27811
+        },
+        {
+          "frame": 69,
+          "restoredSourcePixels": 16312,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4007,
+          "removedDetachedPixels": 755,
+          "cleanedFloorPixels": 329,
+          "changedAlphaPixels": 49377,
+          "changedRgbPixels": 16687,
+          "restoredClothPixels": 14852,
+          "dehazedClothPixels": 909,
+          "cleanedNeutralBackgroundPixels": 28660
+        },
+        {
+          "frame": 70,
+          "restoredSourcePixels": 16170,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4350,
+          "removedDetachedPixels": 516,
+          "cleanedFloorPixels": 876,
+          "changedAlphaPixels": 54773,
+          "changedRgbPixels": 16547,
+          "restoredClothPixels": 13423,
+          "dehazedClothPixels": 850,
+          "cleanedNeutralBackgroundPixels": 33793
+        },
+        {
+          "frame": 71,
+          "restoredSourcePixels": 11484,
+          "removedBlackMattePixels": 3468,
+          "cleanedWeakExteriorPixels": 7682,
+          "removedDetachedPixels": 534,
+          "cleanedFloorPixels": 1182,
+          "changedAlphaPixels": 87752,
+          "changedRgbPixels": 11969,
+          "restoredClothPixels": 9648,
+          "dehazedClothPixels": 1005,
+          "cleanedNeutralBackgroundPixels": 65946
+        },
+        {
+          "frame": 72,
+          "restoredSourcePixels": 5191,
+          "removedBlackMattePixels": 3053,
+          "cleanedWeakExteriorPixels": 4290,
+          "removedDetachedPixels": 659,
+          "cleanedFloorPixels": 2035,
+          "changedAlphaPixels": 78316,
+          "changedRgbPixels": 7007,
+          "restoredClothPixels": 3660,
+          "dehazedClothPixels": 1975,
+          "cleanedNeutralBackgroundPixels": 65824
+        },
+        {
+          "frame": 73,
+          "restoredSourcePixels": 3599,
+          "removedBlackMattePixels": 1015,
+          "cleanedWeakExteriorPixels": 4369,
+          "removedDetachedPixels": 295,
+          "cleanedFloorPixels": 1201,
+          "changedAlphaPixels": 41406,
+          "changedRgbPixels": 4739,
+          "restoredClothPixels": 2570,
+          "dehazedClothPixels": 1375,
+          "cleanedNeutralBackgroundPixels": 32309
+        },
+        {
+          "frame": 74,
+          "restoredSourcePixels": 3966,
+          "removedBlackMattePixels": 1322,
+          "cleanedWeakExteriorPixels": 1269,
+          "removedDetachedPixels": 354,
+          "cleanedFloorPixels": 941,
+          "changedAlphaPixels": 42704,
+          "changedRgbPixels": 4851,
+          "restoredClothPixels": 3263,
+          "dehazedClothPixels": 1316,
+          "cleanedNeutralBackgroundPixels": 35906
+        },
+        {
+          "frame": 75,
+          "restoredSourcePixels": 7098,
+          "removedBlackMattePixels": 2341,
+          "cleanedWeakExteriorPixels": 2726,
+          "removedDetachedPixels": 190,
+          "cleanedFloorPixels": 1205,
+          "changedAlphaPixels": 51922,
+          "changedRgbPixels": 7927,
+          "restoredClothPixels": 6328,
+          "dehazedClothPixels": 1418,
+          "cleanedNeutralBackgroundPixels": 39957
+        },
+        {
+          "frame": 76,
+          "restoredSourcePixels": 9554,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3830,
+          "removedDetachedPixels": 387,
+          "cleanedFloorPixels": 371,
+          "changedAlphaPixels": 32281,
+          "changedRgbPixels": 9924,
+          "restoredClothPixels": 8422,
+          "dehazedClothPixels": 994,
+          "cleanedNeutralBackgroundPixels": 18740
+        },
+        {
+          "frame": 77,
+          "restoredSourcePixels": 6394,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3060,
+          "removedDetachedPixels": 160,
+          "cleanedFloorPixels": 1432,
+          "changedAlphaPixels": 28883,
+          "changedRgbPixels": 6945,
+          "restoredClothPixels": 6081,
+          "dehazedClothPixels": 1131,
+          "cleanedNeutralBackgroundPixels": 18794
+        },
+        {
+          "frame": 78,
+          "restoredSourcePixels": 7034,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3341,
+          "removedDetachedPixels": 163,
+          "cleanedFloorPixels": 1528,
+          "changedAlphaPixels": 31025,
+          "changedRgbPixels": 7423,
+          "restoredClothPixels": 6803,
+          "dehazedClothPixels": 1030,
+          "cleanedNeutralBackgroundPixels": 19908
+        },
+        {
+          "frame": 79,
+          "restoredSourcePixels": 5900,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2004,
+          "removedDetachedPixels": 119,
+          "cleanedFloorPixels": 936,
+          "changedAlphaPixels": 22876,
+          "changedRgbPixels": 6336,
+          "restoredClothPixels": 5684,
+          "dehazedClothPixels": 1079,
+          "cleanedNeutralBackgroundPixels": 14425
+        },
+        {
+          "frame": 80,
+          "restoredSourcePixels": 5853,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2112,
+          "removedDetachedPixels": 21,
+          "cleanedFloorPixels": 1100,
+          "changedAlphaPixels": 26382,
+          "changedRgbPixels": 6400,
+          "restoredClothPixels": 5700,
+          "dehazedClothPixels": 1307,
+          "cleanedNeutralBackgroundPixels": 17873
+        },
+        {
+          "frame": 81,
+          "restoredSourcePixels": 5811,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2977,
+          "removedDetachedPixels": 73,
+          "cleanedFloorPixels": 1886,
+          "changedAlphaPixels": 32029,
+          "changedRgbPixels": 6429,
+          "restoredClothPixels": 4936,
+          "dehazedClothPixels": 1091,
+          "cleanedNeutralBackgroundPixels": 22065
+        },
+        {
+          "frame": 82,
+          "restoredSourcePixels": 6364,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2793,
+          "removedDetachedPixels": 24,
+          "cleanedFloorPixels": 2666,
+          "changedAlphaPixels": 34112,
+          "changedRgbPixels": 7074,
+          "restoredClothPixels": 5307,
+          "dehazedClothPixels": 1183,
+          "cleanedNeutralBackgroundPixels": 23504
+        },
+        {
+          "frame": 83,
+          "restoredSourcePixels": 6976,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2269,
+          "removedDetachedPixels": 75,
+          "cleanedFloorPixels": 2635,
+          "changedAlphaPixels": 34029,
+          "changedRgbPixels": 7427,
+          "restoredClothPixels": 5941,
+          "dehazedClothPixels": 1151,
+          "cleanedNeutralBackgroundPixels": 23149
+        },
+        {
+          "frame": 84,
+          "restoredSourcePixels": 7253,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2011,
+          "removedDetachedPixels": 78,
+          "cleanedFloorPixels": 3487,
+          "changedAlphaPixels": 37751,
+          "changedRgbPixels": 7655,
+          "restoredClothPixels": 6054,
+          "dehazedClothPixels": 1064,
+          "cleanedNeutralBackgroundPixels": 26388
+        },
+        {
+          "frame": 85,
+          "restoredSourcePixels": 8050,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3129,
+          "removedDetachedPixels": 122,
+          "cleanedFloorPixels": 3966,
+          "changedAlphaPixels": 41876,
+          "changedRgbPixels": 8297,
+          "restoredClothPixels": 6851,
+          "dehazedClothPixels": 845,
+          "cleanedNeutralBackgroundPixels": 28044
+        },
+        {
+          "frame": 86,
+          "restoredSourcePixels": 9600,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2521,
+          "removedDetachedPixels": 115,
+          "cleanedFloorPixels": 3484,
+          "changedAlphaPixels": 40620,
+          "changedRgbPixels": 10112,
+          "restoredClothPixels": 8259,
+          "dehazedClothPixels": 960,
+          "cleanedNeutralBackgroundPixels": 26411
+        },
+        {
+          "frame": 87,
+          "restoredSourcePixels": 8772,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3850,
+          "removedDetachedPixels": 49,
+          "cleanedFloorPixels": 4331,
+          "changedAlphaPixels": 46331,
+          "changedRgbPixels": 9411,
+          "restoredClothPixels": 7273,
+          "dehazedClothPixels": 1004,
+          "cleanedNeutralBackgroundPixels": 30864
+        },
+        {
+          "frame": 88,
+          "restoredSourcePixels": 6454,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2705,
+          "removedDetachedPixels": 44,
+          "cleanedFloorPixels": 3351,
+          "changedAlphaPixels": 42091,
+          "changedRgbPixels": 7040,
+          "restoredClothPixels": 5838,
+          "dehazedClothPixels": 1055,
+          "cleanedNeutralBackgroundPixels": 30548
+        },
+        {
+          "frame": 89,
+          "restoredSourcePixels": 3447,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2305,
+          "removedDetachedPixels": 35,
+          "cleanedFloorPixels": 1192,
+          "changedAlphaPixels": 30700,
+          "changedRgbPixels": 3999,
+          "restoredClothPixels": 3213,
+          "dehazedClothPixels": 756,
+          "cleanedNeutralBackgroundPixels": 24333
+        },
+        {
+          "frame": 90,
+          "restoredSourcePixels": 2834,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2499,
+          "removedDetachedPixels": 64,
+          "cleanedFloorPixels": 1294,
+          "changedAlphaPixels": 32574,
+          "changedRgbPixels": 3474,
+          "restoredClothPixels": 2642,
+          "dehazedClothPixels": 842,
+          "cleanedNeutralBackgroundPixels": 26547
+        },
+        {
+          "frame": 91,
+          "restoredSourcePixels": 3415,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2623,
+          "removedDetachedPixels": 14,
+          "cleanedFloorPixels": 5446,
+          "changedAlphaPixels": 32089,
+          "changedRgbPixels": 3754,
+          "restoredClothPixels": 3181,
+          "dehazedClothPixels": 735,
+          "cleanedNeutralBackgroundPixels": 21974
+        },
+        {
+          "frame": 92,
+          "restoredSourcePixels": 5666,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3067,
+          "removedDetachedPixels": 103,
+          "cleanedFloorPixels": 2941,
+          "changedAlphaPixels": 34220,
+          "changedRgbPixels": 6020,
+          "restoredClothPixels": 3871,
+          "dehazedClothPixels": 697,
+          "cleanedNeutralBackgroundPixels": 23422
+        },
+        {
+          "frame": 93,
+          "restoredSourcePixels": 5643,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2940,
+          "removedDetachedPixels": 85,
+          "cleanedFloorPixels": 4017,
+          "changedAlphaPixels": 33454,
+          "changedRgbPixels": 6067,
+          "restoredClothPixels": 3988,
+          "dehazedClothPixels": 695,
+          "cleanedNeutralBackgroundPixels": 21774
+        },
+        {
+          "frame": 94,
+          "restoredSourcePixels": 3793,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2695,
+          "removedDetachedPixels": 21,
+          "cleanedFloorPixels": 4529,
+          "changedAlphaPixels": 31418,
+          "changedRgbPixels": 4181,
+          "restoredClothPixels": 3292,
+          "dehazedClothPixels": 650,
+          "cleanedNeutralBackgroundPixels": 21297
+        },
+        {
+          "frame": 95,
+          "restoredSourcePixels": 8019,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4409,
+          "removedDetachedPixels": 115,
+          "cleanedFloorPixels": 4090,
+          "changedAlphaPixels": 38884,
+          "changedRgbPixels": 8396,
+          "restoredClothPixels": 3715,
+          "dehazedClothPixels": 601,
+          "cleanedNeutralBackgroundPixels": 23481
+        },
+        {
+          "frame": 96,
+          "restoredSourcePixels": 4357,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 6921,
+          "removedDetachedPixels": 588,
+          "cleanedFloorPixels": 3832,
+          "changedAlphaPixels": 39159,
+          "changedRgbPixels": 4801,
+          "restoredClothPixels": 3128,
+          "dehazedClothPixels": 631,
+          "cleanedNeutralBackgroundPixels": 25622
+        },
+        {
+          "frame": 97,
+          "restoredSourcePixels": 2095,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2820,
+          "removedDetachedPixels": 253,
+          "cleanedFloorPixels": 1889,
+          "changedAlphaPixels": 33280,
+          "changedRgbPixels": 2434,
+          "restoredClothPixels": 2038,
+          "dehazedClothPixels": 467,
+          "cleanedNeutralBackgroundPixels": 27246
+        },
+        {
+          "frame": 98,
+          "restoredSourcePixels": 2244,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3052,
+          "removedDetachedPixels": 50,
+          "cleanedFloorPixels": 1335,
+          "changedAlphaPixels": 34973,
+          "changedRgbPixels": 2599,
+          "restoredClothPixels": 2239,
+          "dehazedClothPixels": 544,
+          "cleanedNeutralBackgroundPixels": 28988
+        },
+        {
+          "frame": 99,
+          "restoredSourcePixels": 2758,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4045,
+          "removedDetachedPixels": 92,
+          "cleanedFloorPixels": 1585,
+          "changedAlphaPixels": 28984,
+          "changedRgbPixels": 3229,
+          "restoredClothPixels": 2531,
+          "dehazedClothPixels": 686,
+          "cleanedNeutralBackgroundPixels": 21420
+        },
+        {
+          "frame": 100,
+          "restoredSourcePixels": 5797,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4239,
+          "removedDetachedPixels": 38,
+          "cleanedFloorPixels": 2361,
+          "changedAlphaPixels": 34835,
+          "changedRgbPixels": 6134,
+          "restoredClothPixels": 2038,
+          "dehazedClothPixels": 530,
+          "cleanedNeutralBackgroundPixels": 24227
+        },
+        {
+          "frame": 101,
+          "restoredSourcePixels": 2018,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3368,
+          "removedDetachedPixels": 3,
+          "cleanedFloorPixels": 819,
+          "changedAlphaPixels": 25149,
+          "changedRgbPixels": 2290,
+          "restoredClothPixels": 1943,
+          "dehazedClothPixels": 399,
+          "cleanedNeutralBackgroundPixels": 19436
+        },
+        {
+          "frame": 102,
+          "restoredSourcePixels": 7645,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1553,
+          "removedDetachedPixels": 6,
+          "cleanedFloorPixels": 862,
+          "changedAlphaPixels": 30367,
+          "changedRgbPixels": 7992,
+          "restoredClothPixels": 2374,
+          "dehazedClothPixels": 504,
+          "cleanedNeutralBackgroundPixels": 20774
+        },
+        {
+          "frame": 103,
+          "restoredSourcePixels": 2780,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1167,
+          "removedDetachedPixels": 6,
+          "cleanedFloorPixels": 990,
+          "changedAlphaPixels": 27686,
+          "changedRgbPixels": 3059,
+          "restoredClothPixels": 2691,
+          "dehazedClothPixels": 502,
+          "cleanedNeutralBackgroundPixels": 23129
+        },
+        {
+          "frame": 104,
+          "restoredSourcePixels": 3725,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2405,
+          "removedDetachedPixels": 24,
+          "cleanedFloorPixels": 716,
+          "changedAlphaPixels": 34520,
+          "changedRgbPixels": 4069,
+          "restoredClothPixels": 3725,
+          "dehazedClothPixels": 644,
+          "cleanedNeutralBackgroundPixels": 27954
+        },
+        {
+          "frame": 105,
+          "restoredSourcePixels": 3418,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4335,
+          "removedDetachedPixels": 88,
+          "cleanedFloorPixels": 2263,
+          "changedAlphaPixels": 31993,
+          "changedRgbPixels": 3643,
+          "restoredClothPixels": 3418,
+          "dehazedClothPixels": 442,
+          "cleanedNeutralBackgroundPixels": 23104
+        },
+        {
+          "frame": 106,
+          "restoredSourcePixels": 3181,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4318,
+          "removedDetachedPixels": 21,
+          "cleanedFloorPixels": 1508,
+          "changedAlphaPixels": 28252,
+          "changedRgbPixels": 3422,
+          "restoredClothPixels": 3181,
+          "dehazedClothPixels": 546,
+          "cleanedNeutralBackgroundPixels": 19851
+        },
+        {
+          "frame": 107,
+          "restoredSourcePixels": 4067,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3550,
+          "removedDetachedPixels": 20,
+          "cleanedFloorPixels": 1354,
+          "changedAlphaPixels": 27591,
+          "changedRgbPixels": 4172,
+          "restoredClothPixels": 4067,
+          "dehazedClothPixels": 616,
+          "cleanedNeutralBackgroundPixels": 19109
+        },
+        {
+          "frame": 108,
+          "restoredSourcePixels": 4215,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3864,
+          "removedDetachedPixels": 93,
+          "cleanedFloorPixels": 1507,
+          "changedAlphaPixels": 31377,
+          "changedRgbPixels": 4332,
+          "restoredClothPixels": 4215,
+          "dehazedClothPixels": 639,
+          "cleanedNeutralBackgroundPixels": 22346
+        },
+        {
+          "frame": 109,
+          "restoredSourcePixels": 3944,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3872,
+          "removedDetachedPixels": 86,
+          "cleanedFloorPixels": 3309,
+          "changedAlphaPixels": 28451,
+          "changedRgbPixels": 4191,
+          "restoredClothPixels": 3944,
+          "dehazedClothPixels": 590,
+          "cleanedNeutralBackgroundPixels": 18559
+        },
+        {
+          "frame": 110,
+          "restoredSourcePixels": 3802,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4225,
+          "removedDetachedPixels": 62,
+          "cleanedFloorPixels": 2810,
+          "changedAlphaPixels": 28160,
+          "changedRgbPixels": 4153,
+          "restoredClothPixels": 3802,
+          "dehazedClothPixels": 713,
+          "cleanedNeutralBackgroundPixels": 18649
+        },
+        {
+          "frame": 111,
+          "restoredSourcePixels": 3754,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5705,
+          "removedDetachedPixels": 13,
+          "cleanedFloorPixels": 2964,
+          "changedAlphaPixels": 30651,
+          "changedRgbPixels": 4011,
+          "restoredClothPixels": 3754,
+          "dehazedClothPixels": 541,
+          "cleanedNeutralBackgroundPixels": 19654
+        },
+        {
+          "frame": 112,
+          "restoredSourcePixels": 4083,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5880,
+          "removedDetachedPixels": 16,
+          "cleanedFloorPixels": 1898,
+          "changedAlphaPixels": 33818,
+          "changedRgbPixels": 4374,
+          "restoredClothPixels": 4083,
+          "dehazedClothPixels": 635,
+          "cleanedNeutralBackgroundPixels": 23173
+        },
+        {
+          "frame": 113,
+          "restoredSourcePixels": 3923,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3582,
+          "removedDetachedPixels": 41,
+          "cleanedFloorPixels": 2172,
+          "changedAlphaPixels": 33597,
+          "changedRgbPixels": 4187,
+          "restoredClothPixels": 3923,
+          "dehazedClothPixels": 607,
+          "cleanedNeutralBackgroundPixels": 25072
+        },
+        {
+          "frame": 114,
+          "restoredSourcePixels": 4065,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4403,
+          "removedDetachedPixels": 157,
+          "cleanedFloorPixels": 1661,
+          "changedAlphaPixels": 31390,
+          "changedRgbPixels": 4404,
+          "restoredClothPixels": 4065,
+          "dehazedClothPixels": 681,
+          "cleanedNeutralBackgroundPixels": 22462
+        },
+        {
+          "frame": 115,
+          "restoredSourcePixels": 4020,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4685,
+          "removedDetachedPixels": 23,
+          "cleanedFloorPixels": 1680,
+          "changedAlphaPixels": 36006,
+          "changedRgbPixels": 4262,
+          "restoredClothPixels": 4020,
+          "dehazedClothPixels": 601,
+          "cleanedNeutralBackgroundPixels": 26644
+        },
+        {
+          "frame": 116,
+          "restoredSourcePixels": 3923,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 4637,
+          "removedDetachedPixels": 150,
+          "cleanedFloorPixels": 1601,
+          "changedAlphaPixels": 33598,
+          "changedRgbPixels": 4154,
+          "restoredClothPixels": 3923,
+          "dehazedClothPixels": 685,
+          "cleanedNeutralBackgroundPixels": 24715
+        },
+        {
+          "frame": 117,
+          "restoredSourcePixels": 3765,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 5355,
+          "removedDetachedPixels": 127,
+          "cleanedFloorPixels": 1420,
+          "changedAlphaPixels": 32601,
+          "changedRgbPixels": 3912,
+          "restoredClothPixels": 3765,
+          "dehazedClothPixels": 531,
+          "cleanedNeutralBackgroundPixels": 23248
+        },
+        {
+          "frame": 118,
+          "restoredSourcePixels": 3803,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 3055,
+          "removedDetachedPixels": 115,
+          "cleanedFloorPixels": 1112,
+          "changedAlphaPixels": 32361,
+          "changedRgbPixels": 3988,
+          "restoredClothPixels": 3803,
+          "dehazedClothPixels": 639,
+          "cleanedNeutralBackgroundPixels": 25233
+        },
+        {
+          "frame": 119,
+          "restoredSourcePixels": 3705,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 2978,
+          "removedDetachedPixels": 113,
+          "cleanedFloorPixels": 1038,
+          "changedAlphaPixels": 32014,
+          "changedRgbPixels": 3884,
+          "restoredClothPixels": 3705,
+          "dehazedClothPixels": 564,
+          "cleanedNeutralBackgroundPixels": 25085
+        },
+        {
+          "frame": 120,
+          "restoredSourcePixels": 3585,
+          "removedBlackMattePixels": 0,
+          "cleanedWeakExteriorPixels": 1842,
+          "removedDetachedPixels": 18,
+          "cleanedFloorPixels": 636,
+          "changedAlphaPixels": 31902,
+          "changedRgbPixels": 3698,
+          "restoredClothPixels": 3585,
+          "dehazedClothPixels": 485,
+          "cleanedNeutralBackgroundPixels": 26057
+        }
+      ],
+      "totals": {
+        "restoredSourcePixels": 822840,
+        "removedBlackMattePixels": 34994,
+        "cleanedWeakExteriorPixels": 407198,
+        "removedDetachedPixels": 11700,
+        "cleanedFloorPixels": 121984,
+        "changedAlphaPixels": 4762106,
+        "changedRgbPixels": 864464,
+        "restoredClothPixels": 666976,
+        "dehazedClothPixels": 81108,
+        "cleanedNeutralBackgroundPixels": 3447254
+      }
+    },
+    "weaponCompletion": {
+      "reference": "art/sources/blight-big-mace-reference.png",
+      "referenceSha256": "6d205cfb73065235151b021187b0cfdeab9b89c1956c8397fbef83121513f6c8",
+      "referenceSourceFrame": 104,
+      "padding": [
+        192,
+        0,
+        192,
+        0
+      ],
+      "nativeCanvas": [
+        624,
+        832
+      ],
+      "method": "Intact original frame104 mace head and shaft, source100 pendant; tracked affine transforms with source lighting complete clipped weapon parts in transparent margins; the same fitted mace covers damaged native head regions throughout frames60\u2013102 to prevent seams and partial matte holes; symmetric padding without character scaling, retiming or camera movement",
+      "fullHeadFrames": [
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102
+      ],
+      "perFrame": [
+        {
+          "frame": 1,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 2,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 3,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 4,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 5,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 6,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 7,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 8,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 9,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 10,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 11,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 12,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 13,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 14,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 15,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 16,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 17,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 18,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 19,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 20,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 21,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 22,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 23,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 24,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 25,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 26,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 27,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 28,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 29,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 30,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 31,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 32,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 33,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 34,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 35,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 36,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 37,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 38,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 39,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 40,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 41,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 42,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 43,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 44,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 45,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 46,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 47,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 48,
+          "completedWeaponPixels": 12,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 49,
+          "completedWeaponPixels": 257,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 50,
+          "completedWeaponPixels": 600,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 51,
+          "completedWeaponPixels": 322,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 52,
+          "completedWeaponPixels": 98,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 53,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 54,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 55,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 56,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 57,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 58,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 59,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 60,
+          "completedWeaponPixels": 27,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 61,
+          "completedWeaponPixels": 5724,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 62,
+          "completedWeaponPixels": 7249,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 63,
+          "completedWeaponPixels": 8642,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 64,
+          "completedWeaponPixels": 9804,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 65,
+          "completedWeaponPixels": 10590,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 66,
+          "completedWeaponPixels": 10953,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 67,
+          "completedWeaponPixels": 11019,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 68,
+          "completedWeaponPixels": 11030,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 69,
+          "completedWeaponPixels": 10941,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 70,
+          "completedWeaponPixels": 10875,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 71,
+          "completedWeaponPixels": 10851,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 72,
+          "completedWeaponPixels": 10792,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 73,
+          "completedWeaponPixels": 10701,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 74,
+          "completedWeaponPixels": 10610,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 75,
+          "completedWeaponPixels": 10454,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 76,
+          "completedWeaponPixels": 10205,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 77,
+          "completedWeaponPixels": 10154,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 78,
+          "completedWeaponPixels": 9580,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 79,
+          "completedWeaponPixels": 8648,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 80,
+          "completedWeaponPixels": 8000,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 81,
+          "completedWeaponPixels": 7453,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 82,
+          "completedWeaponPixels": 6876,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 83,
+          "completedWeaponPixels": 6255,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 84,
+          "completedWeaponPixels": 5591,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 85,
+          "completedWeaponPixels": 5147,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 86,
+          "completedWeaponPixels": 4804,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 87,
+          "completedWeaponPixels": 4698,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 88,
+          "completedWeaponPixels": 4576,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 89,
+          "completedWeaponPixels": 4583,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 90,
+          "completedWeaponPixels": 4567,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 91,
+          "completedWeaponPixels": 4690,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 92,
+          "completedWeaponPixels": 4810,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 93,
+          "completedWeaponPixels": 5150,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 94,
+          "completedWeaponPixels": 5912,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 95,
+          "completedWeaponPixels": 5363,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 96,
+          "completedWeaponPixels": 5010,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 97,
+          "completedWeaponPixels": 4774,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 98,
+          "completedWeaponPixels": 4646,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 99,
+          "completedWeaponPixels": 3534,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 100,
+          "completedWeaponPixels": 2425,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 101,
+          "completedWeaponPixels": 734,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 102,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": true
+        },
+        {
+          "frame": 103,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 104,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 105,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 106,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 107,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 108,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 109,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 110,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 111,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 112,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 113,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 114,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 115,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 116,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 117,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 118,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 119,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        },
+        {
+          "frame": 120,
+          "completedWeaponPixels": 0,
+          "replacedDamagedHead": false
+        }
+      ],
+      "completedFrames": 47
+    },
     "crop": [
       0,
       0,
@@ -1938,7 +6299,7 @@
       832
     ],
     "dimensions": [
-      624,
+      1008,
       832
     ],
     "durationSeconds": 5.0,
@@ -2066,6 +6427,6 @@
       118,
       119
     ],
-    "sha256": "51568426feb4f6bb4ce6d71669f47f280b81ce10bd4e9ad08ff69689417609d1"
+    "sha256": "efbf711f2d5734510891c80955a70e5e01bf14c3685328d67a4a52cf7a82b2dd"
   }
 }

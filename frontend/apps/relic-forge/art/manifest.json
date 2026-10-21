@@ -39,19 +39,6 @@
     "bytes": 49328
   },
   {
-    "id": "blight-keeper",
-    "source": "C:\\Users\\user\\Downloads\\Untitled94 (1).png",
-    "preservedSource": "art/sources/Untitled94 (1).png",
-    "sha256": "c6567ddcbb53b3d91875bfd850bf868ff658c3e73dca2a527ef9f2a112341e6f",
-    "role": "Blight hooded creature / premium keeper",
-    "url": "/art/blight-keeper.webp",
-    "dimensions": [
-      569,
-      1000
-    ],
-    "bytes": 138900
-  },
-  {
     "id": "blight-traveler",
     "source": "C:\\Users\\user\\Downloads\\Untitled92 (2).png",
     "preservedSource": "art/sources/Untitled92 (2).png",

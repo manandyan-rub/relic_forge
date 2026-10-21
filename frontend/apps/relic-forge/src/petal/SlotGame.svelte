@@ -26,6 +26,7 @@
  let freeSpins = $state(0), freeSpinNumber = $state(0), featureWin = $state(0), win = $state(0);
  let awardedFreeSpins = $state(0);
  let finishFreeSpinsAward: (()=>void) | undefined;
+ let startFreeSpinsAward: (()=>void) | undefined;
  let reaction = $state<Reaction>('idle');
  let message = $state('A little magic is waiting.');
  let error = $state(''), blocked = $state(false), replayDone = $state(false);
@@ -71,13 +72,14 @@
   awardedFreeSpins=count;
   return new Promise<void>(resolve=>{
    let finished=false;
+   let timer: ReturnType<typeof setTimeout> | undefined;
    const done=()=>{
     if(finished)return;finished=true;
     clearTimeout(timer);abort.signal.removeEventListener('abort',done);
-    finishFreeSpinsAward=undefined;awardedFreeSpins=0;resolve();
+    finishFreeSpinsAward=undefined;startFreeSpinsAward=undefined;awardedFreeSpins=0;resolve();
    };
-   // Keep the award readable in Turbo and reduced-motion modes too.
-   const timer=setTimeout(done,2200);
+   // Start the reading time only after the count has emerged from the gift.
+   startFreeSpinsAward=()=>{if(!finished&&timer===undefined)timer=setTimeout(done,2200);};
    finishFreeSpinsAward=done;abort.signal.addEventListener('abort',done,{once:true});
   });
  }
@@ -258,7 +260,7 @@
  {#if error}<div class="round-error" role="alert">{error}</div>{/if}
  <BetControls bet={money(bet)} balance={money(stateBet.balanceAmount)} {locked} {canSpin} {busy} {auto} {turbo} {canOpenBonus} openBonus={()=>panel='bonus'} autoAllowed={!stateConfig.jurisdiction?.disabledAutoplay&&!replay()} turboAllowed={!stateConfig.jurisdiction?.disabledTurbo&&!replay()} {change} spin={()=>void spin()} toggleAuto={()=>void toggleAuto()} toggleTurbo={()=>turbo=!turbo}/>
  <div class="game-footnote"><span>{demo()?'DEVELOPMENT DEMO · FIXED SHOWCASE BOOKS':replay()?'READ-ONLY REPLAY':'THE LAST PETAL'}</span><span>{stateConfig.jurisdiction?.displaySessionTimer?`Session ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`:'3 SCATTERS · 10 FREE SPINS'}{stateConfig.jurisdiction?.displayNetPosition?` · Net ${money(netPosition)}`:''}</span></div>
- {#if awardedFreeSpins>0}<FreeSpinsAward {world} count={awardedFreeSpins} {reduced} oncontinue={(stopAutoplay=false)=>{if(stopAutoplay)auto=0;finishFreeSpinsAward?.();}}/>{/if}
+ {#if awardedFreeSpins>0}<FreeSpinsAward {world} count={awardedFreeSpins} {reduced} onreveal={()=>startFreeSpinsAward?.()} oncontinue={(stopAutoplay=false)=>{if(stopAutoplay)auto=0;finishFreeSpinsAward?.();}}/>{/if}
  {#if panel==='bonus'}<BonusBuy {world} stake={bet} currency={stateBet.currency} balance={stateBet.balanceAmount} format={money} reason={bonusUnavailableReason} close={()=>panel=null} {purchase}/>
  {:else if panel}<GameSettings {panel} {world} close={()=>panel=null} {reduced} setReduced={v=>reduced=v} {sound} setSound={v=>sound=v}/>{/if}
 </main>

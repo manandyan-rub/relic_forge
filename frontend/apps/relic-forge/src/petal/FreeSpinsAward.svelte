@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { art } from './config';
+	import FreeSpinsGift from './FreeSpinsGift.svelte';
 	import type { World } from './types';
 
 	let {
@@ -8,12 +9,32 @@
 		count,
 		reduced,
 		oncontinue,
-	}: { world: World; count: number; reduced: boolean; oncontinue: (stopAutoplay?: boolean) => void } = $props();
+		onreveal,
+	}: { world: World; count: number; reduced: boolean; oncontinue: (stopAutoplay?: boolean) => void; onreveal: () => void } = $props();
 
 	const id = $props.id();
 	let dialog = $state<HTMLDialogElement>();
 	let startButton = $state<HTMLButtonElement>();
 	let dismissed = false;
+	let giftReady = $state(false);
+	let rewardRevealed = $state(false);
+	let revealTimer: ReturnType<typeof setTimeout> | undefined;
+	let loadTimer: ReturnType<typeof setTimeout> | undefined;
+
+	function finishReveal() {
+		if (rewardRevealed || dismissed) return;
+		clearTimeout(revealTimer);
+		rewardRevealed = true;
+		onreveal();
+	}
+
+	function reveal() {
+		if (giftReady || dismissed) return;
+		clearTimeout(loadTimer);
+		giftReady = true;
+		if (reduced) finishReveal();
+		else revealTimer = setTimeout(finishReveal, 2250);
+	}
 
 	function continueOnce(stopAutoplay = false) {
 		if (dismissed) return;
@@ -49,7 +70,14 @@
 		dialog?.showModal();
 		dialog?.addEventListener('keydown', handleKeydown);
 		startButton?.focus({ preventScroll: true });
+		// A stalled decorative image must never hold up the feature.
+		if (!giftReady) loadTimer = setTimeout(() => {
+			giftReady = true;
+			finishReveal();
+		}, 2500);
 		return () => {
+			clearTimeout(loadTimer);
+			clearTimeout(revealTimer);
 			dialog?.removeEventListener('keydown', handleKeydown);
 			if (dialog?.open) dialog.close();
 			document.documentElement.style.overflow = previousOverflow;
@@ -76,20 +104,25 @@
 	oncancel={handleCancel}
 >
 	<div class="scene" aria-hidden="true"></div>
-	<div class="content">
+	<div class="content" class:gift-ready={giftReady}>
 		<div class="presentation">
 			<div class="presenter">
 				<img
 					class="presenter-art"
-					src={art(world, world === 'BLOOM' ? 'guardian' : 'traveler')}
-					width={world === 'BLOOM' ? 453 : 438}
-					height="650"
+					src={world === 'BLOOM' ? art(world, 'guardian') : '/art/blight-gift-presenter.webp'}
+					width={world === 'BLOOM' ? 453 : 780}
+					height={world === 'BLOOM' ? 650 : 1300}
 					alt=""
 				/>
 				<div class="award-copy">
-					<p class="kicker">YOU WON</p>
-					<strong class="count" aria-hidden="true">{count}</strong>
-					<h2 id={`${id}-heading`}>FREE SPINS</h2>
+					<FreeSpinsGift {world} {reduced} opened={rewardRevealed} onready={reveal} />
+					<div class="award-reward">
+						<div class="reward-motion" class:revealed={rewardRevealed || reduced} onanimationend={finishReveal}>
+							<p class="kicker">YOU WON</p>
+							<strong class="count" aria-hidden="true">{count}</strong>
+							<h2 id={`${id}-heading`}>FREE SPINS</h2>
+						</div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -179,7 +212,7 @@
 		position: absolute;
 		bottom: 0;
 		left: 18%;
-		height: 80%;
+		height: 60%;
 		aspect-ratio: 453 / 650;
 	}
 
@@ -193,21 +226,44 @@
 		position: absolute;
 		left: 90%;
 		top: 28%;
-		width: 48cqw;
-		transform: translate(-50%, calc(-100% - 12px));
+		width: clamp(110px, 30cqw, 210px);
+		transform: translate(-50%, -96%);
 		text-shadow: 0 3px 16px #000c;
+	}
+
+	.award-reward {
+		position: absolute;
+		z-index: 2;
+		left: 50%;
+		bottom: 55%;
+		width: 48cqw;
+		transform: translateX(-50%);
+		pointer-events: none;
+	}
+
+	.reward-motion {
+		transform-origin: center bottom;
+		animation: reward-emerge 1000ms cubic-bezier(0.2, 0.75, 0.2, 1) 1100ms both;
+		animation-play-state: paused;
+	}
+
+	.gift-ready .reward-motion {
+		animation-play-state: running;
+	}
+
+	.reward-motion.revealed {
+		animation: none;
 	}
 
 	.award[data-world='BLIGHT'] .presenter {
 		left: auto;
 		right: 20%;
-		aspect-ratio: 438 / 650;
+		aspect-ratio: 780 / 1300;
 	}
 
 	.award[data-world='BLIGHT'] .award-copy {
-		left: 17%;
-		top: 45%;
-		margin-left: -8cqw;
+		left: -6%;
+		top: 46%;
 	}
 
 	.kicker {
@@ -221,7 +277,7 @@
 	.count {
 		display: block;
 		color: var(--award-accent);
-		font-size: clamp(64px, 24cqw, 164px);
+		font-size: clamp(64px, 19cqw, 130px);
 		font-weight: 800;
 		font-variant-numeric: tabular-nums;
 		line-height: 0.88;
@@ -269,8 +325,23 @@
 		white-space: nowrap;
 	}
 
-	.reduced .content {
+	.reduced .content,
+	.reduced .reward-motion {
 		animation: none;
+	}
+
+	@keyframes reward-emerge {
+		from {
+			opacity: 0;
+			transform: translateY(100px) scale(0.2);
+		}
+		25% {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0) scale(1);
+		}
 	}
 
 	@keyframes award-enter {
@@ -290,13 +361,13 @@
 		}
 		.presenter {
 			left: 12%;
-			height: 72%;
+			height: 52%;
 		}
 		.award[data-world='BLIGHT'] .presenter {
 			right: 8%;
 		}
 		.count {
-			font-size: clamp(76px, 27cqw, 140px);
+			font-size: clamp(64px, 24cqw, 120px);
 		}
 		h2 {
 			margin-top: 10px;
@@ -310,7 +381,7 @@
 		}
 		.presenter {
 			left: 12%;
-			height: 72%;
+			height: 52%;
 		}
 		.award[data-world='BLIGHT'] .presenter {
 			right: 12%;
@@ -332,7 +403,8 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.content {
+		.content,
+		.reward-motion {
 			animation: none;
 		}
 	}

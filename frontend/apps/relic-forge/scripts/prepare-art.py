@@ -16,11 +16,7 @@ ENTRIES = [
  ('blight-traveler','Untitled92 (2).png','Blight skull gnome premium',650),
  ('blight-guardian','Untitled108 (1).png','Blight brute premium',650),
  ('bloom-room','Untitled97_Restored2.jpg','Bloom environment',2400),
- ('bloom-bedroom','Untitled97_Restored3.jpg','Additional Bloom scene',2000),
  ('blight-room','Untitled97_Restored_20260607113127.jpg','Blight environment, no character',2400),
- ('blight-composite','Untitled97_Restored_20260607113326.jpg','Reference composite, not used behind independent character',1600),
- ('logo','Untitled122.png','The Last Petal logo',650),
- ('bloom-keeper-alternate','Untitled91_0004-35-53 (1).png','Alternate supplied gnome reference',650),
  ('bloom-keeper-symbol','Untitled91_0004-35-53.png','Keeper reel thumbnail',240),
  ('blight-keeper-symbol','Untitled94 (1).png','Keeper reel thumbnail',240),
  ('bloom-tools-sheet','Untitled93.png','Separated Bloom props source sheet',1000),
@@ -31,7 +27,7 @@ ENTRIES = [
  ('brute-tools-sheet','Untitled118.png','Corrupted brute props source sheet',1000),
  ('guardian-charms-sheet','Ռիմա3.png','Guardian scarf, brooch and pendant source sheet',800),
 ]
-ACTIVE_ASSET_IDS = ['blight-book', 'blight-flower', 'blight-guardian', 'blight-keeper', 'blight-keeper-symbol', 'blight-key', 'blight-lantern', 'blight-mushroom', 'blight-room', 'blight-traveler', 'bloom-book', 'bloom-flower', 'bloom-guardian', 'bloom-keeper-symbol', 'bloom-key', 'bloom-lantern', 'bloom-mushroom', 'bloom-room', 'bloom-traveler', 'bloom-traveler-stage']
+ACTIVE_ASSET_IDS = ['blight-book', 'blight-flower', 'blight-guardian', 'blight-keeper-symbol', 'blight-key', 'blight-lantern', 'blight-mushroom', 'blight-room', 'blight-traveler', 'bloom-book', 'bloom-flower', 'bloom-guardian', 'bloom-keeper-symbol', 'bloom-key', 'bloom-lantern', 'bloom-mushroom', 'bloom-room', 'bloom-traveler', 'bloom-traveler-stage']
 REGIONS = [
  ('bloom-flower','Untitled93.png',(.14,.25,.35,.39),'Flowerpot reel symbol'),
  ('bloom-lantern','Untitled95.png',(.145,.16,.25,.295),'Lantern reel symbol'),
