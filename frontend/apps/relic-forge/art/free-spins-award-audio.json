@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "source": "art/sources/free-spins-award-original.wav",
+  "suppliedFilename": "Create_an_epic_dark__#4-1792919987161.wav",
+  "sourceSha256": "4e1250725068406243d7a651a51994bcac9dabbd3d213ca8b19e35b07bb4032b",
+  "file": "static/audio/free-spins-award.wav",
+  "sha256": "052a8ed708e4f8246002e96064a5cec0e935e2f8043fec188e3ac476196c0db5",
+  "durationSeconds": 3,
+  "sampleRate": 48000,
+  "channels": 2,
+  "sampleWidthBytes": 2,
+  "frames": 144000,
+  "method": "Exact first three seconds of the supplied PCM WAV, preserving original sample bytes.",
+  "playback": "Play once when the free-spin award appears in either world; stop on dismissal, mute, hiding, failure or unmount. Free-spin rounds remain silent.",
+  "verification": {
+    "decodedSamplesMatchSourcePrefix": true,
+    "extraFrames": 0,
+    "sourceCopyByteIdentical": true
+  }
+}

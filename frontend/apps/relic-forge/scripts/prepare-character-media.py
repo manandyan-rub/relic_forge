@@ -9,6 +9,7 @@ The Blight spin attenuates isolated weak dark floor haze, restores its lower
 cloak from a preserved reference frame, and gently antialiases alpha edges.
 The supplied Blight final-win frames retain their RGB and alpha, with one
 shared crop of transparent margins, in their original order at 24 fps.
+Retired big-win videos are rebuilt only when explicitly requested.
 """
 from io import BytesIO
 from pathlib import Path
@@ -499,13 +500,16 @@ def main():
     parser.add_argument('--scratch', type=Path, required=True)
     parser.add_argument('--preview-only', action='store_true')
     parser.add_argument('--only', choices=[job[0] for job in JOBS])
+    parser.add_argument('--include-big-wins', action='store_true', help='Also rebuild archived big-win videos')
     args = parser.parse_args()
     args.scratch.mkdir(parents=True, exist_ok=True)
     cache = {}
     manifest_path = ROOT / 'art' / 'character-media.json'
-    manifest = json.loads(manifest_path.read_text()) if args.only and manifest_path.exists() else {}
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     for name, source, start, duration, cycle in JOBS:
         if args.only and name != args.only:
+            continue
+        if name.endswith('-big') and not args.only and not args.include_big_wins:
             continue
         work = args.scratch / name
         work.mkdir(exist_ok=True)

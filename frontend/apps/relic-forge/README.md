@@ -1,6 +1,6 @@
 # The Last Petal
 
-A local development rebuild of the existing Relic Forge app. Work stays in this repository on `last-petal-rebuild`; no upload or push is performed.
+A rebuild of the existing Relic Forge app on `last-petal-rebuild`. A static frontend candidate can be prepared for Stake Engine upload testing; production math export and connected Bonus Buy remain gated pending independent validation. No upload, live release, or Git push has been performed.
 
 From `frontend/apps/relic-forge`:
 
@@ -33,7 +33,7 @@ See `LAST_PETAL_CONTRACT.md` for units, events, math and readiness limits. See `
 
 The lower-value IDs are stable math identifiers, with world-specific labels: `flower` is flowerpot/stone, `lantern` is lantern/flail, `key` is brooch/pouch, `book` is hammer/shears, and `mushroom` is traveler hat/spiked club. These identifiers do not imply new generated images. Individual Wild and Scatter symbols use SVG flowers.
 
-Winning paylines trace the exact paid symbol positions from the authoritative event book. Multiple wins cycle individually with matching line details; new reveals clear the overlay. Before a base-game big-win video, each paid line is shown once for 800 ms. A pointer press anywhere (or Space/Escape) skips this presentation without activating controls underneath; recovery skips already-presented events and reduced motion bypasses the pre-video delay. Bloom uses warm gold trails, Blight uses copper and violet trails. Reduced motion shows a static trail. Expanded and sticky Wild columns retain their original vine and multiplier presentation.
+Winning paylines trace the exact paid symbol positions from the authoritative event book. Multiple wins cycle individually with matching line details; new reveals clear the overlay. Before a base-game big-win counter, each paid line is shown once for 800 ms. A pointer press anywhere (or Space/Escape) skips this presentation without activating controls underneath; recovery skips already-presented events and reduced motion bypasses the line review. Bloom uses warm gold trails, Blight uses copper and violet trails. Reduced motion shows a static trail. Expanded and sticky Wild columns retain their original vine and multiplier presentation.
 
 ## Generate and measure math
 
@@ -70,20 +70,31 @@ Blight's bonus loop removes only weak, near-black floor haze away from solid cha
 
 The Blight loop also restores disappearing lower-cloak fabric and the black side/back panel behind the hanging arm using extracted frame 31, preserved in `art/sources/blight-cloak-reference.png`. The exterior cloak flap beside the bent leg/right foot uses extracted frame 32, preserved in `art/sources/blight-foot-cloak-reference.png`. Feathered masks follow the inner bent leg, natural hem, back panel and foot flap; each moving frame remains in front of that fabric. The genuine finger opening stays transparent. Gentle alpha antialiasing smooths pixel edges while protecting the face, gripping hand, chain/flail and finger details. Original opaque foreground colors, the 458×820 canvas, 120 frames, 60 fps and two-second timing are preserved. The repair masks, reference hashes and per-frame change counts are recorded in the loop and character-media manifests.
 
-Normal base spins use the still character artwork. Character loops run only throughout bonus features and stay silent. A short reel-spin cue plays on normal base spins when Sound effects is enabled. All bonus sound effects are muted. During bonuses, the same animation continues through all ten free spins and their pauses.
+Normal base spins use still character artwork. Bloom and Blight play the same final user-edited walking WAV during base and free-spin reel movement, at 0.9 playback speed (10% slower). The exact supplied samples are unchanged; the 0.534059-second recording loops in about 0.593399 seconds. Playback stops when the reels settle, when muted, on a world change, on a hidden page, or on unmount. The free-spin award uses the first three seconds of its supplied WAV once in either world and stops if dismissed early. Both cues follow Sound effects. Sources and hashes are recorded in `art/bloom-walking-audio.json` and `art/free-spins-award-audio.json`. The character video tracks remain silent, and the same character animation continues through all ten free spins and their pauses.
 
 Awarded and purchased features show their server-provided free-spin count full-screen before the first spin. Bloom's grandmother and Blight's supplied skull gnome hold a gift in their world colors above their raised palms. The lid starts lifting after 550 ms and opens over 1.4 seconds; the count emerges over one second after a 1.1-second delay. It then remains readable for 2.2 seconds, including in Turbo. Reduced motion shows the open gift and count immediately for 2.2 seconds. Start free spins, Enter, Space, or Escape can continue sooner; Escape also stops autoplay. Loading and animation fallbacks ensure a stalled decorative image or animation never blocks the feature or hides the count. Already-presented recovery events skip the announcement. Gift assets, the supplied presenter source and timing are documented in `art/free-spins-gifts.json`. Blight has no added character aura or warm outline glow.
 
-Big wins (20× or more) play the corresponding five-second clip full-screen against the current world's background, with original audio controlled by Sound effects. Bloom uses the 21:23:21 source clip; Blight uses the supplied cleaned PNG sequence. Playback waits for a presented video frame before replacing the still and starting audio; the character and cinematic background fade out together. Win labels never appear above the side characters; totals remain below the reels and on the full-screen big-win display. Reduced motion uses still artwork.
+Big wins (20× or more) count from zero to the authoritative final payout in a full-screen Bloom or Blight display. The cubic easing, 2.46–3.6-second count, 1.4-second final hold and exact counting/finish sounds match Fluppy Flight. Sound effects controls this audio. The first click, Space or Enter finishes counting; the next continues. Escape closes the display and stops autoplay. Reduced motion shows the exact total immediately, without the counting loop, for one second. Controls stay locked until the presentation finishes, and recovery skips already-presented final events. `art/win-count-audio.json` records timing and source hashes.
+
+Both retired big-win videos, their separate soundtracks and posters are backed up in the Desktop folder `The Last Petal - Big Win Videos`. They are absent from `static/art` and the upload build. Character animation remains limited to the existing silent free-spin loops. The following repair records describe archived videos retained for possible restoration.
 
 Bloom's final-win clip is reviewed across all 120 frames. `art/bloom-traveler-big-repairs.json` records the source-backed hammer, staff, lantern, gripping-hand and inner-coattail alpha repairs, reviewed background regions and protected-edge cleanup. Stray matte chunks and faint detached/exterior/floor haze are removed conservatively. Matching source poses, original opaque colors, the 624×832 canvas, 24 fps, five-second duration and separate soundtrack are preserved. Lossless VP9 with a separately preserved alpha plane and a lossless matching poster retain the corrected transparency.
 
 Blight's final-win animation uses the 120 cleaned RGBA PNGs from `blight-cleaned.zip`, preserved unchanged in `art/sources/blight-cleaned`. The supplied 1920×1080 frames share one 1050×894 crop of their transparent margins, with two pixels of padding; every visible pixel and frame position inside that crop is preserved. The sequence stays in original order at 24 fps for five seconds, with the existing separate soundtrack. No old reconstruction masks or weapon patches are applied. Lossless VP9 preserves the exact alpha plane and its lossless WebP poster matches the first cropped PNG. Archive provenance, frame hashes and the shared crop are recorded in `art/character-media.json`.
 
-Rebuild all current character clips and posters with Python (Pillow, NumPy, SciPy) and FFmpeg:
+Rebuild the current free-spin clips and posters with Python (Pillow, NumPy, SciPy) and FFmpeg:
 
 ```powershell
 python scripts/prepare-character-media.py --scratch art/qa/rebuild-characters
 ```
 
-Add `--preview-only` to inspect gold and room background contact sheets before replacing runtime assets, or `--only <clip-name>` to rebuild one clip.
+Add `--preview-only` to inspect gold and room background contact sheets before replacing runtime assets, or `--only <clip-name>` to rebuild one clip. Archived big-win clips are skipped by default; rebuilding one requires its explicit `--only` name or `--include-big-wins`.
+
+
+## Frontend upload candidate
+
+`pnpm build` writes a static `build` directory. Upload its contents with `index.html` at the upload root, including `_app`, `art`, `audio`, and `fonts`. Runtime assets use relative URLs so a versioned game path can load them; all fonts are bundled locally. Production requires Stake authentication or replay and never enables the development demo from `demo=true`.
+
+Autoplay requires a separate confirmation showing ten spins and their maximum total cost. Replay fetches the authoritative round, waits for Play, and offers Play Again without betting controls or wallet writes. Optional replay amount and currency use safe display defaults.
+
+This is a frontend upload candidate, not an approved live game. The production math export deliberately refuses to run until independent validation is complete. All six connected purchase approvals remain false. Real Stake staging verification, final artwork review (including the youthful Bloom traveler), final special-symbol art, and social-casino wording review remain necessary before a live submission. Do not upload the finite development math library as production math.

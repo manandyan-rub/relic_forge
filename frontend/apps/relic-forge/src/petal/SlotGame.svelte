@@ -15,9 +15,14 @@
  import FreeSpinsAward from './FreeSpinsAward.svelte';
  import PurchaseReceipt from './PurchaseReceipt.svelte';
  import WinPresentation from './WinPresentation.svelte';
+ import BigWinCountUp from './BigWinCountUp.svelte';
+ import { createWinCountAudio } from './winCountAudio';
+ import { createFreeSpinsAwardAudio } from './freeSpinsAwardAudio';
+ import { createBloomWalkingAudio } from './bloomWalkingAudio';
  import BetControls from './BetControls.svelte';
  import GameSettings from './GameSettings.svelte';
  import BonusBuy from './BonusBuy.svelte';
+ import AutoPlayConfirm from './AutoPlayConfirm.svelte';
 
  let world = $state<World>('BLOOM');
  let board = $state(initialBoard());
@@ -30,6 +35,8 @@
  let reaction = $state<Reaction>('idle');
  let message = $state('A little magic is waiting.');
  let error = $state(''), blocked = $state(false), replayDone = $state(false);
+ let replayRound = $state.raw<Round | null>(null);
+ let replayCost = $state(0);
  let winningLines = $state<LineWin[]>([]), activeWin = $state(0), lineStake = $state(1);
  let presentingLines = $state(false);
  let showWinningLines = $state(false);
@@ -46,17 +53,23 @@
  });
  let turbo = $state(false), reduced = $state(false), sound = $state(true);
  let auto = $state(0), sequence = 0;
+ let confirmAuto = $state(false);
  let panel = $state<'rules' | 'settings' | 'bonus' | null>(null);
  let receipt = $state<PurchaseReceiptData|null>(null);
  let reelGrid: { settle: () => Promise<void> } | undefined;
  let mounted = false;
  let elapsed = $state(0), netPosition = $state(0);
  let audio: AudioContext | undefined;
+ let countAudio = $state<ReturnType<typeof createWinCountAudio> | undefined>();
+ let awardAudio: ReturnType<typeof createFreeSpinsAwardAudio> | undefined;
+ let walkingAudio: ReturnType<typeof createBloomWalkingAudio> | undefined;
+ let countedWin = $state<number | null>(null), countedMultiplier = $state(0);
+ let finishBigWin: (() => void) | undefined;
  let featureBase = 0;
  const abort = new AbortController();
  const betLevels = $derived(demo() ? developmentBets : stateConfig.betAmountOptions.filter(b => Number.isFinite(b) && b>0));
  const bet = $derived(stateBet.betAmount);
- const locked = $derived(busy || auto>0 || blocked || replay() || replayDone || !!panel);
+ const locked = $derived(busy || auto>0 || blocked || replay() || replayDone || !!panel || confirmAuto);
  const validBet = $derived(Number.isFinite(bet) && bet>0 && (betLevels.length ? betLevels.includes(bet) : stateConfig.minBet>0 && stateConfig.stepBet>0 && bet>=stateConfig.minBet && bet<=stateConfig.maxBet && Math.abs(bet/stateConfig.stepBet-Math.round(bet/stateConfig.stepBet))<1e-9));
  const canSpin = $derived(!locked && available(world) && validBet && stateBet.balanceAmount >= bet);
  const canOpenBonus = $derived(!locked && validBet && !stateConfig.jurisdiction?.disabledBuyFeature);
@@ -70,17 +83,54 @@
  function presentFreeSpinsAward(count: number) {
   if(!mounted)return Promise.resolve();
   awardedFreeSpins=count;
+  if(!document.hidden)prepareAwardAudio()?.play();
   return new Promise<void>(resolve=>{
    let finished=false;
    let timer: ReturnType<typeof setTimeout> | undefined;
    const done=()=>{
     if(finished)return;finished=true;
     clearTimeout(timer);abort.signal.removeEventListener('abort',done);
-    finishFreeSpinsAward=undefined;startFreeSpinsAward=undefined;awardedFreeSpins=0;resolve();
+    awardAudio?.stop();finishFreeSpinsAward=undefined;startFreeSpinsAward=undefined;awardedFreeSpins=0;resolve();
    };
    // Start the reading time only after the count has emerged from the gift.
    startFreeSpinsAward=()=>{if(!finished&&timer===undefined)timer=setTimeout(done,2200);};
    finishFreeSpinsAward=done;abort.signal.addEventListener('abort',done,{once:true});
+  });
+ }
+ function prepareCountAudio() {
+  if(!mounted || !sound)return;
+  try {
+   audio ??= new AudioContext();
+   countAudio ??= createWinCountAudio(audio);
+   countAudio.preload();
+   return countAudio;
+  } catch { return; }
+ }
+ function prepareAwardAudio() {
+  if(!mounted || !sound)return;
+  try {
+   audio ??= new AudioContext();
+   awardAudio ??= createFreeSpinsAwardAudio(audio);
+   awardAudio.preload();
+   return awardAudio;
+  } catch { return; }
+ }
+ function prepareWalkingAudio() {
+  if(!mounted || !sound)return;
+  try { audio ??= new AudioContext();walkingAudio ??= createBloomWalkingAudio(audio);walkingAudio.preload();return walkingAudio; }
+  catch { return; }
+ }
+ function presentBigWin(total: number, stake: number) {
+  if(!mounted)return Promise.resolve();
+  showWinningLines=false;countedWin=total;countedMultiplier=total/stake;
+  return new Promise<void>(resolve=>{
+   let finished=false;
+   const done=()=>{
+    if(finished)return;finished=true;
+    abort.signal.removeEventListener('abort',done);
+    finishBigWin=undefined;countedWin=null;resolve();
+   };
+   finishBigWin=done;abort.signal.addEventListener('abort',done,{once:true});
   });
  }
  function presentWinningLines() {
@@ -108,28 +158,30 @@
   suppressLineClick=false;event.preventDefault();event.stopImmediatePropagation();
  }
  function cancelLinePointer() {suppressLineClick=false;}
- function chime(kind: 'spin' | 'win' | 'wild') {
+ function chime(kind: 'win' | 'wild') {
   if (!sound || !mounted || feature) return;
   audio ??= new AudioContext(); void audio.resume();
   const osc=audio.createOscillator(), gain=audio.createGain();
-  osc.type=kind==='spin'?'triangle':'sine'; osc.frequency.value=kind==='win'?660:kind==='wild'?440:220;
+  osc.type='sine'; osc.frequency.value=kind==='win'?660:440;
   gain.gain.setValueAtTime(.025,audio.currentTime); gain.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.25);
   osc.connect(gain);gain.connect(audio.destination);osc.start();osc.stop(audio.currentTime+.25);
  }
- function fail(e: unknown) { finishFreeSpinsAward?.();error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
- function choose(next: World) { if (locked || !available(next)) return; world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt=null;winningLines=[];activeWin=0;showWinningLines=false;message='A little magic is waiting.';reaction='idle'; }
+ function fail(e: unknown) { walkingAudio?.stop();awardAudio?.stop();countAudio?.stop();finishBigWin?.();finishFreeSpinsAward?.();error=e instanceof Error?e.message:'The round could not be presented safely.'; blocked=true;busy=false;moving=false;auto=0; }
+ function choose(next: World) { if (locked || !available(next)) return; walkingAudio?.stop();awardAudio?.stop();world=next;stateBet.activeBetModeKey=next;board=initialBoard();wilds=[];win=0;receipt=null;winningLines=[];activeWin=0;showWinningLines=false;message='A little magic is waiting.';reaction='idle'; }
  function change(n: number) { if (locked) return; const i=betLevels.indexOf(bet); stateBet.betAmount=betLevels[Math.max(0,Math.min(betLevels.length-1,i+n))] ?? bet; }
  async function showEvent(e: BookEvent, stake: number, animate: boolean) {
   const amount=(v=0) => stake*v/100;
   if(e.type==='reveal') {
    reaction='spin';moving=true;
-   if(animate&&!feature)chime('spin');
+   if(animate&&!document.hidden)prepareWalkingAudio()?.start();
    if (!feature) wilds=[];
    winningLines=[];activeWin=0;showWinningLines=false;
    if(animate) await wait(feature?300:440);
    if(!mounted) return;
    board=e.board!;moving=false;
    if(animate) await reelGrid?.settle();
+   walkingAudio?.stop();
+   awardAudio?.stop();
    if(!mounted) return;
    reaction=board.flat().filter(s=>s==='scatter').length>=2?'anticipation':'idle';
   } else if(e.type==='expandWilds') {
@@ -152,7 +204,10 @@
   else if(e.type==='updateFreeSpin') {freeSpinNumber=e.amount!;freeSpins=11-freeSpinNumber;message=`Free Spin ${freeSpinNumber} of 10`;}
   else if(e.type==='freeSpinEnd') {freeSpins=0;featureWin=amount(e.amount);reaction='ending';message='Your garden’s gift';if(animate)await wait(900);feature=false;}
   else if(e.type==='wincap') {message='5,000× · The garden’s greatest gift';reaction='big';}
-  else if(e.type==='finalWin') {win=amount(e.amount);if(!win)message='Another petal, another possibility.';freeSpins=0;}
+  else if(e.type==='finalWin') {
+   win=amount(e.amount);if(!win)message='Another petal, another possibility.';freeSpins=0;
+   if(animate && win/stake>=20)await presentBigWin(win,stake);
+  }
  }
  async function consume(round: Round, stake: number, recovering=false, expectedMode?:Mode) {
   const decoded=validateWallet(round,stake);
@@ -183,6 +238,9 @@
   if(purchaseMode ? (auto>0||Boolean(bonusUnavailableReason(mode))) : !available(world))return false;
   busy=true;error='';win=0;featureWin=0;winningLines=[];activeWin=0;showWinningLines=false;reaction='spin';moving=true;
   const stake=bet, started=Date.now();
+  prepareCountAudio()?.unlock();
+  prepareAwardAudio();
+  prepareWalkingAudio();
   try {
    const round=await play(mode,stake,sequence++);
    validateWallet(round,stake);
@@ -199,6 +257,14 @@
   finally{if(mounted){busy=false;moving=false;reaction='idle';}}
  }
  async function spin(){if(canSpin)await run();}
+ async function startReplay(){
+  if(!replayRound||busy||blocked)return;
+  busy=true;replayDone=false;error='';win=0;reaction='spin';moving=true;
+  prepareCountAudio()?.unlock();prepareAwardAudio();prepareWalkingAudio();
+  try { await consume(replayRound,Number(replayRound.amount)/API_AMOUNT_MULTIPLIER); }
+  catch(e){fail(e);}
+  finally { if(mounted){busy=false;moving=false;reaction='idle';} }
+ }
  async function purchase(quote:PurchaseQuote){
   if(panel!=='bonus'||busy||blocked||auto>0||!validBet||quote.world!==world||quote.stake!==bet||quote.currency!==stateBet.currency||quote.costMultiplier!==modeCost(quote.mode)||quote.total!==bet*modeCost(quote.mode)||stateBet.balanceAmount<quote.total||bonusUnavailableReason(quote.mode))return;
   panel=null;
@@ -207,6 +273,11 @@
  async function toggleAuto(){
   if(auto){auto=0;return;}
   if(!canSpin||stateConfig.jurisdiction?.disabledAutoplay)return;
+  confirmAuto=true;
+ }
+ async function startAuto(){
+  confirmAuto=false;
+  if(auto||!canSpin||stateConfig.jurisdiction?.disabledAutoplay)return;
   auto=10;
   while(mounted&&auto>0&&!stateConfig.jurisdiction?.disabledAutoplay){
    const ok=await run();if(!ok)break;auto=Math.max(0,auto-1);if(auto)await wait(400);
@@ -224,6 +295,8 @@
   window.addEventListener('pointerdown',skipLinePointer,true);
   window.addEventListener('click',skipLineClick,true);
   window.addEventListener('pointercancel',cancelLinePointer,true);
+  const silenceHidden=()=>{if(document.hidden){walkingAudio?.stop();awardAudio?.stop();}};
+  document.addEventListener('visibilitychange',silenceHidden);
   const media=matchMedia('(prefers-reduced-motion: reduce)');reduced=media.matches;
   const motion=()=>{reduced=media.matches;};media.addEventListener('change',motion);
   const timer=setInterval(()=>elapsed++,1000);
@@ -233,10 +306,14 @@
   if(resume?.state){
    const round=resume as Round;
    const stake=Number(round.amount)/API_AMOUNT_MULTIPLIER;
-   void consume(round,stake,true).then(()=>{if(mounted){stateBet.betToResume=null;busy=false;reaction='idle';}}).catch(fail);
+   if(replay()){
+    try { const decoded=validateWallet(round,stake);world=decoded.world;replayCost=stake*decoded.costMultiplier;replayRound=$state.snapshot(round) as Round;busy=false;message='Replay ready'; }
+    catch(e){fail(e);}
+   }else void consume(round,stake,true).then(()=>{if(mounted){stateBet.betToResume=null;busy=false;reaction='idle';}}).catch(fail);
   }else{busy=false;if(replay()){blocked=true;error='This replay has no authoritative round.';}}
-  return()=>{mounted=false;auto=0;abort.abort();clearInterval(timer);media.removeEventListener('change',motion);window.removeEventListener('pointerdown',skipLinePointer,true);window.removeEventListener('click',skipLineClick,true);window.removeEventListener('pointercancel',cancelLinePointer,true);void audio?.close();};
+  return()=>{mounted=false;auto=0;abort.abort();walkingAudio?.dispose();awardAudio?.dispose();countAudio?.dispose();clearInterval(timer);media.removeEventListener('change',motion);document.removeEventListener('visibilitychange',silenceHidden);window.removeEventListener('pointerdown',skipLinePointer,true);window.removeEventListener('click',skipLineClick,true);window.removeEventListener('pointercancel',cancelLinePointer,true);void audio?.close();};
  });
+ $effect(()=>{countAudio?.setMuted(!sound);if(!sound){walkingAudio?.stop();awardAudio?.stop();}});
  $effect(()=>{if(stateConfig.jurisdiction?.disabledAutoplay)auto=0;if(stateConfig.jurisdiction?.disabledTurbo)turbo=false;if(stateConfig.jurisdiction?.disabledBuyFeature&&panel==='bonus')panel=null;});
 </script>
 
@@ -245,7 +322,7 @@
  <div class="scene-art"></div><div class="scene-shade"></div>
  <header class="petal-header"><div class="edition"><span class="edition-mark"><UiIcon name="flower" size={32}/></span><span>AN ENCHANTED<br/>TALE OF FORTUNE</span></div><div class="mini-brand">The Last Petal</div><div class="header-tools"><button onclick={()=>panel='rules'} aria-label="Open game rules"><UiIcon name="help" size={22}/></button><button onclick={()=>panel='settings'} aria-label="Open settings"><UiIcon name="settings" size={21}/></button></div></header>
  <section class="game-scene">
-  <CharacterStage {world} {reaction} {moving} {feature} {reduced} {sound} winnings={money(win)} hasWin={win/bet>=20}/>
+  <CharacterStage {world} {reaction} {feature} {reduced}/>
   <div class="slot-stage">
    <div class="title-lockup"><div><span class="eyebrow">TWO WORLDS. ONE LAST PETAL.</span><h1>The Last Petal</h1><p>{world==='BLOOM'?'Where a little kindness grows into magic.':'Where the last light meets the shadows.'}</p></div></div>
    <WorldSelection {world} {locked} {available} select={choose}/>
@@ -258,9 +335,19 @@
   </div>
  </section>
  {#if error}<div class="round-error" role="alert">{error}</div>{/if}
- <BetControls bet={money(bet)} balance={money(stateBet.balanceAmount)} {locked} {canSpin} {busy} {auto} {turbo} {canOpenBonus} openBonus={()=>panel='bonus'} autoAllowed={!stateConfig.jurisdiction?.disabledAutoplay&&!replay()} turboAllowed={!stateConfig.jurisdiction?.disabledTurbo&&!replay()} {change} spin={()=>void spin()} toggleAuto={()=>void toggleAuto()} toggleTurbo={()=>turbo=!turbo}/>
+ {#if replay()}
+  <footer class="replay-controls" aria-label="Replay controls">
+   <div><small>REPLAY BET</small><strong>{money(bet)}</strong></div>
+   <div><small>TOTAL COST</small><strong>{money(replayCost)}</strong></div>
+   <button type="button" disabled={busy||blocked||!replayRound} onclick={()=>void startReplay()} aria-label={replayDone?'Play replay again':'Play replay'}>{busy?'Playing replay…':replayDone?'Play Again':'Play'}</button>
+  </footer>
+ {:else}
+  <BetControls bet={money(bet)} balance={money(stateBet.balanceAmount)} {locked} {canSpin} {busy} {auto} {turbo} {canOpenBonus} openBonus={()=>panel='bonus'} autoAllowed={!stateConfig.jurisdiction?.disabledAutoplay} turboAllowed={!stateConfig.jurisdiction?.disabledTurbo} {change} spin={()=>void spin()} toggleAuto={()=>void toggleAuto()} toggleTurbo={()=>turbo=!turbo}/>
+ {/if}
  <div class="game-footnote"><span>{demo()?'DEVELOPMENT DEMO · FIXED SHOWCASE BOOKS':replay()?'READ-ONLY REPLAY':'THE LAST PETAL'}</span><span>{stateConfig.jurisdiction?.displaySessionTimer?`Session ${Math.floor(elapsed/60)}:${String(elapsed%60).padStart(2,'0')}`:'3 SCATTERS · 10 FREE SPINS'}{stateConfig.jurisdiction?.displayNetPosition?` · Net ${money(netPosition)}`:''}</span></div>
  {#if awardedFreeSpins>0}<FreeSpinsAward {world} count={awardedFreeSpins} {reduced} onreveal={()=>startFreeSpinsAward?.()} oncontinue={(stopAutoplay=false)=>{if(stopAutoplay)auto=0;finishFreeSpinsAward?.();}}/>{/if}
+ {#if confirmAuto}<AutoPlayConfirm bet={money(bet)} maximum={money(bet*10)} confirm={()=>void startAuto()} close={()=>confirmAuto=false}/>{/if}
+ {#if countedWin!==null}<BigWinCountUp {world} amount={countedWin} multiplier={countedMultiplier} format={money} {reduced} {sound} {countAudio} oncontinue={(stopAutoplay=false)=>{if(stopAutoplay)auto=0;finishBigWin?.();}}/>{/if}
  {#if panel==='bonus'}<BonusBuy {world} stake={bet} currency={stateBet.currency} balance={stateBet.balanceAmount} format={money} reason={bonusUnavailableReason} close={()=>panel=null} {purchase}/>
  {:else if panel}<GameSettings {panel} {world} close={()=>panel=null} {reduced} setReduced={v=>reduced=v} {sound} setSound={v=>sound=v}/>{/if}
 </main>

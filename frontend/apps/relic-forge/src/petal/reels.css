@@ -23,7 +23,8 @@
 	inset-block-start: 0;
 	display: grid;
 	will-change: transform;
-	animation: petal-reel-scroll 0.48s linear infinite;
+	filter: blur(0.65px);
+	animation: petal-reel-scroll var(--reel-cycle-duration, 480ms) linear infinite;
 }
 .reel-spin-cell {
 	display: flex;
@@ -33,12 +34,9 @@
 	border-bottom: 1px solid #9c855b21;
 }
 .reel-spin-track .symbol {
-	filter: var(--reel-symbol-shadow) blur(0.65px);
+	filter: var(--reel-symbol-shadow);
 }
 .reel-spin-track.reel-landing-track {
-	animation: none;
-}
-.reel-landing-track .symbol {
 	animation: petal-reel-sharpen var(--settle-duration) ease-out both;
 }
 @keyframes petal-reel-scroll {
@@ -46,17 +44,17 @@
 		transform: translate3d(0, 0, 0);
 	}
 	to {
-		transform: translate3d(0, -33.3333333333%, 0);
+		transform: translate3d(0, -50%, 0);
 	}
 }
 @keyframes petal-reel-sharpen {
 	0%,
 	30% {
-		filter: var(--reel-symbol-shadow) blur(0.65px);
+		filter: blur(0.65px);
 	}
 	85%,
 	100% {
-		filter: var(--reel-symbol-shadow) blur(0);
+		filter: blur(0);
 	}
 }
 .reduced .reel-spin-viewport {

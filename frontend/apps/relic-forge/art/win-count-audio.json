@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "sourceGame": "Fluppy Flight / Lucky Flight (frontend/apps/dragon-flight)",
+  "method": "Unchanged copies of the existing win-count-loop and win-count-finish assets, with the same 0.35 playback gain and loop-seam overlap as FlightAudio. These two cues are used only by the big-win counter.",
+  "presentation": {
+    "minimumMultiplier": 20,
+    "easing": "1 - (1 - progress)^3",
+    "durationMs": { "20x": 2460, "50x": 2940, "100x": 3600 },
+    "holdMs": 1400,
+    "reducedMotion": { "count": "immediate", "loop": false, "holdMs": 1000 },
+    "volume": 0.35,
+    "loopSeamOverlapSeconds": 0.08
+  },
+  "clips": [
+    {
+      "file": "static/audio/win-count-loop.mp3",
+      "source": "../dragon-flight/static/audio/win-count-loop.mp3",
+      "sha256": "deb71ef3d82766bd7942ee714924f3e35d7bb734b0f45756920ea6a3e9c63fc0",
+      "bytes": 119900,
+      "usage": "Loop only while the big-win amount is counting. Stop before the finish cue, on mute, hiding, dismissal or unmount."
+    },
+    {
+      "file": "static/audio/win-count-finish.mp3",
+      "source": "../dragon-flight/static/audio/win-count-finish.mp3",
+      "sha256": "8dc4e74c006843e021622b723c7823039dd7b666e09b699d6c74215fd0a066c8",
+      "bytes": 19916,
+      "usage": "Play once when counting reaches or is skipped to the authoritative final amount."
+    }
+  ]
+}

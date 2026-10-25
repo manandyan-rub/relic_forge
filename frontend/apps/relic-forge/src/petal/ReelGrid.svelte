@@ -33,6 +33,8 @@
 	let landingRows = $state<SymbolId[][]>([]);
 	let landingOffsets = $state<string[]>([]);
 	let landingTimes = $state<number[]>([]);
+	let landingEasings = $state<string[]>([]);
+	let motionTurbo = $state(false);
 	const tracks = new SvelteMap<number, HTMLElement>();
 	const starts = new SvelteMap<number, () => void>();
 	const landings = new SvelteSet<Animation>();
@@ -57,8 +59,8 @@
 		if (animation && !reduced) {
 			animation.pause();
 			animation.currentTime = 0;
-			const begins = performance.now() + reel * (turbo ? 8 : 28);
-			const accelerate = turbo ? 70 : 190;
+			const begins = performance.now() + reel * (motionTurbo ? 4 : 28);
+			const accelerate = motionTurbo ? 45 : 190;
 			const advance = (now: number) => {
 				if (cancelled) return;
 				if (now < begins) {
@@ -94,10 +96,23 @@
 			return;
 		}
 		const currentGeneration = generation;
+		const rollingSpeeds = new SvelteMap<number, { rate: number; period: number }>();
+		// Freeze every strip before measuring, so rebuilding the landing rows
+		// cannot consume another rolling frame between capture and presentation.
+		for (const [reel, node] of tracks) {
+			const animation = node.getAnimations()[0];
+			const duration = animation?.effect?.getTiming().duration;
+			rollingSpeeds.set(reel, {
+				rate: animation?.playState === 'running' ? animation.playbackRate : 0,
+				period: typeof duration === 'number' && duration > 0 ? duration : motionTurbo ? 160 : 480,
+			});
+			animation?.pause();
+		}
 		const destinations: number[] = [];
 		const rows: SymbolId[][] = [];
 		const offsets: string[] = [];
 		const times: number[] = [];
+		const easings: string[] = [];
 		for (let reel = 0; reel < next.length; reel++) {
 			const node = tracks.get(reel);
 			const column = rollingBoard[reel];
@@ -107,6 +122,7 @@
 				offsets.push('translate3d(0,0,0)');
 				times.push(0);
 				destinations.push(0);
+				easings.push('linear');
 				continue;
 			}
 			const cell = height / column.length;
@@ -124,11 +140,20 @@
 			rows.push([...visible, ...next[reel]]);
 			offsets.push(`translate3d(0,${-remainder}px,0)`);
 			destinations.push(-(column.length + 1) * cell);
-			times.push(turbo ? 120 + reel * 12 : 730 + reel * 34);
+			const duration = motionTurbo ? 240 + reel * 16 : 730 + reel * 34;
+			const speed = rollingSpeeds.get(reel)!;
+			const distance = (column.length + 1) * cell - remainder;
+			const velocity = height * speed.rate / speed.period;
+			// Linear x controls make the first derivative exactly 3*y1.
+			// Match the incoming pixel velocity and reach zero velocity at the end.
+			const initialSlope = Math.max(0, Math.min(1, velocity * duration / (3 * distance)));
+			times.push(duration);
+			easings.push(`cubic-bezier(.3333333333,${initialSlope},.6666666667,1)`);
 		}
 		landingRows = rows;
 		landingOffsets = offsets;
 		landingTimes = times;
+		landingEasings = easings;
 		phase = 'landing';
 		await tick();
 		if (generation !== currentGeneration) return;
@@ -138,7 +163,7 @@
 			if (!node || !times[reel]) continue;
 			const animation = node.animate(
 				[{ transform: offsets[reel] }, { transform: `translate3d(0,${destinations[reel]}px,0)` }],
-				{ duration: times[reel], easing: 'cubic-bezier(.333333,.5,.666667,1)', fill: 'forwards' },
+				{ duration: times[reel], easing: landingEasings[reel], fill: 'forwards' },
 			);
 			landings.add(animation);
 			finished.push(
@@ -166,6 +191,7 @@
 			} else if (active && (!wasSpinning || phase === 'idle')) {
 				cancelMotion();
 				rollingBoard = next.map((column) => [...column]);
+				motionTurbo = turbo;
 				phase = 'rolling';
 			} else if (!active && wasSpinning) settlement = land(next);
 			wasSpinning = active;
@@ -201,7 +227,7 @@
 					{@const symbols =
 						phase === 'landing'
 							? landingRows[r]
-							: [...rollingBoard[r], ...rollingBoard[r], ...rollingBoard[r]]}
+							: [...rollingBoard[r], ...rollingBoard[r]]}
 					<div class="reel-spin-viewport" aria-hidden="true">
 						<div
 							class="reel-spin-track"
@@ -210,6 +236,7 @@
 							style:grid-template-rows={`repeat(${symbols.length},minmax(0,1fr))`}
 							style:transform={phase === 'landing' ? landingOffsets[r] : undefined}
 							style:--settle-duration={`${landingTimes[r] ?? 730}ms`}
+							style:--reel-cycle-duration={motionTurbo ? '160ms' : '480ms'}
 							use:reelMotion={r}
 						>
 							{#each symbols as symbol, row (row)}<div class="reel-spin-cell">

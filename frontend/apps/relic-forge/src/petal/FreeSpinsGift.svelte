@@ -7,7 +7,7 @@
 		onready,
 		opened = false,
 	}: { world: World; reduced: boolean; opened?: boolean; onready?: () => void } = $props();
-	const image = $derived(`/art/${world.toLowerCase()}-free-spins-gift.png`);
+	const image = $derived(`./art/${world.toLowerCase()}-free-spins-gift.png`);
 	let ready = $state(false);
 	let failed = $state(false);
 	let notified = false;

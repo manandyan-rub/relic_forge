@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "source": "art/sources/bloom-final-walking.wav",
+  "suppliedFilename": "bloom-walking-music-reduced-trim-end16ms (mp3cut.net).wav",
+  "sourceSha256": "6059f571ff0310f52bb78a4341fc778fac61874cf88c7034b7cd8786b2a916e2",
+  "file": "static/audio/bloom-walking.wav",
+  "sha256": "6059f571ff0310f52bb78a4341fc778fac61874cf88c7034b7cd8786b2a916e2",
+  "durationSeconds": 0.5340589569160997,
+  "frames": 23552,
+  "sampleRate": 44100,
+  "channels": 2,
+  "sampleWidthBytes": 2,
+  "method": "Use the final user-edited WAV byte-for-byte, without additional cuts, filtering or amplification.",
+  "playback": "Play at 0.9 speed (10% slower), looping during Bloom and Blight base and free-spin reel movement and landing; stop at settlement, mute, hiding, world change, failure or unmount.",
+  "playbackRate": 0.9,
+  "playbackDurationSeconds": 0.5933988410178885,
+  "worlds": [
+    "BLOOM",
+    "BLIGHT"
+  ]
+}

@@ -7,7 +7,7 @@ export const worldLabels: Record<World, Record<SymbolId,string>> = {
  BLOOM: { ...labels, keeper:'Bloom Keeper',traveler:'Lantern Traveler',guardian:'Elderly Guardian',flower:'Flowerpot',lantern:'Lantern',key:'Guardian Brooch',book:'Traveler Hammer',mushroom:'Traveler Hat' },
  BLIGHT: { ...labels, keeper:'Withered Keeper',traveler:'Skull Gnome',guardian:'Corrupted Brute',flower:'Stone',lantern:'Chained Flail',key:'Belt Pouch',book:'Shears',mushroom:'Spiked Club',wild:'Withered Petal Wild',scatter:'Corrupted Flower Scatter' },
 };
-export const art = (world: World, role: string) => `/art/${world.toLowerCase()}-${role}.webp?v=2`;
+export const art = (world: World, role: string) => `./art/${world.toLowerCase()}-${role}.webp?v=2`;
 export const initialBoard = (): SymbolId[][] => Array.from({ length: 5 }, (_, r) => Array.from({ length: 5 }, (_, row) => symbolIds[(r * 3 + row) % 8]));
 export const betLevels = [.2,.5,1,2,5,10,20,50];
 

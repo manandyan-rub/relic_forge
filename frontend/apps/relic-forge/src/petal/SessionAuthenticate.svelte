@@ -206,8 +206,12 @@
 	};
 
 	const handleReplay = async () => {
-		stateBet.betAmount = stateUrlDerived.amount() / API_AMOUNT_MULTIPLIER || 0;
-		stateBet.wageredBetAmount = stateUrlDerived.amount() / API_AMOUNT_MULTIPLIER || 0;
+		const suppliedAmount = stateUrlDerived.amount();
+		const replayAmount = Number.isSafeInteger(suppliedAmount) && suppliedAmount > 0 ? suppliedAmount : API_AMOUNT_MULTIPLIER;
+		const currency = new URL(window.location.href).searchParams.get('currency')?.toUpperCase() || 'USD';
+		stateBet.currency = /^[A-Z]{3}$|^(SC|GC)$/.test(currency) ? currency : 'USD';
+		stateBet.betAmount = replayAmount / API_AMOUNT_MULTIPLIER;
+		stateBet.wageredBetAmount = replayAmount / API_AMOUNT_MULTIPLIER;
 		stateBet.activeBetModeKey = stateUrlDerived.mode();
 
 		const data = await requestReplay({
@@ -221,7 +225,7 @@
 		if (data && typeof data === 'object') {
 			const replayData = data as Record<string, unknown>;
 			if (replayData.error) throw replayData.error;
-			const resumableRound = toBetToResume({ ...replayData, mode: stateUrlDerived.mode(), amount: stateUrlDerived.amount() });
+			const resumableRound = toBetToResume({ ...replayData, mode: stateUrlDerived.mode(), amount: replayAmount });
 			if (!resumableRound) throw new Error('The replay response contained invalid round state.');
 			stateBet.betToResume = resumableRound;
 		}

@@ -109,7 +109,7 @@
 			<div class="presenter">
 				<img
 					class="presenter-art"
-					src={world === 'BLOOM' ? art(world, 'guardian') : '/art/blight-gift-presenter.webp'}
+					src={world === 'BLOOM' ? art(world, 'guardian') : './art/blight-gift-presenter.webp'}
 					width={world === 'BLOOM' ? 453 : 780}
 					height={world === 'BLOOM' ? 650 : 1300}
 					alt=""
