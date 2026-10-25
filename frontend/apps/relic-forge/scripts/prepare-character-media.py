@@ -1,4 +1,4 @@
-"""Prepare supplied character clips and the corrected Bloom PNG sequence.
+"""Prepare character clips and the supplied cleaned PNG sequences.
 
 Requires ffmpeg, Pillow and NumPy; original clip processing also needs SciPy.
 Original RGB source clips are untouched.
@@ -7,6 +7,8 @@ only tiny detached alpha specks in two fixed exterior regions are removed.
 Other clips preserve semantic soft edges and repair opaque character interiors.
 The Blight spin attenuates isolated weak dark floor haze, restores its lower
 cloak from a preserved reference frame, and gently antialiases alpha edges.
+The supplied Blight final-win frames retain their RGB and alpha, with one
+shared crop of transparent margins, in their original order at 24 fps.
 """
 from io import BytesIO
 from pathlib import Path
@@ -25,7 +27,7 @@ JOBS = [
     ('bloom-traveler-spin', 'bloom-corrected-spin', 0.0, 1.0, 1.0),
     ('blight-keeper-spin', '2026-10-15_21-29-23_Lumina_1.mp4', 0.0, .5, 2.0),
     ('bloom-traveler-big', '2026-10-15_21-23-21_Lumina_1.mp4', 0.0, 5.0, None),
-    ('blight-keeper-big', '2026-10-15_21-29-23_Lumina_1.mp4', 0.0, 5.0, None),
+    ('blight-keeper-big', 'blight-cleaned', 0.0, 5.0, None),
 ]
 
 
@@ -49,6 +51,40 @@ def corrected_bloom_frames(source):
             frames.append(image.copy())
         provenance.append(dict(filename=filename, sha256=hashlib.sha256(payload).hexdigest()))
     return frames, provenance
+
+
+def cleaned_blight_frames(source):
+    sequence_path = source / 'sequence.json'
+    sequence = json.loads(sequence_path.read_text(encoding='utf-8'))
+    if sequence['frameCount'] != 120 or sequence['fps'] != 24:
+        raise ValueError('Cleaned Blight requires 120 supplied frames at 24 fps')
+    filenames = [sequence['filenamePattern'].format(index=index) for index in range(1, 121)]
+    paths = {path.name: path for path in source.glob('*.png') if path.is_file()}
+    if set(paths) != set(filenames):
+        raise ValueError('Cleaned Blight requires exactly monster.jpg0001.png through monster.jpg0120.png')
+    provenance, boxes = [], []
+    dimensions = tuple(sequence['sourceCanvas'])
+    for filename in filenames:
+        payload = paths[filename].read_bytes()
+        with Image.open(BytesIO(payload)) as frame:
+            if frame.format != 'PNG' or frame.mode != 'RGBA' or frame.size != dimensions:
+                raise ValueError(f'{filename} must be an RGBA PNG on the supplied canvas')
+            bounds = frame.getchannel('A').getbbox()
+            if bounds is None:
+                raise ValueError(f'{filename} has no visible character artwork')
+            boxes.append(bounds)
+        provenance.append(dict(filename=filename, sha256=hashlib.sha256(payload).hexdigest()))
+    margin = sequence['transparentMarginPixels']
+    left = max(0, min(box[0] for box in boxes) - margin) // 2 * 2
+    top = max(0, min(box[1] for box in boxes) - margin) // 2 * 2
+    right = min(dimensions[0], (max(box[2] for box in boxes) + margin + 1) // 2 * 2)
+    bottom = min(dimensions[1], (max(box[3] for box in boxes) + margin + 1) // 2 * 2)
+    crop = (left, top, right, bottom)
+    frames = []
+    for filename in filenames:
+        with Image.open(paths[filename]) as frame:
+            frames.append(frame.crop(crop))
+    return frames, provenance, sequence, crop
 
 
 def cleanup_bloom_specks(frames):
@@ -282,38 +318,7 @@ def repair_blight_cloak(frames):
     return result, meta
 
 
-def blight_garment_mask(rgb, semantic, number, settings):
-    from scipy import ndimage
-
-    keys = {int(key): value for key, value in settings['keyframePolygons'].items()}
-    lower = max(key for key in keys if key <= number)
-    upper = min(key for key in keys if key >= number)
-    fraction = (number - lower) / (upper - lower) if upper != lower else 0
-    polygon = np.asarray(keys[lower]) * (1 - fraction) + np.asarray(keys[upper]) * fraction
-    roi_image = Image.new('L', (SIZE[0] * 4, SIZE[1] * 4))
-    ImageDraw.Draw(roi_image).polygon([(round(x * 4), round(y * 4)) for x, y in polygon], fill=255)
-    roi = np.asarray(roi_image.resize(SIZE, Image.Resampling.LANCZOS)) >= 128
-    red, green, blue = rgb.astype(float).transpose(2, 0, 1)
-    semantic_alpha = semantic[:, :, 3]
-    warm = ((red >= green * settings['minimumRedGreenRatio']) &
-            (green >= blue * settings['minimumGreenBlueRatio']) &
-            (red >= settings['minimumRed']))
-    support = roi & ((semantic_alpha >= settings['opaqueSemanticMinimum']) |
-                     (warm & (semantic_alpha >= settings['edgeSemanticMinimum'])))
-    # A source-green opening with zero semantic support is an actual tear.
-    support[(semantic_alpha == 0) & (green >= red)] = False
-    support[settings['maximumNewClothY']:] = False
-    labels, _ = ndimage.label(support, structure=np.ones((3, 3)))
-    areas = np.bincount(labels.ravel())
-    areas[0] = 0
-    support = np.isin(labels, np.flatnonzero(areas >= settings['minimumComponentPixels']))
-    mask = np.rint(ndimage.gaussian_filter(support.astype(float), sigma=settings['edgeSigmaPixels']) * 255).astype(np.uint8)
-    mask[mask < 4] = 0
-    mask[mask >= 252] = 255
-    return mask
-
-
-def repair_final_win(frames, source_rgb, name='bloom-traveler-big', semantic_rgba=None):
+def repair_final_win(frames, source_rgb, name='bloom-traveler-big'):
     from scipy import ndimage
 
     plan_path = ROOT / 'art' / f'{name}-repairs.json'
@@ -337,7 +342,6 @@ def repair_final_win(frames, source_rgb, name='bloom-traveler-big', semantic_rgb
         alpha = rgba[:, :, 3].copy()
         source_max = rgb.max(axis=2)
         restored = np.zeros(alpha.shape, dtype=bool)
-        protected = np.zeros(alpha.shape, dtype=bool)
         for entry in restores.get(number, []):
             mask_image = Image.new('L', (width * 4, height * 4))
             draw = ImageDraw.Draw(mask_image)
@@ -346,85 +350,22 @@ def repair_final_win(frames, source_rgb, name='bloom-traveler-big', semantic_rgb
                 draw.rectangle((x0 * 4, y0 * 4, x1 * 4 - 1, y1 * 4 - 1), fill=255)
             for polygon in entry.get('polygons', []):
                 draw.polygon([(x * 4, y * 4) for x, y in polygon], fill=255)
-            for line in entry.get('polylines', []):
-                draw.line([(x * 4, y * 4) for x, y in line], fill=255,
-                          width=round(entry['lineWidthPixels'] * 4), joint='curve')
-            for ellipse in entry.get('ellipses', []):
-                draw.ellipse(tuple(coordinate * 4 for coordinate in ellipse), fill=255)
             mask_image = mask_image.resize((width, height), Image.Resampling.LANCZOS)
             dilation = entry.get('polygonDilationPixels', 0)
             if dilation:
                 mask_image = mask_image.filter(ImageFilter.MaxFilter(2 * dilation + 1))
             mask = np.array(mask_image.filter(ImageFilter.GaussianBlur(entry.get('maskFeatherPixels', .5)))) / 255
-            if entry.get('protectOnly'):
-                protected |= (mask >= .25) & (semantic_rgba[number - 1, :, :, 3] >= 16)
-                continue
-            if entry['kind'].startswith('solid-'):
-                support = np.ones(alpha.shape)
-            elif entry['kind'] == 'brown-staff':
+            if entry['kind'] == 'brown-staff':
                 red, green, blue = rgb.astype(float).transpose(2, 0, 1)
                 support = np.clip((red - 6) / 18, 0, 1) * (red > green * 1.25) * (red > blue * 1.5)
             else:
                 transparent, opaque = entry.get('supportRamp', [18, 38])
                 support = np.clip((source_max.astype(float) - transparent) / (opaque - transparent), 0, 1)
-            if 'sourceWarmth' in entry:
-                red, green, blue = rgb.astype(float).transpose(2, 0, 1)
-                rg, gb = entry['sourceWarmth']
-                support *= (red >= green * rg) & (green >= blue * gb)
             target = np.rint(support * mask * 255).astype(np.uint8)
-            protected |= target >= 64
             raised = target > alpha
             alpha[raised] = target[raised]
             rgba[raised, :3] = rgb[raised]
             restored |= raised
-
-        cloth_restored = cloth_dehazed = neutral_removed = 0
-        if 'garmentRepair' in plan:
-            if semantic_rgba is None:
-                raise ValueError('Blight garment repair needs its matching semantic RGBA source')
-            semantic_frame = semantic_rgba[number - 1]
-            cloth = blight_garment_mask(rgb, semantic_frame, number, plan['garmentRepair'])
-            raised = cloth > alpha
-            alpha[raised] = cloth[raised]
-            rgba[raised, :3] = rgb[raised]
-            restored |= raised
-            cloth_restored = int(raised.sum())
-            protected |= cloth >= 64
-            red, green, blue = rgb.astype(float).transpose(2, 0, 1)
-            sr, sg, sb = semantic_frame[:, :, :3].astype(float).transpose(2, 0, 1)
-            dehaze = ((cloth >= 128) & (semantic_frame[:, :, 3] >= 64) &
-                      (source_max > 20) & (red < green * 1.25) &
-                      (sr >= sg * 1.3) & (sg >= sb * 1.1))
-            rgba[dehaze, :3] = semantic_frame[dehaze, :3]
-            cloth_dehazed = int(dehaze.sum())
-
-        if 'neutralBackgroundCleanup' in plan:
-            settings = plan['neutralBackgroundCleanup']
-            red, green, blue = rgb.astype(float).transpose(2, 0, 1)
-            # Confirmed semantic foreground protects ink-black anatomy and
-            # clothing as well as bright bones. Ground haze is handled below.
-            confirmed = semantic_rgba[number - 1, :, :, 3] >= 128
-            confirmed[755:] = False
-            protected |= confirmed
-            warm = ((red > green * settings['foregroundRedGreenRatio']) &
-                    (green > blue * settings['foregroundGreenBlueRatio']) &
-                    (red > settings['foregroundMinimumRed']) & (alpha >= 128))
-            warm[settings['floorY']:] &= red[settings['floorY']:] >= settings['floorForegroundMinimumRed']
-            protected |= warm
-            protect_distance = ndimage.distance_transform_edt(~protected)
-            neutral = (((red <= green * settings['backgroundRedGreenMaximumRatio'] + 1) &
-                        (green <= blue * settings['backgroundGreenBlueMaximumRatio'] + 1)) |
-                       (source_max <= settings['sourceDarkMaximum']))
-            candidate = neutral & (protect_distance >= settings['minimumDistanceToArtwork'])
-            candidate[:settings['minimumY']] = False
-            candidate[settings['floorY']:] |= protect_distance[settings['floorY']:] >= settings['floorDistanceToArtwork']
-            candidate = ndimage.binary_closing(candidate, iterations=settings['closingPixels'])
-            strength = ndimage.gaussian_filter(candidate.astype(float), sigma=settings['edgeSigmaPixels'])
-            strength[protect_distance < settings['artworkGuardPixels']] = 0
-            before = alpha.copy()
-            alpha = np.rint(alpha * (1 - strength)).clip(0, 255).astype(np.uint8)
-            alpha[alpha < 4] = 0
-            neutral_removed = int(np.count_nonzero(alpha != before))
 
         # Semantic mattes sometimes retain black background as opaque chunks.
         # Follow source-black background only; never fill genuine object gaps.
@@ -509,70 +450,11 @@ def repair_final_win(frames, source_rgb, name='bloom-traveler-big', semantic_rgb
                           cleanedFloorPixels=int(np.count_nonzero(before_floor != alpha)),
                           changedAlphaPixels=int(np.count_nonzero(alpha != original[:, :, 3])),
                           changedRgbPixels=int(np.count_nonzero(np.any(rgba[:, :, :3] != original[:, :, :3], axis=2)))))
-        if 'garmentRepair' in plan:
-            stats[-1].update(restoredClothPixels=cloth_restored, dehazedClothPixels=cloth_dehazed,
-                             cleanedNeutralBackgroundPixels=neutral_removed)
     meta = dict(plan='art/' + plan_path.name, planSha256=hashlib.sha256(plan_path.read_bytes()).hexdigest(),
                 method=plan['sourceRestoreMethod'] + '; reviewed source-black background removal and conservative exterior/floor cleanup',
                 reviewedFrames=len(frames), frameNumbering=plan['frameNumbering'], perFrame=stats)
     meta['totals'] = {key: sum(entry[key] for entry in stats) for key in stats[0] if key != 'frame'}
     return result, meta
-
-
-def complete_blight_weapon(frames, settings):
-    """Complete cropped and erased weapon artwork with intact native plates."""
-    reference_path = ROOT / settings['reference']
-    if hashlib.sha256(reference_path.read_bytes()).hexdigest() != settings['referenceSha256']:
-        raise ValueError('Blight weapon completion reference has changed')
-    plate = Image.open(reference_path).convert('RGBA')
-    for key in ('shaftReference', 'weightReference'):
-        if hashlib.sha256((ROOT / settings[key]).read_bytes()).hexdigest() != settings[key + 'Sha256']:
-            raise ValueError(f'Blight weapon completion {key} has changed')
-    left, top, right, bottom = settings['padding']
-    canvas = (SIZE[0] + left + right, SIZE[1] + top + bottom)
-    track = {entry['frame']: entry for entry in settings['frames']}
-    output, stats = [], []
-    for number, frame in enumerate(frames, 1):
-        underlay = Image.new('RGBA', canvas)
-        full_head = None
-        entry = track.get(number)
-        if entry:
-            forward = np.asarray(entry['forwardAffine']).reshape(2, 3)
-            inverse = np.linalg.inv(forward[:, :2])
-            offset = -inverse @ (forward[:, 2] + np.array([left, top]))
-            painted = plate.transform(canvas, Image.Transform.AFFINE, tuple(np.c_[inverse, offset].ravel()), Image.Resampling.BICUBIC)
-            rgba = np.array(painted)
-            rgba[:, :, :3] = np.rint(rgba[:, :, :3] * np.asarray(entry.get('rgbGain', [1, 1, 1]))).clip(0, 255).astype(np.uint8)
-            # Connect a head that swung fully outside the canvas to its shaft.
-            if 'shaftReference' in settings and 'shaftForwardAffine' in entry:
-                shaft = Image.open(ROOT / settings['shaftReference']).convert('RGBA')
-                transform = np.asarray(entry['shaftForwardAffine']).reshape(2, 3)
-                inv = np.linalg.inv(transform[:, :2])
-                off = -inv @ (transform[:, 2] + np.array([left, top]))
-                shaft = shaft.transform(canvas, Image.Transform.AFFINE, tuple(np.c_[inv, off].ravel()), Image.Resampling.BICUBIC)
-                underlay.alpha_composite(shaft)
-            underlay.alpha_composite(Image.fromarray(rgba))
-            if number in settings.get('fullHeadFrames', []):
-                full_head = Image.new('RGBA', canvas)
-                full_head.paste(Image.fromarray(rgba).crop((left, top, left + SIZE[0], top + SIZE[1])), (left, top))
-        if str(number) in settings.get('weightFrames', {}):
-            weight = Image.open(ROOT / settings['weightReference']).convert('RGBA')
-            cx, cy = settings['weightFrames'][str(number)]
-            underlay.alpha_composite(weight, (round(left + cx - weight.width / 2), round(top + cy - weight.height / 2)))
-        rgba = np.array(underlay)
-        rgba[top:top + SIZE[1], left:left + SIZE[0], 3] = 0
-        underlay = Image.fromarray(rgba)
-        added = int(np.count_nonzero(rgba[:, :, 3]))
-        underlay.alpha_composite(frame, (left, top))
-        if full_head is not None:
-            underlay.alpha_composite(full_head)
-        output.append(underlay)
-        stats.append(dict(frame=number, completedWeaponPixels=added,
-                          replacedDamagedHead=full_head is not None))
-    return output, dict(reference=settings['reference'], referenceSha256=settings['referenceSha256'],
-                        referenceSourceFrame=settings['referenceSourceFrame'], padding=settings['padding'],
-                        nativeCanvas=list(SIZE), method=settings['method'], fullHeadFrames=settings.get('fullHeadFrames', []), perFrame=stats,
-                        completedFrames=sum(entry['completedWeaponPixels'] > 0 for entry in stats))
 
 
 def harden(rgb, prepared):
@@ -638,6 +520,17 @@ def main():
                         sourceKind='user-corrected-rgba-png-sequence',
                         edit='supplied PNGs in original order; RGB and full canvas preserved; conservative detached-speck alpha cleanup only; no crop, blending or retiming',
                         alphaCleanup=alpha_cleanup)
+        elif name == 'blight-keeper-big':
+            frames, source_files, sequence, crop = cleaned_blight_frames(SOURCES / source)
+            fps, first, indices = sequence['fps'], 0, list(range(len(frames)))
+            meta = dict(source=f'art/sources/{source}', sourceFiles=source_files,
+                        sourceArchive=sequence['archive'], sourceArchiveSha256=sequence['archiveSha256'],
+                        sourceSequence=f'art/sources/{source}/sequence.json',
+                        sourceSequenceSha256=hashlib.sha256((SOURCES / source / 'sequence.json').read_bytes()).hexdigest(),
+                        sourceCanvas=sequence['sourceCanvas'],
+                        sourceStartSeconds=0.0, sourceEndSeconds=5.0, sourceFps=fps,
+                        sourceKind='user-cleaned-rgba-png-sequence',
+                        edit='all 120 supplied PNGs in original order; preserve RGB and alpha exactly inside one shared even crop of transparent margins with two-pixel padding; no repainting, masks, compositing, scaling, blending or retiming')
         else:
             if source not in cache:
                 cache[source] = decode(SOURCES / source)
@@ -645,7 +538,7 @@ def main():
             first = round(start * 24)
             available = max(1, round(duration * 24))
             semantic_source = ('blight-spin-input.mkv' if name == 'blight-keeper-spin' else
-                               'bloom-big-alpha-input.webm' if name.startswith('bloom') else 'blight-big-alpha-input.webm')
+                               'bloom-big-alpha-input.webm')
             semantic = decode(SOURCES / semantic_source, alpha=True)
             source_frames = [harden(rgb, prepared) for rgb, prepared in
                              zip(original[first:first + available], semantic)]
@@ -681,13 +574,6 @@ def main():
             frames, final_win_repair = repair_final_win(frames, original[first:first + len(frames)], name)
             meta['finalWinRepair'] = final_win_repair
             meta['edit'] += '; reviewed all 120 frames; source-backed tool/staff/hand alpha repairs; source-black matte, detached fragment and weak exterior/floor cleanup'
-        if name == 'blight-keeper-big':
-            frames, final_win_repair = repair_final_win(frames, original[first:first + len(frames)], name, semantic)
-            meta['finalWinRepair'] = final_win_repair
-            plan = json.loads((ROOT / 'art' / f'{name}-repairs.json').read_text(encoding='utf-8'))
-            frames, completion = complete_blight_weapon(frames, plan['weaponCompletion'])
-            meta['weaponCompletion'] = completion
-            meta['edit'] += '; reviewed all 120 frames; matching-source mace/shaft/chain/foot and cloth repairs; neutral energy/floor background cleanup; cropped weapon completed from intact native artwork on a symmetrically extended transparent canvas'
         for index, frame in enumerate(frames):
             frame.save(work / f'frame-{index:03d}.png')
         room = Image.open(ROOT / 'static' / 'art' / ('bloom-room.webp' if name.startswith('bloom') else 'blight-room.webp'))

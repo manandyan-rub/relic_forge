@@ -1,0 +1,13 @@
+{
+  "archive": "blight-cleaned.zip",
+  "archiveSha256": "b86d729e6d8c8fc90d3d48162a3a8a986ea86de2195f9d6713267cc02dfb1ab5",
+  "frameCount": 120,
+  "filenamePattern": "monster.jpg{index:04d}.png",
+  "sourceCanvas": [
+    1920,
+    1080
+  ],
+  "fps": 24,
+  "timing": "Preserve the existing final-win five-second timing: 120 supplied poses in original order at 24 fps.",
+  "transparentMarginPixels": 2
+}

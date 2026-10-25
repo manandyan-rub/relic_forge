@@ -10,7 +10,7 @@
  let soundtrack = $state<HTMLAudioElement>();
  const name = $derived(world==='BLOOM'?'bloom-traveler':'blight-keeper');
  const loopRevision = $derived(world==='BLOOM' ? 'clean-specks-6' : 'blight-cloak-4');
- const mediaRevision = $derived(feature ? loopRevision : world==='BLOOM' ? 'bloom-final-clean-2' : 'blight-final-clean-1');
+ const mediaRevision = $derived(feature ? loopRevision : world==='BLOOM' ? 'bloom-final-clean-2' : 'blight-cleaned-20261025-1');
  const still = $derived(world==='BLOOM' ? art(world,'traveler-stage') : `/art/${name}-spin-poster.webp?v=${loopRevision}`);
  const phase = $derived(reduced ? null : feature ? 'spin' : celebration ? 'big' : null);
  $effect(()=>{void world;celebration=false;});
