@@ -1,4 +1,5 @@
 <script lang="ts">
+
 	import type { World } from './types';
 
 	let {

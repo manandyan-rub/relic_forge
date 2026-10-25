@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr } from '../petal/i18n';
 	import { type Snippet } from 'svelte';
 	import Authenticate from '../petal/SessionAuthenticate.svelte';
 	import { stateUrlDerived } from 'state-shared';
@@ -19,10 +20,10 @@
 	{@render props.children()}
 {:else}
 	<main class="session-error" role="alert">
-		<h1>The Last Petal</h1>
+		<h1>{tr("The Last Petal")}</h1>
 		<p>
 			{partialSession
-				? 'This session is incomplete. Both sessionID and rgs_url are required.'
+				? tr('This session is incomplete. Both sessionID and rgs_url are required.')
 				: 'A Stake session is required. Add ?demo=true only in local development.'}
 		</p>
 	</main>

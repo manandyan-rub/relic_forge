@@ -8,5 +8,5 @@ export type SymbolId = 'keeper' | 'traveler' | 'guardian' | 'flower' | 'lantern'
 export type Wild = { reel: number; row?: number; multiplier: number };
 export type LineWin = { symbol: SymbolId; kind: number; win: number; uncappedWin: number; positions: { reel: number; row: number }[]; meta: { lineIndex: number; winWithoutMult: number; lineMultiplier: number } };
 export type BookEvent = { index: number; type: string; board?: SymbolId[][]; gameType?: string; world?: World; mode?: Mode; variant?: BonusVariant; contract?: string; wilds?: Wild[]; sticky?: boolean; wins?: LineWin[]; totalWin?: number; amount?: number; totalFs?: number; total?: number };
-export type Round = { roundID?: number; amount?: number; payout?: number; payoutMultiplier?: number; state?: unknown[]; mode?: string; active?: boolean; event?: string | number | null };
+export type Round = { roundID?: number | string; betID?: number | string; amount?: number; payout?: number; payoutMultiplier?: number; state?: unknown[]; mode?: string; active?: boolean; event?: string | number | null };
 export type Reaction = 'idle' | 'spin' | 'anticipation' | 'win' | 'wild' | 'intro' | 'big' | 'ending';

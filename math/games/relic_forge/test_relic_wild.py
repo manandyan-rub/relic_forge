@@ -128,6 +128,7 @@ def test_entire_exported_library_and_weighted_statistics(mode):
     weight=sum(w for _,w,_ in rows)
     rtp=sum(w*p/100 for _,w,p in rows)/weight
     assert abs(rtp-.96)<1e-6
+    assert sum(w for _,w,p in rows if p>=CAP)/weight==pytest.approx(1e-8,abs=1e-12)
     assert max(p for _,_,p in rows)==CAP
     s=next(s for s in json.loads((dest/'statistics.json').read_text()) if s['mode']==mode)
     assert s['weightedRtp']==pytest.approx(rtp)
@@ -188,7 +189,11 @@ def test_bonus_export_statistics_and_prices(mode):
     assert stat['maxPayoutBaseBetX']==max(p for _,_,p in rows)/100==5000
     assert stat['maxPayoutPurchaseX']==5000/cost
     pricing=json.loads((ROOT/'bonus_pricing.json').read_text())
-    assert cost==max(1,round(stat['naturalMeanPayoutBaseBetX']/.96))
+    assert 1<=cost<=1000
+    assert cost==min(1000,max(1,round(stat['tailLimitedMeanPayoutBaseBetX']/.96)))
+    tail=sum(w for _,w,p in rows if p>=CAP)/total
+    assert tail<=0.005
+    assert stat['tail5000Probability']==pytest.approx(tail,abs=1e-12)
     assert pricing[mode]['costMultiplier']==cost and pricing[mode]['connectedApproved'] is False
     assert all(b['events'][0]['purchaseCostMultiplier']==cost for b in books.values())
     index=json.loads((dest/'index.json').read_text())
@@ -213,4 +218,37 @@ def test_six_independent_bonus_distributions_and_artifact_integrity():
         assert hashlib.sha256((dest/name).read_bytes()).hexdigest()==expected
     for mode in BONUS_MODES:
         cap=generate(mode,139,'cap');verify(cap);assert cap['payoutMultiplier']==CAP
+
+
+def test_tail_budget_includes_natural_cap_outcomes_and_preserves_payouts():
+    from copy import deepcopy
+    from distribution import calibrate_bonus
+    books=[{'id':1,'payoutMultiplier':0},{'id':2,'payoutMultiplier':10000},
+           {'id':3,'payoutMultiplier':CAP},{'id':4,'payoutMultiplier':CAP}]
+    forced={'id':99,'payoutMultiplier':CAP}
+    before=deepcopy(books)
+    rows,cost,_=calibrate_bonus(books,forced,CAP)
+    total=sum(w for _,w in rows)
+    assert books==before
+    assert {b['id'] for b,_ in rows}=={1,2,3,4,99}
+    assert all(isinstance(w,int) and w>0 for _,w in rows)
+    assert sum(w for b,w in rows if b['payoutMultiplier']==CAP)/total==0.005
+    assert sum(b['payoutMultiplier']*w for b,w in rows)/100/total/cost==pytest.approx(.96,abs=1e-7)
+
+
+def test_cost_ceiling_recalibrates_distribution_instead_of_only_changing_price():
+    from distribution import calibrate_bonus
+    books=[{'id':1,'payoutMultiplier':0},{'id':2,'payoutMultiplier':400000},
+           {'id':3,'payoutMultiplier':CAP},{'id':4,'payoutMultiplier':CAP}]
+    rows,cost,details=calibrate_bonus(books,{'id':99,'payoutMultiplier':CAP},CAP)
+    assert details['costLimited'] and cost==1000
+    total=sum(w for _,w in rows)
+    assert sum(b['payoutMultiplier']*w for b,w in rows)/100/total/cost==pytest.approx(.96,abs=1e-7)
+
+
+def test_infeasible_priced_distribution_is_rejected():
+    from distribution import calibrate_bonus
+    with pytest.raises(RuntimeError,match='cannot meet the priced RTP'):
+        calibrate_bonus([{'id':1,'payoutMultiplier':400000}],
+                        {'id':99,'payoutMultiplier':CAP},CAP)
 

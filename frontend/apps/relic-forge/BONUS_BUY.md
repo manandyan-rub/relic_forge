@@ -12,24 +12,24 @@ Bonus Buy is a permanent target feature and now exists in both worlds. Three var
 
 Starting reels and values are chosen by Python, remain sticky throughout the feature and are present in the authoritative snapshots. There is no browser RNG, simulated Scatter entry, base-spin payout or new per-spin charge. The cap can stop a feature early. A guaranteed Wild is not a guaranteed payout.
 
-Profiles, including additional Wild probability and full multiplier pools, are individually specified in `math/games/relic_forge/bonus_rules.json`. Standard uses its world's normal feature profile; Super and Mythic use distinct profiles. All 15,006 generated purchased books were reconciled, including guarantees on every first Free Spin and cap examples. Base-game development probabilities and books remain unchanged.
+Profiles, including additional Wild probability and full multiplier pools, are individually specified in `math/games/relic_forge/bonus_rules.json`. Standard uses its world's normal feature profile; Super and Mythic use distinct profiles. All 15,006 generated purchased books were reconciled, including guarantees on every first Free Spin and cap examples. Raw outcome mechanics, payouts and feature guarantees remain unchanged. Exported probabilities are recalibrated under the distribution policy.
 
 ## Derived development prices and statistics
 
-Default generation uses 2,500 independent source features per purchase mode, plus an explicit valid 5,000x cap path: 2,501 books per mode. Prices are computed as the nearest positive integer to source mean payout / 0.96. They are not inherited from Relic Forge. Small low/high-population reweighting then gives approximately 96% RTP at the rounded price. Every exported book retains positive integer selection weight; statistics are recalculated from the exact exported CSV weights.
+Default generation uses 2,500 independent source features per purchase mode, plus an explicit valid 5,000x cap path: 2,501 books per mode. `distribution_policy.json` bounds the total probability of every naturally generated and forced max-win outcome together at 0.5%, with a 1e-8 floor when no natural cap appears. Cost is the rounded tail-limited source mean divided by 0.96, bounded at 1,000x. Low/high non-cap probability masses are then solved for 96% RTP at that actual price, including the capped tail. Exact integer group budgets preserve every outcome with positive weight.
 
-| World / mode | Cost (base bet x) | Weighted RTP | Mean payout (base bet x) | Standard deviation (base bet x) | Standard deviation (purchase x) | Max payout (purchase x) |
-|---|---:|---:|---:|---:|---:|---:|
-| Bloom Standard | 29 | 96.00000% | 27.84 | 126.4724 | 4.3611 | 172.4138 |
-| Bloom Super | 241 | 96.00000% | 231.36 | 550.3706 | 2.2837 | 20.7469 |
-| Bloom Mythic | 628 | 96.00000% | 602.88 | 1,032.5410 | 1.6442 | 7.9618 |
-| Blight Standard | 315 | 96.00000% | 302.40 | 756.8118 | 2.4026 | 15.8730 |
-| Blight Super | 1,466 | 96.00000% | 1,407.36 | 1,740.5491 | 1.1873 | 3.4106 |
-| Blight Mythic | 2,514 | 96.00000% | 2,413.44 | 2,007.2969 | 0.7984 | 1.9889 |
+| World / mode | Cost (base bet x) | Weighted RTP | Mean payout (base bet x) | Standard deviation (base bet x) | Standard deviation (purchase x) | Max payout (purchase x) | Max-win probability |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Bloom Standard | 29 | 96.00000% | 27.84 | 126.4749 | 4.3612 | 172.4138 | 0.000001% |
+| Bloom Super | 241 | 96.00000% | 231.36 | 550.3282 | 2.2835 | 20.7469 | 0.440000% |
+| Bloom Mythic | 548 | 96.00000% | 526.08 | 861.3765 | 1.5719 | 9.1241 | 0.500000% |
+| Blight Standard | 288 | 96.00000% | 276.48 | 674.0756 | 2.3405 | 17.3611 | 0.500000% |
+| Blight Super | 936 | 96.00000% | 898.56 | 1,171.1806 | 1.2513 | 5.3419 | 0.500000% |
+| Blight Mythic | 1,000 | 96.00000% | 960.00 | 1,214.7674 | 1.2148 | 5.0000 | 0.500000% |
 
-Maximum total payout for every mode is **5,000x the base bet**. This is not 5,000x the purchase price. For a $0.20 base bet the prices are Bloom $5.80 / $48.20 / $125.60 and Blight $63.00 / $293.20 / $502.80; maximum return is $1,000.
+Maximum total payout for every mode remains **5,000x the base bet**. For a $0.20 base bet the prices are Bloom $5.80 / $48.20 / $109.60 and Blight $57.60 / $187.20 / $200.00; maximum return is $1,000.
 
-The high Super/Mythic prices follow from sticky reels and their enhanced profiles. In particular, Blight Mythic's maximum is only about 1.99x its full purchase cost under the retained cap. These economics require production-scale player-experience and tail review; they are not final approved commercial prices. Higher absolute payout variance does not necessarily mean higher purchase-normalized variance.
+The previous exporter only assigned the rare-cap budget to one forced example. Naturally capped outcomes retained ordinary population weights, causing excess tail probabilities and expensive Blight purchases. The corrected calibration budgets all cap outcomes together and recomputes the remaining distribution when the price ceiling binds. Editing only the price is never sufficient. The actual exported CSVs are checked against the screenshot's 1,000x cost and 1% tail limits, with a 0.5% internal tail target. This does not claim official Studio validation or production approval.
 
 These are exact theoretical statistics of finite weighted development libraries, not certification or estimates of the unlimited natural generator's theoretical RTP. Changing population size/profile may produce new derived prices; treat a new catalog/books/hash set as a new release. Historical receipts carry their original cost in `bonusStart`.
 
@@ -53,8 +53,8 @@ Frontend config, 18 deterministic purchased fixtures (three per mode), and measu
 
 ## Validation
 
-- PASS: 39 Python tests, including payout and weight reconciliation, 20 paylines, multiplier addition, cap handling, full sticky state, all purchased-book starting guarantees, pricing formula, SDK flags/costs and artifact SHA-256.
-- PASS: 118 CDP browser checks, including all six purchases, full-cost confirmation, cancel without debit, insufficient funds, double-click protection, feature reconciliation, historical-price recovery, read-only purchase replay, connected-release denial and jurisdiction restrictions.
+- PASS: 44 Python tests, including payout and weight reconciliation, 20 paylines, multiplier addition, cap handling, full sticky state, all purchased-book starting guarantees, tail budgets, price/RTP calibration, SDK flags/costs and artifact SHA-256.
+- PASS: 302 CDP browser checks, including all six purchases, full-cost confirmation, cancel without debit, insufficient funds, double-click protection, feature reconciliation, historical-price recovery, read-only purchase replay, connected-release denial and jurisdiction restrictions.
 - PASS: Svelte check with zero errors and warnings; ESLint; production build.
 - PASS: desktop/tablet/phone layout checks; desktop and mobile Bonus Buy screenshots visually inspected.
 - NOT RUN: real Stake staging, official production RGS/package validation, production-scale optimizer, Playwright (browser tests use installed headless Chrome/Edge through CDP).
@@ -65,4 +65,4 @@ All six `connectedApproved` flags are false. Purchase buttons explain the pendin
 
 Before enabling connected purchase: independently review much larger populations and purchase economics; approve immutable costs/profiles/books; complete official production packaging and verification with real provider identifiers; verify actual wallet debit/payout denominations, authenticated `buyBonus` flags/costs, interruptions and replay against Stake staging; then deliberately release the approved configuration. A successful local suite never flips these flags automatically.
 
-No push, upload or connected purchase release was performed.
+The revised files are prepared for upload testing. No connected purchase release is enabled.

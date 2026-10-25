@@ -1,0 +1,10 @@
+{
+  "version": "last-petal-risk-v2",
+  "targetRtp": 0.96,
+  "integerWeightBudget": 1000000000000,
+  "baseCapProbability": 0.00000001,
+  "minimumBonusCapProbability": 0.00000001,
+  "maximumBonusCapProbability": 0.005,
+  "maximumBonusCostMultiplier": 1000,
+  "scope": "Finite development targets with headroom beneath the screenshot's 2-star 1% tail and 1000x cost limits; not production approval."
+}

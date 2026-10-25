@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr, t } from './i18n';
 	import { onMount } from 'svelte';
 	let { bet, maximum, confirm, close }: { bet: string; maximum: string; confirm: () => void; close: () => void } = $props();
 	let dialog: HTMLDialogElement;
@@ -15,13 +16,13 @@
 </script>
 
 <dialog bind:this={dialog} class="auto-confirm" aria-labelledby="autoplay-title" oncancel={event => { event.preventDefault(); finish(); }}>
-	<small>THE LAST PETAL</small>
-	<h2 id="autoplay-title">Start autoplay?</h2>
-	<p>Up to 10 spins at <strong>{bet}</strong> each. Maximum total bet: <strong>{maximum}</strong>.</p>
-	<p>You can stop autoplay at any time. A spin already in progress will finish.</p>
+	<small>{tr("THE LAST PETAL")}</small>
+	<h2 id="autoplay-title">{tr("Start autoplay?")}</h2>
+	<p>{t('autoLimit',{bet,maximum})}</p>
+	<p>{tr("You can stop autoplay at any time. A spin already in progress will finish.")}</p>
 	<div class="actions">
-		<button bind:this={cancelButton} type="button" onclick={() => finish()} aria-label="Cancel autoplay">Cancel</button>
-		<button type="button" onclick={() => finish(true)} aria-label="Confirm 10 autoplay spins">Start 10 spins</button>
+		<button bind:this={cancelButton} type="button" onclick={() => finish()} aria-label={tr("Cancel autoplay")}>{tr("Cancel")}</button>
+		<button type="button" onclick={() => finish(true)} aria-label={tr("Confirm 10 autoplay spins")}>{tr("Start 10 spins")}</button>
 	</div>
 </dialog>
 

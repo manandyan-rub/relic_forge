@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr, t, locale } from './i18n';
 	import { onMount } from 'svelte';
 	import type { World } from './types';
 	import type { createWinCountAudio } from './winCountAudio';
@@ -26,7 +27,7 @@
 	let frame = 0;
 	let hold: ReturnType<typeof setTimeout> | undefined;
 	const target = $derived(format(amount));
-	const ratio = $derived(`${new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(multiplier)}×`);
+	const ratio = $derived(`${new Intl.NumberFormat(locale(), { maximumFractionDigits: 2 }).format(multiplier)}×`);
 
 	function complete() {
 		if (dismissed || !counting) return;
@@ -107,15 +108,15 @@
 
 <dialog bind:this={dialog} class="big-win-count" class:reduced data-world={world} data-counting={counting} aria-labelledby={`${id}-heading`} aria-describedby={`${id}-total`} oncancel={cancel}>
 	<div class="count-content">
-		<p class="count-kicker">THE LAST PETAL</p>
-		<h2 id={`${id}-heading`}>BIG WIN</h2>
+		<p class="count-kicker">{tr("THE LAST PETAL")}</p>
+		<h2 id={`${id}-heading`}>{tr("BIG WIN")}</h2>
 		<div class="count-amount" dir="ltr" style={`--amount-characters:${Math.max(6, target.length)}`} aria-hidden="true">
 			<strong class="count-target">{target}</strong>
 			<strong class="count-value">{format(displayed)}</strong>
 		</div>
-		<p id={`${id}-total`} class="visually-hidden">You won {target}, {ratio} your bet.</p>
+		<p id={`${id}-total`} class="visually-hidden">{t('youWon')} {target} · {ratio} {t('bet')}.</p>
 		<span class="count-multiplier" dir="ltr">{ratio}</span>
-		<button bind:this={button} class="count-continue" type="button" onclick={click}>{counting ? 'Skip count' : 'Continue'}</button>
+		<button bind:this={button} class="count-continue" type="button" onclick={click}>{counting ? tr('Skip count') : tr('Continue')}</button>
 	</div>
 </dialog>
 

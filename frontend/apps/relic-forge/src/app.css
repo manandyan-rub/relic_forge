@@ -167,7 +167,7 @@ input:focus-visible {
 	align-items: center;
 	gap: clamp(16px, 3vw, 48px);
 	max-width: 1740px;
-	min-height: calc(100svh - 216px);
+	min-height: calc(100svh - 272px);
 	margin: 0 auto;
 }
 .slot-stage {
@@ -619,13 +619,19 @@ input:focus-visible {
 	color: #ffe7a5;
 	text-shadow: 0 0 16px #dcae4980;
 }
-/* Empty result rows stay reserved so wins cannot move the controls. */
+/* Keep the paid-line row stable; the receipt sits beneath the controls. */
 .round-details {
 	display: grid;
-	grid-template-rows: 16px 56px;
-	row-gap: 4px;
-	block-size: 76px;
+	grid-template-rows: 16px;
+	block-size: 20px;
 	min-inline-size: 0;
+}
+.purchase-summary {
+	display: grid;
+	place-items: center;
+	block-size: 56px;
+	max-width: 1120px;
+	margin: 4px auto 0;
 }
 .line-detail {
 	margin: 0 4px;
@@ -1320,7 +1326,7 @@ input:focus-visible {
 		min-height: 52px;
 	}
 	.game-scene {
-		min-height: calc(100svh - 196px);
+		min-height: calc(100svh - 252px);
 	}
 	.slot-stage {
 		padding-block: 6px;
@@ -1740,3 +1746,21 @@ input:focus-visible {
 @media (min-width: 1001px) and (min-height: 700px) {
   .slot-stage { max-width: clamp(340px, calc((100svh - 650px) * 1.43 + 28px), 980px); }
 }
+
+/* Language-specific fallback faces are bundled with the game. */
+:root:lang(ar) { --font-ui: 'Google Sans', 'Petal Arabic', sans-serif; }
+:root:lang(ja) { --font-ui: 'Google Sans', 'Petal Japanese', sans-serif; }
+:root:lang(ko) { --font-ui: 'Google Sans', 'Petal Korean', sans-serif; }
+:root:lang(zh) { --font-ui: 'Google Sans', 'Petal Chinese', sans-serif; }
+/* Payline geometry and reel order always run left to right. */
+.petal-world { direction: ltr; }
+:lang(ar) :is(.title-lockup,.character-caption,.world-selection,.under-reels,.line-detail,.game-footnote,.petal-modal,.bonus-panel,.auto-confirm,.purchase-receipt,.replay-controls,.count-content,.award .content,.session-error) { direction: rtl; }
+:lang(ar) :is(.eyebrow,.edition,.world-choice small,.character-caption small,.cabinet-top,.cabinet-bottom,.bet-controls small,.free-spins-kicker) { letter-spacing: normal; }
+html:not(:lang(en)) .edition > span:last-child { max-width: 190px; line-height: 1.5; }
+html:not(:lang(en)) .secondary-control { min-width: 70px; }
+html:not(:lang(en)) .secondary-control small { max-width: 110px; font-size: 9px; white-space: normal; line-height: 1.35; }
+html:not(:lang(en)) .bonus-buy-button { min-width: 0; }
+html:not(:lang(en)) .bonus-buy-button > span { white-space: normal; line-height: 1.35; }
+html:not(:lang(en)) .free-spins-kicker { letter-spacing: .08em; }
+html:not(:lang(en)) .world-choice small { overflow-wrap: anywhere; }
+:lang(ar) :is(.cabinet-top,.cabinet-bottom,.world-description,.line-detail) { unicode-bidi: plaintext; }

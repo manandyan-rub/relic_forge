@@ -14,6 +14,7 @@ let socket;
 const results=[],errors=[],retiredBigMediaRequests=[];
 const counts={authenticate:0,play:0,event:0,end:0,replay:0};
 let modes=[],restricted=false,recovery=false,bad=false,recoveryMode='BLIGHT',historicPrice=null;
+let identityKind='numeric',completedRecovery=false;
 let holdWinInfo=false,releaseWinInfo;
 let playBookIndex=2,holdPlayAt=-1,releasePlay;
 const fixtures=JSON.parse(readFileSync('src/petal/fixtures.json','utf8'));
@@ -47,7 +48,7 @@ try{
   const b=structuredClone(bonusFixtures[mode]?bonusFixtures[mode][0]:fixtures[mode][i]);
   if(historicPrice&&bonusFixtures[mode])b.events[0].purchaseCostMultiplier=historicPrice;
   if(bad)b.events[0].contract='old-forge';
-  return{roundID:500+counts.play,amount:1000000,payout:b.payoutMultiplier*10000,payoutMultiplier:b.payoutMultiplier/100,mode,state:b.events,active:true,event:recovery?Math.floor(b.events.length/2):null};
+  return{...(identityKind==='numeric'?{roundID:500+counts.play}:identityKind==='betID'?{betID:'same-bet-id'}:identityKind==='opaque'?{roundID:'same-opaque-id'}:{}),amount:1000000,payout:b.payoutMultiplier*10000,payoutMultiplier:b.payoutMultiplier/100,mode,state:b.events,active:!completedRecovery,event:recovery?Math.floor(b.events.length/2):null};
  };
  on('Fetch.requestPaused',async p=>{
   const url=p.request.url,input=JSON.parse(p.request.postData??'{}');let body={};
@@ -161,7 +162,7 @@ try{
  const continuous=await ev("(()=>{cancelAnimationFrame(window.__featureMediaRaf);return window.__featureMedia})()");
  check(continuous.samples>30&&continuous.between>0&&continuous.counts.length>=10,'Blight media observed across all ten free spins and pauses');
  check(Array.from({length:10},(_,i)=>`Free spin ${i+1} of 10`).every(label=>continuous.counts.includes(label)),'Blight banner identifies every current free spin consistently');
- check(continuous.changes===0&&continuous.paused===0,'Blight keeps the same playing video and stays silent throughout the feature');
+ check(continuous.changes===0&&continuous.paused===0,'Blight keeps the same muted video throughout the feature');
  await wait("!document.querySelector('audio,video')",'Blight feature media finishes its exit fade',800);
  check(await ev("!document.querySelector('audio')&&!document.querySelector('video')"),'Blight feature media stops after completion');
  // Observe layout throughout real motion, wins and a purchased sticky feature.
@@ -268,6 +269,17 @@ try{
  await navigate(live);await idle();await click('.world-choice:nth-child(2)');await click('.spin-button');await idle();
  check(modes.at(-1)==='BLIGHT','base mode sent unchanged');check(counts.play===1&&counts.end===1&&counts.event>0,'base play and settlement once');
  check(await ev("document.querySelector('.wallet strong').textContent.includes('1,000.20')"),'authoritative settled balance');
+ // Optional/opaque RGS identities must not block valid books or merge wagers.
+ playBookIndex=1;
+ for(const kind of ['betID','opaque','none']){
+  identityKind=kind;await navigate(live);await idle();const before={...counts};
+  for(let i=0;i<2;i++){await click('.spin-button');await idle();}
+  check(counts.play===before.play+2&&counts.end===before.end+2&&await ev("!document.querySelector('.round-error')"),kind+' identity: two valid consecutive wagers settle separately');
+ }
+ const dedupBefore={...counts};
+ const walletChecks=await ev(`(async()=>{const {record,settle,validateWallet}=await import('/src/petal/rgs.ts');const book=(await import('/src/petal/fixtures.json')).default.BLOOM[1];const round={amount:1000000,payout:book.payoutMultiplier*10000,payoutMultiplier:book.payoutMultiplier/100,mode:'BLOOM',state:book.events,active:true};validateWallet(round,1);let rejected=false;try{validateWallet({...round,payout:999999},1)}catch{rejected=true}await record(round,0);await record(round,0);await settle(round);await settle(round);return rejected})()`);
+ check(walletChecks&&counts.event===dedupBefore.event+1&&counts.end===dedupBefore.end+1,'ID-less round deduplicates repeated progress/settlement and retains payout validation');
+ identityKind='numeric';playBookIndex=2;
  // Dismiss while winInfo awaits acknowledgment, before setTotalWin can start its sequence.
  await media(false);await navigate(live);await idle();holdWinInfo=true;await click('.spin-button');await wait("Boolean(document.querySelector('.winning-payline'))",'live winInfo displayed before acknowledgment');
  for(let i=0;i<60&&!releaseWinInfo;i++)await delay(25);
@@ -289,6 +301,8 @@ try{
  check(await ev("document.querySelector('main').dataset.busy==='true'&&!document.querySelector('[aria-label=\"Stop autoplay\"]')&&Boolean(document.querySelector('[aria-label=\"Start 10 autoplay spins\"]'))"),'one genuine Stop click cancels autoplay while the wager reply is pending');
  holdPlayAt=-1;playBookIndex=2;const releaseAuto=releasePlay;releasePlay=undefined;releaseAuto();await idle();await delay(100);
  check(counts.play===beforeAuto+2&&await ev("!document.querySelector('.round-error,[aria-label=\"Stop autoplay\"]')"),'released autoplay wager settles without starting another round');
+ recovery=true;completedRecovery=true;const completedSnapshot={...counts};await navigate(live);await idle();
+ check(await ev("document.querySelector('main').dataset.world==='BLOOM'&&document.querySelector('.win-presentation strong').textContent.includes('0.00')")&&counts.play===completedSnapshot.play&&counts.event===completedSnapshot.event&&counts.end===completedSnapshot.end,'completed authenticated round is not recovered or settled again');completedRecovery=false;
  recovery=true;const before=counts.play;await navigate(live);await idle();check(counts.play===before,'base recovery never wagers');check(!(await ev("Boolean(document.querySelector('.round-error'))")),'base feature recovery succeeds');
  recoveryMode='BLOOM_MYTHIC_BONUS';historicPrice=611;const beforePurchaseRecovery={...counts};await navigate(live);await idle();
  check(counts.play===beforePurchaseRecovery.play&&counts.end===beforePurchaseRecovery.end+1,'purchased recovery settles without buying again');

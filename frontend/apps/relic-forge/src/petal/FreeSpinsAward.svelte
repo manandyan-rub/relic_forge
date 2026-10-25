@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr, t } from './i18n';
 	import { onMount } from 'svelte';
 	import { art } from './config';
 	import FreeSpinsGift from './FreeSpinsGift.svelte';
@@ -118,18 +119,18 @@
 					<FreeSpinsGift {world} {reduced} opened={rewardRevealed} onready={reveal} />
 					<div class="award-reward">
 						<div class="reward-motion" class:revealed={rewardRevealed || reduced} onanimationend={finishReveal}>
-							<p class="kicker">YOU WON</p>
+							<p class="kicker">{tr("YOU WON")}</p>
 							<strong class="count" aria-hidden="true">{count}</strong>
-							<h2 id={`${id}-heading`}>FREE SPINS</h2>
+							<h2 id={`${id}-heading`}>{tr("FREE SPINS")}</h2>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 		<p id={`${id}-description`} class="visually-hidden">
-			You have been awarded {count} free spins. Start your free spins to continue.
+			{t('freeSpins')}: {count}. {t('startFreeSpins')}.
 		</p>
-		<button bind:this={startButton} type="button" onclick={handleClick}>Start free spins</button>
+		<button bind:this={startButton} type="button" onclick={handleClick}>{tr("Start free spins")}</button>
 	</div>
 </dialog>
 

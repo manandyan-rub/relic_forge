@@ -1,12 +1,9 @@
 <script lang="ts">
+ import { tr, t } from './i18n';
 	import type { PurchaseReceiptData } from './types';
 
 	let { receipt }: { receipt: PurchaseReceiptData | null } = $props();
-	const description = $derived(
-		receipt
-			? `${receipt.world} ${receipt.bonus} · Base bet ${receipt.baseBet} · Purchase ${receipt.multiplier}× = ${receipt.paid} · Feature win ${receipt.win ?? 'Pending'} · ${receipt.currency}`
-			: undefined,
-	);
+	const description = $derived(receipt ? `${receipt.world} ${receipt.bonus} · ${t('baseBet')} ${receipt.baseBet} · ${t('fullCost')} ${receipt.paid} · ${t('featureWin')} ${receipt.win??t('pending')} · ${receipt.currency}` : undefined);
 </script>
 
 <div
@@ -14,7 +11,7 @@
 	class:empty={!receipt}
 	role="group"
 	aria-hidden={!receipt}
-	aria-label="Bonus purchase receipt"
+	aria-label={t('fullCost')}
 	title={description}
 >
 	{#if receipt}
@@ -22,21 +19,21 @@
 			<strong>{receipt.world} <span>{receipt.bonus}</span></strong>
 			<span
 				class="receipt-multiplier"
-				aria-label={`Purchase multiplier ${receipt.multiplier} times`}>{receipt.multiplier}×</span
+				aria-label={`${t('purchaseMultiplier')} ${receipt.multiplier}×`}>{receipt.multiplier}×</span
 			>
 		</div>
 		<dl class="receipt-metrics">
 			<div>
-				<dt>Base bet</dt>
+				<dt>{tr("Base bet")}</dt>
 				<dd title={receipt.baseBet}>{receipt.baseBet}</dd>
 			</div>
 			<div>
-				<dt>Paid</dt>
+				<dt>{tr("Paid")}</dt>
 				<dd title={receipt.paid}>{receipt.paid}</dd>
 			</div>
 			<div>
-				<dt>Feature win</dt>
-				<dd title={receipt.win ?? 'Pending'}>{receipt.win ?? '—'}</dd>
+				<dt>{tr("Feature win")}</dt>
+				<dd title={receipt.win ?? tr('Pending')}>{receipt.win ?? '—'}</dd>
 			</div>
 		</dl>
 	{/if}

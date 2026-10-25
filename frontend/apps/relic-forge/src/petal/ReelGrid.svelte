@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr } from './i18n';
 	import { onDestroy, tick, untrack } from 'svelte';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
 	import UiIcon from './UiIcon.svelte';
@@ -138,7 +139,7 @@
 				(_, row) => column[(first + row) % column.length],
 			);
 			rows.push([...visible, ...next[reel]]);
-			offsets.push(`translate3d(0,${-remainder}px,0)`);
+			offsets.push(tr(`translate3d(0,${-remainder}px,0)`));
 			destinations.push(-(column.length + 1) * cell);
 			const duration = motionTurbo ? 240 + reel * 16 : 730 + reel * 34;
 			const speed = rollingSpeeds.get(reel)!;
@@ -148,7 +149,7 @@
 			// Match the incoming pixel velocity and reach zero velocity at the end.
 			const initialSlope = Math.max(0, Math.min(1, velocity * duration / (3 * distance)));
 			times.push(duration);
-			easings.push(`cubic-bezier(.3333333333,${initialSlope},.6666666667,1)`);
+			easings.push(tr(`cubic-bezier(.3333333333,${initialSlope},.6666666667,1)`));
 		}
 		landingRows = rows;
 		landingOffsets = offsets;
@@ -162,7 +163,7 @@
 			const node = tracks.get(reel);
 			if (!node || !times[reel]) continue;
 			const animation = node.animate(
-				[{ transform: offsets[reel] }, { transform: `translate3d(0,${destinations[reel]}px,0)` }],
+				[{ transform: offsets[reel] }, { transform: tr(`translate3d(0,${destinations[reel]}px,0)`) }],
 				{ duration: times[reel], easing: landingEasings[reel], fill: 'forwards' },
 			);
 			landings.add(animation);
@@ -202,12 +203,13 @@
 
 <div
 	class="reel-cabinet"
+ dir="ltr"
 	class:reels-moving={spinning || phase !== 'idle'}
-	aria-label="Five reels, five rows, twenty paylines"
+	aria-label={tr("Five reels, five rows, twenty paylines")}
 >
 	<div class="cabinet-top">
 		<span><UiIcon name="sparkle" size={17} /></span><span
-			>{world === 'BLOOM' ? 'THE ENCHANTED GARDEN' : 'THE WITHERED GARDEN'}</span
+			>{world === 'BLOOM' ? tr('THE ENCHANTED GARDEN') : tr('THE WITHERED GARDEN')}</span
 		><span><UiIcon name="sparkle" size={17} /></span>
 	</div>
 	<div class="reel-window">
@@ -233,9 +235,9 @@
 							class="reel-spin-track"
 							class:reel-landing-track={phase === 'landing'}
 							style:block-size={`${(symbols.length / column.length) * 100}%`}
-							style:grid-template-rows={`repeat(${symbols.length},minmax(0,1fr))`}
+							style:grid-template-rows={tr(`repeat(${symbols.length},minmax(0,1fr))`)}
 							style:transform={phase === 'landing' ? landingOffsets[r] : undefined}
-							style:--settle-duration={`${landingTimes[r] ?? 730}ms`}
+							style:--settle-duration={tr(`${landingTimes[r] ?? 730}ms`)}
 							style:--reel-cycle-duration={motionTurbo ? '160ms' : '480ms'}
 							use:reelMotion={r}
 						>
@@ -256,8 +258,8 @@
 				/>{/key}{/if}
 	</div>
 	<div class="cabinet-bottom">
-		<span>20 FIXED LINES</span><span><UiIcon name="flower" size={17} /></span><span
-			>5,000× MAX WIN</span
+		<span>{tr("20 FIXED LINES")}</span><span><UiIcon name="flower" size={17} /></span><span
+			>{tr("5,000× MAX WIN")}</span
 		>
 	</div>
 </div>

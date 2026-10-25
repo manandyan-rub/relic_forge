@@ -2,6 +2,7 @@
 import argparse, csv, json, math
 from pathlib import Path
 import zstandard
+from distribution import POLICY, distribute_weight, calibrate_bonus
 from model import RULES, MODES, BONUS_MODES, BONUS_RULES, REELS, generate, attach_purchase_cost
 ROOT=Path(__file__).resolve().parent
 FRONT=ROOT.parents[2]/'frontend'/'apps'/'relic-forge'
@@ -14,10 +15,10 @@ def build(mode, count):
     books += [generate(mode,900000,'cap')]
     groups={'loss':[], 'win':[], 'feature':[], 'cap':[]}
     for b in books:
-        group='cap' if b['id']==900000 else 'feature' if b['criteria']=='feature' else 'win' if b['payoutMultiplier'] else 'loss'
+        group='cap' if b['payoutMultiplier']>=RULES['cap'] else 'feature' if b['criteria']=='feature' else 'win' if b['payoutMultiplier'] else 'loss'
         groups[group].append(b)
     avg=lambda g:sum(b['payoutMultiplier']/100 for b in groups[g])/len(groups[g])
-    pcap=1e-8
+    pcap=POLICY['baseCapProbability']
     pfeature=RULES['modes'][mode]['bonusProbability']-pcap
     pwin=(.96-pfeature*avg('feature')-pcap*5000)/avg('win')
     probs={'feature':pfeature,'cap':pcap,'win':pwin,'loss':1-pfeature-pcap-pwin}
@@ -25,8 +26,7 @@ def build(mode, count):
         raise RuntimeError(f'Infeasible development weights: {mode} {probs}')
     rows=[]
     for group,items in groups.items():
-        weight=max(1,round(probs[group]*10**12/len(items)))
-        rows += [(b,weight) for b in items]
+        rows += distribute_weight(items,round(probs[group]*POLICY['integerWeightBudget']))
     total=sum(w for _,w in rows)
     mean=sum(b['payoutMultiplier']/100*w for b,w in rows)/total
     variance=sum((b['payoutMultiplier']/100-mean)**2*w for b,w in rows)/total
@@ -37,29 +37,17 @@ def build(mode, count):
         meanFeatureRoundX=sum(b['payoutMultiplier']/100*w for b,w in rows if b['criteria']=='feature')/sum(w for b,w in rows if b['criteria']=='feature'),
         maxExposureX=max(b['payoutMultiplier'] for b,_ in rows)/100,
         naturalSampleRtp=sum(b['payoutMultiplier'] for b in books[:count])/100/count,
+        tail5000Probability=sum(w for b,w in rows if b['payoutMultiplier']>=RULES['cap'])/total,
+        distributionPolicy=POLICY['version'],
         status='Finite development library, calibrated group weights; not production optimized or certified')
     return rows,report
 
 def build_bonus(mode,count):
-    """Price from the independent finite feature population, then calibrate
-    positive integer weights to the rounded purchase cost. Never reuse old prices.
-    """
+    """Price and calibrate the finite population under tail and cost limits."""
     offset=1000000+BONUS_MODES.index(mode)*100000
     books=[generate(mode,offset+i) for i in range(count)]
     natural_mean=sum(b['payoutMultiplier'] for b in books)/100/len(books)
-    cost=max(1,round(natural_mean/.96))
-    low=[b for b in books if b['payoutMultiplier']/100<=natural_mean]
-    high=[b for b in books if b['payoutMultiplier']/100>natural_mean]
-    avg=lambda group:sum(b['payoutMultiplier'] for b in group)/100/len(group)
-    pcap=1e-8
-    target=(.96*cost-pcap*5000)/(1-pcap)
-    phigh=(target-avg(low))/(avg(high)-avg(low))
-    if not 0<phigh<1: raise RuntimeError(f'Infeasible bonus pricing: {mode}')
-    rows=[]
-    for group,p in ((low,(1-pcap)*(1-phigh)),(high,(1-pcap)*phigh)):
-        weight=max(1,round(p*10**12/len(group)))
-        rows.extend((b,weight) for b in group)
-    rows.append((generate(mode,offset+90000,'cap'),round(pcap*10**12)))
+    rows,cost,calibration=calibrate_bonus(books,generate(mode,offset+90000,'cap'),RULES['cap'])
     for book,_ in rows: attach_purchase_cost(book,cost)
     total=sum(w for _,w in rows)
     mean=sum(b['payoutMultiplier']/100*w for b,w in rows)/total
@@ -71,6 +59,8 @@ def build_bonus(mode,count):
         hitFrequency=sum(w for b,w in rows if b['payoutMultiplier']>0)/total,
         maxPayoutBaseBetX=max(b['payoutMultiplier'] for b,_ in rows)/100,
         maxPayoutPurchaseX=5000/cost,naturalMeanPayoutBaseBetX=natural_mean,
+        tail5000Probability=sum(w for b,w in rows if b['payoutMultiplier']>=RULES['cap'])/total,
+        **calibration,
         status='Locally validated finite development books; connected purchase release is locked')
     return rows,report
 
@@ -128,6 +118,7 @@ def main():
     (dest/'index.json').write_text(json.dumps(index,indent=2))
     (dest/'statistics.json').write_text(json.dumps(reports,indent=2))
     (dest/'rules.json').write_text(json.dumps(RULES,indent=2))
+    (dest/'distribution_policy.json').write_text(json.dumps(POLICY,indent=2))
     with (dest/'reels.csv').open('w',newline='') as f: csv.writer(f).writerows(zip(*REELS))
     target=FRONT/'src'/'petal'
     target.mkdir(parents=True,exist_ok=True)
@@ -139,7 +130,7 @@ def main():
     (target/'bonus-statistics.json').write_text(json.dumps(bonus_reports,indent=2))
     # Hash exact book/config/weight artifacts for independent staging review.
     import hashlib
-    artifact_names={'index.json','statistics.json','bonus_statistics.json','bonus_config.json','stake-mode-config.json','rules.json','reels.csv'}
+    artifact_names={'index.json','statistics.json','bonus_statistics.json','bonus_config.json','stake-mode-config.json','rules.json','reels.csv','distribution_policy.json'}
     for item in index['modes']: artifact_names.update((item['events'],item['weights']))
     integrity={name:hashlib.sha256((dest/name).read_bytes()).hexdigest() for name in sorted(artifact_names)}
     (dest/'integrity.json').write_text(json.dumps(integrity,indent=2))

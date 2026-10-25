@@ -9,7 +9,8 @@
 		"dev": "vite dev --host --port 3006",
 		"verify:browser": "node scripts/verify-browser.mjs",
 		"build": "node scripts/build.mjs",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"verify:languages": "node scripts/verify-languages.mjs"
 	},
 	"type": "module",
 	"devDependencies": {

@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr } from './i18n';
  import { art, worldLabels } from './config';
  import type { SymbolId, World } from './types';
  let { symbol, world }: { symbol: SymbolId; world: World } = $props();
@@ -14,5 +15,5 @@
     {#each [0,60,120,180,240,300] as angle (angle)}<ellipse cx="50" cy="27" rx="12" ry="20" transform="rotate({angle} 50 45)" fill={symbol === 'wild' ? '#f5d692' : symbol === 'scatter' ? '#e9bd73' : '#d68b99'} stroke="#895b50" stroke-width="2"/>{/each}<circle cx="50" cy="45" r="11" fill="#f6cf6c" stroke="#936135" stroke-width="3"/>
   </svg>
  {/if}
- {#if symbol === 'wild' || symbol === 'scatter'}<span class="symbol-tag">{symbol === 'wild' ? 'WILD' : 'SCATTER'}</span>{/if}
+ {#if symbol === 'wild' || symbol === 'scatter'}<span class="symbol-tag">{symbol === 'wild' ? tr('WILD') : tr('SCATTER')}</span>{/if}
 </div>

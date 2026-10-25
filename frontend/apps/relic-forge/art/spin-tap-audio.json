@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "worlds": ["BLOOM", "BLIGHT"],
+  "source": "The existing expanding-Wild multiplier cue in SlotGame.chime('wild')",
+  "implementation": "src/petal/spinTapAudio.ts",
+  "waveform": "sine",
+  "frequencyHz": 440,
+  "initialGain": 0.025,
+  "finalGain": 0.001,
+  "exponentialDecaySeconds": 0.25,
+  "tapIntervalMilliseconds": 320,
+  "playback": "Repeat the same multiplier tone during base and free-spin reel movement in both worlds. Stop immediately at reel settlement, mute, hiding, world change, failure or unmount. Cancel delayed starts and prevent overlapping timers.",
+  "replaces": "The retired Bloom walking recording, preserved in art/sources/bloom-final-walking.wav. No walking recording is shipped at runtime."
+}

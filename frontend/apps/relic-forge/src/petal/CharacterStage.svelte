@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr, t } from './i18n';
  import { fade } from 'svelte/transition';
  import { art } from './config';
  import type { World, Reaction } from './types';
@@ -52,13 +53,13 @@
   };
  });
 </script>
-<aside class="character-stage" data-reaction={reaction} aria-label={`${world === 'BLOOM' ? 'The Lantern Traveler' : 'The Withered Keeper'}: ${reaction}`}>
+<aside class="character-stage" data-reaction={reaction} aria-label={`${world === 'BLOOM' ? tr('The Lantern Traveler') : tr('The Withered Keeper')}: ${t(({idle:'ready',spin:'spinning',anticipation:'ready',win:'win',wild:'wild',intro:'freeSpins',big:'bigWin',ending:'complete'} as const)[reaction])}`}>
  {#if world==='BLOOM'}<div class="character-aura"></div>{/if}
  <div class="character-figure" class:has-motion={!!phase} class:motion-active={visible && !!phase}>
-  <img class="character-art" src={still} alt={world === 'BLOOM' ? 'Magical forest traveler holding a lantern staff' : 'Hooded Blight creature with a chained weapon'} />
+  <img class="character-art" src={still} alt={world === 'BLOOM' ? tr('Magical forest traveler holding a lantern staff') : tr('Hooded Blight creature with a chained weapon')} />
   {#key `${name}-${phase}`}
    {#if phase}<video bind:this={video} out:fade={{duration:reduced?0:180}} class="character-motion" data-phase={phase} src={`./art/${name}-spin.webm?v=${loopRevision}`} poster={`./art/${name}-spin-poster.webp?v=${loopRevision}`} muted playsinline loop preload="auto" aria-hidden="true"></video>{/if}
   {/key}
  </div>
- <div class="character-caption"><small>{world === 'BLOOM' ? 'EVERY FLOWER HOLDS A LITTLE' : 'EVEN IN DARKNESS, THERE IS'}</small><strong>{world === 'BLOOM' ? 'Magic.' : 'Power.'}</strong><span>{world === 'BLOOM' ? 'Let your fortune blossom.' : 'See what the shadows keep.'}</span></div>
+ <div class="character-caption"><small>{world === 'BLOOM' ? tr('EVERY FLOWER HOLDS A LITTLE') : tr('EVEN IN DARKNESS, THERE IS')}</small><strong>{world === 'BLOOM' ? tr('Magic.') : tr('Power.')}</strong><span>{world === 'BLOOM' ? tr('Let your fortune blossom.') : tr('See what the shadows keep.')}</span></div>
 </aside>

@@ -1,0 +1,50 @@
+[
+  {
+    "language": "ar",
+    "family": "Noto Sans Arabic",
+    "cssFamily": "Petal Arabic",
+    "file": "fonts/petal-ar-ui.woff2",
+    "bytes": 33752,
+    "sha256": "46ccd5ad891bd2ed498c6e37a8ded7814fd101485d9beaa64bd111ca48c22c99",
+    "characters": "×،؟ءأؤإئابةتثجحخدذرزسشصضطظعغفقكلمنهوىيًٍُّ٠١٢٣٤٥٦٧٨٩٪٫٬…",
+    "source": "https://fonts.gstatic.com/l/font?kit=nwpCtLGrOAZMl5nJ_wfgRg3DrWFZWsnVBJ_sS6tlqHHFlg43rfoDUuJEZq9HofcsY_5duNtkU_GO3Y94uTygnqM5tsh0gG9DPhCmab3Xpi2hCWzO3q4nrpu9N3dVjViz5H98O0BDjf24jRtAaikgNxBQLWmhogIXrpd6ddqu8NclRlTZgZK6PjqUnwZiAAOhz-bjY4NNXJ32jyQ&skey=f979c51db865377e&v=v33",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansarabic/OFL.txt",
+    "method": "Google Fonts CSS2 text subset, variable weight 400–700"
+  },
+  {
+    "language": "ja",
+    "family": "Noto Sans JP",
+    "cssFamily": "Petal Japanese",
+    "file": "fonts/petal-ja-ui.woff2",
+    "bytes": 120524,
+    "sha256": "a4ab4e196156f8565a8148ae209b0fa731cd3b3d5f7e0fc8403475e9bc597789",
+    "characters": "…、。あいうえかがきくけげこさしじすせただつづてでとどなにのはばびへまみめもやらりるれわをんアィイウオカガキクグゲシスセタダチッデトドナニハパヒビピフブプベボポマミメモャョラリルレロワンー一上下不世中了二介付代低体価保個倍偏停備元入全再初別利到力加効動各合含回固園地域基報場変大始子学完定宿小少左差常帽幅幸広度庭張当後得復必情戦戻払承抑択抽拡挑接損支数断新時最有木本枚果枯格棍棒植検標機止残法準物獲率生用界留番発益短石確示穏端算純紹終結続総縮繁能致花行表要計設証認読費購贈足込途通進運道達選配重鉢鎖閉開闇限音順頻額高魔！：？",
+    "source": "https://fonts.gstatic.com/l/font?kit=-F62fjtqLzI2JPCgQBnw7HFowxrp1LXlIQmVlTrgTXhzVFe-PCMW513nzUTMq7-R0I_PcJihSSLtgFznLr7qmzrpx3BC3agpOh4zLlJGjMMT66aid5AipLh62zrOynlm3vR82g7Pof4LuI8G3Z5rRyZRFcF9jtpMzb7zF30itWlCQjdlrtMArqtJAdXIkdVvSLyabdsSqZNtjHNrIUMkGTqdlWxBnddBjo7o8GOG7YzoBUPeCkxMWkWc5CEsfs2IDle8RYLgGm684UDLjJYIklw6PX0pnG2VXrkCyi4qAPap8iT8gpFpztAQI32GjjZDBU3RW4cLwXdUUxmiuGRf9Z5AjArDlG_LP4fkgOkMwb5-jirPUVEZUNnGn364pYQQ6b2wojEukPXEJS05gydi3apOMcAaGf3FU_mJZYE1Ts5KOWDJTALrkQNYpqgHafb6VKgiXIGWhRCD3jiIe5qxz8msnnEfpsIaMMt0a1zr1EEK8wEIA_f02LzVCkxaUiDE8LhyfgHDEJ8xNXaEZ_O7A72_Eu0GvZWiCSm0QijFNL61Ov0KyF9wspzW0UqF4j9aGDsRYIWACh77bWa5uEhZNblcUMQ4UZQ0YV5VCi8jjgDj0ZfkhZhtTlHzhMjyebSPPM3IlraoT5FiRbWC65fK9Ngd2EV7pHJ-osDbkFAUe_t2puu6kgiZ5qXfk-F10HcFpmFMV9CY-utoeXq3YXvZPC5qFmE-kDCY9I0kF0LRrCBXxIQj-ruPctK0MX8GnOG15oLYH5r1koj7AIuFf8xag017xuJKu_iAg0pibFhqNVPW_HXUj38b3vOS_5GMQYtdTgeIp3t1ZEsXklqvz-GWr2wKGnYA3rKnzmMSo0fn83lF5lWJbDXZUyGd46mGNdeKoLWCJny3j4gwX1zEbnBrT4l_RuVFfjriNTZHjKhFUQ0G7JvnwdcQrqQ43MHUkUrlFIyGcMuva6Y8CPv04DwqDmsrIOcrWSlzMi8llEoPWpISBMBOQG6eViYJsw6gP6_02GTT1KX8n85P_GL10a1JPDREH69OHjcReODVjEGNLMLViWkR8Ynq1gsZEQmpySMdmnnT1c3jeiUs84txEW_vSLmlAndjK3-dn3LikGF-6wc-ihS3eFCBwkHrEE9I5jne8pH2UXZlT8AxGgcyBgmFKwutaVo0yLK1gQ&skey=72472b0eb8793570&v=v57",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosansjp/OFL.txt",
+    "method": "Google Fonts CSS2 text subset, variable weight 400–700"
+  },
+  {
+    "language": "ko",
+    "family": "Noto Sans KR",
+    "cssFamily": "Petal Korean",
+    "file": "fonts/petal-ko-ui.woff2",
+    "bytes": 31424,
+    "sha256": "84afe4324dcdb8d8d313c634be36fc16cb93424e89a9dcc78a40214cad7234f8",
+    "characters": "…가개건검게겨격결계고곤과구규금급기길깃까꽃끝나날낮너넓는늘능니닙다단닫달당대더데도돌동되된됩두둠뒤드든때뛰라랜러레로료률를리릴마막망매머메며면모무물미및반발배번범법베변별보복본볼봉부분불브비빅빈빕사새생서선설성세션소속손수순슈스슬습승시식심아안않애액어언없었에여역연영올와완왼요용운움원월위윈유으은을음의이익인일임입있잎자작잔잠장재전정제조족존종주준줄중증지직진집쪽차철첨첫체총최추취치칙침캐택탠터턴퇴팅퍼페편포표플핀필하학한할함합해행향허화확회효힘",
+    "source": "https://fonts.gstatic.com/l/font?kit=PbykFmXiEBPT4ITbgNA5Cgm202xO7XCUH42DTsjBxF5xQJyS5QpK7L76H6QlbVdOmHfIGfoLUuHR5JRUacXhv8_-45qmIYla6wBaGOkqkmpl8Cx388ki9BfKg87_txQ07uHEERFIMbX4lufA01g5nscjxXW6RVunzBXWIqRifisyZ9hPjw7qdgrP7L7nf2biGeqYuHBCstI6UJKNkuSFPUjJZdNU9OpYRRtuf5NDvLCWWWhbLwWu-1L9A_8uG5RiqqDqoYSqyS-FHauAkE_F4-r_yyvNksxAJhN3IKdKKGwICa-CIQt5r4w95_l3VzXf4LhZO2ZeoLUls-GFc93eS0w4zUPo_0IX1G3StRmBPrRaYQBlp0fhOqv90ukE9mDsSRrCdGoIPdWuVcnfhWewlbRSFdc-deKLoMfiPv9i-LEwFM35Yzzi6K5aFo92NHHFh_IszkRgEYAen9nRCmNUgTFdCh3f3ExnhQwBapvA_mb7NxT8EFsqgp3GjfNIAZhw-8g8EqUZVgH6Oh4bakBOvqrVMvdBfxx0YRypq7f3whrEgdyNotaELQQjjfU8BlMPYa6EfaXro7Ll02SaSkdxFkQVMzUC8TqFrOydtCf-l8IZrAQRJ4pcBK-T6McQtbpahtLFUKuGUXki_7HdSxUdagEEsFF7so1KJRp4n4vT5v4ndsBGHQ4IA3nls2pOhIeSjawnxYzkwB8APgiuPfmz6nLYW7FvlC1DkwEYdX1fU-9X0k-SeI4BKsb7RUFGT3PoY_P0vwEpSCXo_VXjxSp6xSG0n0_NsMSfCTiXFA-aJgakRmJNeu5c54nkMD0uuULXm53xWL799hwxRMXvMQsepniSkDb7KHbbXe-jCBg-d-0t9MYBgET84_k7bAafceggjqwq7kZvPikbd6sgatuIbqEEtrcpp03x-O1mrA&skey=87e7ee645936e2c7&v=v40",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/OFL.txt",
+    "method": "Google Fonts CSS2 text subset, variable weight 400–700"
+  },
+  {
+    "language": "zh",
+    "family": "Noto Sans SC",
+    "cssFamily": "Petal Chinese",
+    "file": "fonts/petal-zh-ui.woff2",
+    "bytes": 89428,
+    "sha256": "d4e7720c63e520145f89d1c7ee4636044d38178f5309217839b3c196ed07c3e7",
+    "characters": "…、。一上不世两个中为之也买了些产从付代以价会但低余使例供侧保信倍停免入全关再净准减出刀分则到刷刺前剪力功加动励包匹区单即发取变可号合后含和回园围固在地基增备复多大头奖好始子学完定小少尖尚就展左差已帽并广序库开式彩待得总恢息您戏成战所扩投抽择持按挑提搭播支收放效散数整断新旋无时是显普暗更替最有期木未朵权束条极果枯枷标样格棒概模次止正每法波注派消温游演灯点片物独率现瓣生用画界百的盆益相短石础确示礼祝神符笼算繁级线结继绪续缩网置联胸能腰自至花范萎蕴藏行表要规触计认许设证试话请购费赔赢起超足路跳转轴载较达过运返这进选通速部都配量针链锁锤闭间降限随需面音页顺须频额首验高魔黑！，：？",
+    "source": "https://fonts.gstatic.com/l/font?kit=k3kXo84MPvpLmixcA63oeALhLJBr9-1-VE8amvQGP2jf6BBrdpTxfdPUua5S8CDpioutF7iIbYurhEMwxnz5a5DrBPalQXmTELhnYME9scq5RBLEOBIiaVGqxTX84vh4Mm7wou45WjTlsbtzn-5Iar2GhRHPhUkCuPgLf7JOcVfEahm1yEYbFPW_jExkuka9PHoctXOsZAGnD6iB7EnMH1D_j5k-xcBHiPhh9RvggKCHiNxGFjHweVsw6dVAkrLGTPuClgMPVuHfcav20WCe3TaBnlfoiP682dtmE67d5UAtkuXeOeqrmRp6D0WyXXEmaJU3otHccEt5gssG5-JI5zmJzRnIdc80-gsXzFWYGpuKwko6Od_34JpkfLXk8q-3Rhn-kVPLDmTPd0Ic6iFJD9IvwbXdVFrlgVy7dD0zynXNEosX-Tr7EpPUT7y9j1YAMlbQ-5NRYkBkegys1uhQMPHAs5n1E8qxnPyulYly86-5ba1Ra3uLZz45Ky1gkrBPTR9cuetb9DDO-NVF_urLCLLDlMUj3iaxevYdKzeyMCsCuuBAPQ_fNn2zq35OkDxaktz--l2YfdWC4Hch5HRw99mGsrQbLSJtYKR55iVopIEcsMSNi8PmMmkzG_DkU-y6hEotFY_KAymZwoj0IIp-pJvCtjvEzCw2GsPI_pcOCd3X7YYgbl4XMfr62lWwVV8WUUCU94bRYojH-e5_Nq8NeJYN8djCvMwnldca3pPoEkYaQdeIk98r81liV-Eh_hZGxlYpBP9Li2Oj55pNbd1Y_Bh9vwGRimn5bBUQBTet8kDoy5HykLMWbkcYptySLODvYeoMK4urmTR-4PWBPHH1EEpr_4SZ9oyelesBhInRg8z7IFTQqhU6DuNOFDVnFNEHKP0ji4sVVM9WdkCPr6__CgqqQV_8lAok7QL-NyuB9xNaPoHoCE1L1fhwecksqzWpEL7h6Ln4vKFVwM_NXca3_BXjJhF8FXWVSXOqQZaHBCinXiH5h3-c5LGicJ1uY0OsyNFVEc3xNG2IXyMSnSREl5JkML_KTjE4aJ3vGklhBRdMWy4aikkKEEvEw4kNT9nECjB_THjDTc2KyL8fYvioeFFFXLuhDCCgv4R0xFzxDsHaptg4uwhViFRqc2WFJNLwj8hL-s0egOnRkpqob_SoRP5MJMOjFepPjBIkPA&skey=cf0bb10b5602fdc3&v=v41",
+    "licenseSource": "https://raw.githubusercontent.com/google/fonts/main/ofl/notosanssc/OFL.txt",
+    "method": "Google Fonts CSS2 text subset, variable weight 400–700"
+  }
+]

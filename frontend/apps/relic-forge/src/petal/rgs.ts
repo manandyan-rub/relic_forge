@@ -42,9 +42,19 @@ export async function play(mode: Mode, bet: number, index: number): Promise<Roun
 }
 const completed = new Set<string>();
 const recorded = new Set<string>();
+// Wallet endpoints use sessionID. Optional bet/round IDs are not required by
+// the response contract and may be opaque. A fresh response object is one local
+// presentation, even if the same book/identifier appears on consecutive wagers.
+const presentationKeys = new WeakMap<Round, string>();
+let presentationSequence = 0;
+function roundKey(round: Round) {
+ let key=presentationKeys.get(round);
+ if(!key){key=`${stateUrlDerived.sessionID()}:presentation:${++presentationSequence}`;presentationKeys.set(round,key);}
+ return key;
+}
 export async function record(round: Round, index: number) {
  if (demo() || replay() || round.active === false) return;
- const key = `${stateUrlDerived.sessionID()}:${round.roundID}:${index}`;
+ const key = `${roundKey(round)}:${index}`;
  if (recorded.has(key)) return;
  const response = await requestEndEvent({ rgsUrl: stateUrlDerived.rgsUrl(), sessionID: stateUrlDerived.sessionID(), eventIndex: index });
  if (response?.error) throw new Error('Could not save round progress. Reload to recover.');
@@ -52,7 +62,7 @@ export async function record(round: Round, index: number) {
 }
 export async function settle(round: Round) {
  if (demo() || replay() || round.active === false) return;
- const key = `${stateUrlDerived.sessionID()}:${round.roundID}`;
+ const key = roundKey(round);
  if (completed.has(key)) return;
  completed.add(key);
  const response = await requestEndRound({ rgsUrl: stateUrlDerived.rgsUrl(), sessionID: stateUrlDerived.sessionID() });
@@ -60,7 +70,6 @@ export async function settle(round: Round) {
  stateBet.balanceAmount = response.balance.amount/API_AMOUNT_MULTIPLIER;
 }
 export function validateWallet(round: Round, bet: number) {
- if (round.active === true && !Number.isSafeInteger(round.roundID)) throw new Error('Missing active round identity. Reload to recover.');
  const decoded = decodeRound(round);
  if (!(Number.isFinite(bet) && bet > 0)) throw new Error('Missing original round stake.');
  if(round.amount!==undefined && (!Number.isSafeInteger(round.amount)||Math.abs(round.amount/API_AMOUNT_MULTIPLIER-bet)>1/API_AMOUNT_MULTIPLIER))throw new Error('Wallet stake does not match the original base bet.');

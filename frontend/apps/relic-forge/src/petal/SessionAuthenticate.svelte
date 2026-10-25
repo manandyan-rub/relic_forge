@@ -1,4 +1,5 @@
 <script lang="ts">
+ import { tr, language } from './i18n';
 	import { onMount, type Snippet } from 'svelte';
 
 	import { requestAuthenticate, requestReplay } from 'rgs-requests';
@@ -55,8 +56,12 @@
 	const toBetToResume = (value: unknown): BetToResume | null => {
 		if (!isRecord(value) || !Array.isArray(value.state) || !value.state.every(isRecord)) return null;
 
-		const round: BetToResume = { state: value.state };
+		// The shared SDK currently narrows roundID to number; retain opaque IDs
+		// at this app's boundary for local deduplication, never wallet requests.
+		const round: Omit<NonNullable<BetToResume>, 'roundID'> & { roundID?: number | string; betID?: number | string } = { state: value.state };
 		if (typeof value.roundID === 'number') round.roundID = value.roundID;
+		if (typeof value.roundID === 'string') round.roundID = value.roundID;
+		if (typeof value.betID === 'number' || typeof value.betID === 'string') round.betID = value.betID;
 		if (typeof value.amount === 'number') round.amount = value.amount;
 		if (typeof value.payout === 'number') round.payout = value.payout;
 		if (typeof value.payoutMultiplier === 'number') round.payoutMultiplier = value.payoutMultiplier;
@@ -65,7 +70,7 @@
 		if (typeof value.event === 'string' || typeof value.event === 'number') {
 			round.event = String(value.event);
 		}
-		return round;
+		return round as BetToResume;
 	};
 
 	const authenticate = async () => {
@@ -73,7 +78,7 @@
 			const authenticateData = await requestAuthenticate({
 				rgsUrl: stateUrlDerived.rgsUrl(),
 				sessionID: stateUrlDerived.sessionID(),
-				language: stateUrlDerived.lang(),
+				language: language(),
 			});
 
 			// error
@@ -166,7 +171,7 @@
 			}
 
 			// round
-			if (authenticateData?.round) {
+			if (authenticateData?.round?.active === true) {
 				// Example of authenticateData.round
 				// {
 				// 	"betID": 62277967,
@@ -179,11 +184,9 @@
 				// 	"event": null
 				// }
 
-				if (authenticateData.round?.state) {
-					const resumableRound = toBetToResume(authenticateData.round);
-					if (!resumableRound) throw new Error('The authenticated round state is invalid.');
-					stateBet.betToResume = resumableRound;
-				}
+				const resumableRound = toBetToResume(authenticateData.round);
+				if (!resumableRound) throw new Error(tr('The authenticated round state is invalid.'));
+				stateBet.betToResume = resumableRound;
 
 				if (authenticateData.round?.amount) {
 					const betAmountValue =
@@ -200,7 +203,7 @@
 			}
 		} catch (error) {
 			console.error(error);
-			authenticationError = 'The Stake session could not be authenticated.';
+			authenticationError = tr('The Stake session could not be authenticated.');
 			stateModal.modal = { name: 'error', error };
 		}
 	};
@@ -226,7 +229,7 @@
 			const replayData = data as Record<string, unknown>;
 			if (replayData.error) throw replayData.error;
 			const resumableRound = toBetToResume({ ...replayData, mode: stateUrlDerived.mode(), amount: replayAmount });
-			if (!resumableRound) throw new Error('The replay response contained invalid round state.');
+			if (!resumableRound) throw new Error(tr('The replay response contained invalid round state.'));
 			stateBet.betToResume = resumableRound;
 		}
 	};
@@ -238,7 +241,7 @@
 				await handleReplay();
 			} catch (error) {
 				console.error(error);
-				authenticationError = 'The replay could not be loaded.';
+				authenticationError = tr('The replay could not be loaded.');
 			}
 		} else {
 			stateUi.config.mode = 'default';
@@ -251,7 +254,7 @@
 
 
 {#if authenticationError}
-	<main class="session-error" role="alert"><h1>The Last Petal</h1><p>{authenticationError}</p></main>
+	<main class="session-error" role="alert"><h1>{tr("The Last Petal")}</h1><p>{authenticationError}</p></main>
 {:else if authenticated}
 	{@render props.children()}
 {/if}
