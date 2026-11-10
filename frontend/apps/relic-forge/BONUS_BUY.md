@@ -61,8 +61,8 @@ Frontend config, 18 deterministic purchased fixtures (three per mode), and measu
 
 ## Connected release gates and remaining work
 
-All six `connectedApproved` flags are false. Purchase buttons explain the pending validation in connected play, and the transport refuses the request even if authentication advertises a mode with a matching cost. `disabledBuyFeature` and replay independently disable the control. Bonus Buy is retained in the final interface.
+All six `connectedApproved` flags are **true** (enabled November 2026 on the owner's decision). A connected purchase still requires Stake to advertise the exact mode with `buyBonus:true` at the catalog cost; otherwise the button explains why and the transport refuses the request. `disabledBuyFeature` and replay independently disable the control. Bonus Buy is retained in the final interface.
 
-Before enabling connected purchase: independently review much larger populations and purchase economics; approve immutable costs/profiles/books; complete official production packaging and verification with real provider identifiers; verify actual wallet debit/payout denominations, authenticated `buyBonus` flags/costs, interruptions and replay against Stake staging; then deliberately release the approved configuration. A successful local suite never flips these flags automatically.
+Still recommended before a live release: independently review much larger populations and purchase economics; approve immutable costs/profiles/books; complete official production packaging and verification with real provider identifiers; verify actual wallet debit/payout denominations, authenticated `buyBonus` flags/costs, interruptions and replay against Stake staging; then deliberately release the approved configuration. A successful local suite never flips these flags automatically.
 
-The revised files are prepared for upload testing. No connected purchase release is enabled.
+Connected purchases are enabled for advertised modes; verify debits and payouts in Stake staging before going live.

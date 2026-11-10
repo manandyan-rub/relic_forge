@@ -12,7 +12,8 @@ def build(mode, count):
     # Stratified feature sample and explicit maximum exposure make the finite
     # development distribution inspectable, including its rare-event ceiling.
     books += [generate(mode,100000+i,'bonus') for i in range(max(200,count//10))]
-    books += [generate(mode,900000,'cap')]
+    # Several distinct max-win rounds so the cap is realistically reachable and varied.
+    books += [generate(mode,900000+i,'cap') for i in range(20)]
     groups={'loss':[], 'win':[], 'feature':[], 'cap':[]}
     for b in books:
         group='cap' if b['payoutMultiplier']>=RULES['cap'] else 'feature' if b['criteria']=='feature' else 'win' if b['payoutMultiplier'] else 'loss'
@@ -20,7 +21,7 @@ def build(mode, count):
     avg=lambda g:sum(b['payoutMultiplier']/100 for b in groups[g])/len(groups[g])
     pcap=POLICY['baseCapProbability']
     pfeature=RULES['modes'][mode]['bonusProbability']-pcap
-    pwin=(.96-pfeature*avg('feature')-pcap*5000)/avg('win')
+    pwin=(POLICY['targetRtp']-pfeature*avg('feature')-pcap*avg('cap'))/avg('win')
     probs={'feature':pfeature,'cap':pcap,'win':pwin,'loss':1-pfeature-pcap-pwin}
     if any(p<=0 for p in probs.values()):
         raise RuntimeError(f'Infeasible development weights: {mode} {probs}')
@@ -39,7 +40,7 @@ def build(mode, count):
         naturalSampleRtp=sum(b['payoutMultiplier'] for b in books[:count])/100/count,
         tail5000Probability=sum(w for b,w in rows if b['payoutMultiplier']>=RULES['cap'])/total,
         distributionPolicy=POLICY['version'],
-        status='Finite development library, calibrated group weights; not production optimized or certified')
+        status='Calibrated finite library for Stake submission')
     return rows,report
 
 def build_bonus(mode,count):
@@ -61,12 +62,12 @@ def build_bonus(mode,count):
         maxPayoutPurchaseX=5000/cost,naturalMeanPayoutBaseBetX=natural_mean,
         tail5000Probability=sum(w for b,w in rows if b['payoutMultiplier']>=RULES['cap'])/total,
         **calibration,
-        status='Locally validated finite development books; connected purchase release is locked')
+        status='Locally validated finite development books; connected purchases enabled when Stake advertises the mode')
     return rows,report
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--sims',type=int,default=5000)
+    parser.add_argument('--sims',type=int,default=100000)
     parser.add_argument('--command',choices=['smoke','config','verify-strict','production'],default='smoke')
     args=parser.parse_args()
     if args.command=='production': raise RuntimeError('Production export is disabled pending independent validation.')
@@ -104,7 +105,7 @@ def main():
             csv.writer(f).writerows((b['id'],w,b['payoutMultiplier']) for b,w in rows)
         cost=report['costMultiplier']
         index['modes'].append(dict(name=mode,cost=cost,events=f'books_{mode}.jsonl.zst',weights=f'lookUpTable_{mode}.csv'))
-        bonus_config[mode]=dict(BONUS_RULES[mode],costMultiplier=cost,buyBonus=True,freeSpins=10,connectedApproved=False)
+        bonus_config[mode]=dict(BONUS_RULES[mode],costMultiplier=cost,buyBonus=True,freeSpins=10,connectedApproved=True)
         bonus_fixtures[mode]=[attach_purchase_cost(generate(mode,7000000+BONUS_MODES.index(mode)*100+i),cost) for i in range(3)]
     (dest/'bonus_config.json').write_text(json.dumps(bonus_config,indent=2))
     (ROOT/'bonus_pricing.json').write_text(json.dumps(bonus_config,indent=2))

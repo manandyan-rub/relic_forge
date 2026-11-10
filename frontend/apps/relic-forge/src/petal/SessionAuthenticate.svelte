@@ -202,7 +202,6 @@
 				}
 			}
 		} catch (error) {
-			console.error(error);
 			authenticationError = tr('The Stake session could not be authenticated.');
 			stateModal.modal = { name: 'error', error };
 		}
@@ -212,7 +211,7 @@
 		const suppliedAmount = stateUrlDerived.amount();
 		const replayAmount = Number.isSafeInteger(suppliedAmount) && suppliedAmount > 0 ? suppliedAmount : API_AMOUNT_MULTIPLIER;
 		const currency = new URL(window.location.href).searchParams.get('currency')?.toUpperCase() || 'USD';
-		stateBet.currency = /^[A-Z]{3}$|^(SC|GC)$/.test(currency) ? currency : 'USD';
+		stateBet.currency = /^[A-Z]{2,5}$/.test(currency) ? currency : 'USD';
 		stateBet.betAmount = replayAmount / API_AMOUNT_MULTIPLIER;
 		stateBet.wageredBetAmount = replayAmount / API_AMOUNT_MULTIPLIER;
 		stateBet.activeBetModeKey = stateUrlDerived.mode();
@@ -239,8 +238,7 @@
 			stateUi.config.mode = 'replay';
 			try {
 				await handleReplay();
-			} catch (error) {
-				console.error(error);
+			} catch {
 				authenticationError = tr('The replay could not be loaded.');
 			}
 		} else {
@@ -257,5 +255,15 @@
 	<main class="session-error" role="alert"><h1>{tr("The Last Petal")}</h1><p>{authenticationError}</p></main>
 {:else if authenticated}
 	{@render props.children()}
+{:else}
+	<main class="petal-loading" aria-busy="true" aria-label={tr("The Last Petal")}><svg viewBox="0 0 24 24" width="64" height="64" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">{#each [0,60,120,180,240,300] as angle (angle)}<ellipse cx="12" cy="6.5" rx="2.8" ry="4.5" transform={`rotate(${angle} 12 12)`}/>{/each}<circle cx="12" cy="12" r="2.4"/></svg><strong>{tr("The Last Petal")}</strong></main>
 {/if}
+
+<style>
+	.petal-loading { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 14px; background: #2f3a25; color: #ecc679; font-family: var(--display-font, serif); }
+	.petal-loading svg { animation: petal-load 2.4s linear infinite; }
+	.petal-loading strong { color: #fbefd3; font-size: 26px; font-style: italic; font-weight: 800; }
+	@keyframes petal-load { to { transform: rotate(360deg); } }
+	@media (prefers-reduced-motion: reduce) { .petal-loading svg { animation: none; } }
+</style>
 

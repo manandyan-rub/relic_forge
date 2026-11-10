@@ -13,31 +13,29 @@
 	inset: 0;
 	z-index: 1;
 	overflow: hidden;
-	contain: paint;
+	contain: strict;
 	pointer-events: none;
 }
+/* No per-frame filters on moving strips: transform-only motion stays on the compositor. */
 .reel-spin-track {
-	--reel-symbol-shadow: drop-shadow(1px 3px 1px #7a644536);
 	position: absolute;
 	inset-inline: 0;
 	inset-block-start: 0;
 	display: grid;
 	will-change: transform;
-	filter: blur(0.65px);
-	animation: petal-reel-scroll var(--reel-cycle-duration, 480ms) linear infinite;
+	animation: petal-reel-scroll var(--reel-cycle-duration, 300ms) linear infinite;
 }
 .reel-spin-cell {
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	min-block-size: 0;
-	border-bottom: 1px solid #9c855b21;
 }
 .reel-spin-track .symbol {
-	filter: var(--reel-symbol-shadow);
+	filter: none;
 }
 .reel-spin-track.reel-landing-track {
-	animation: petal-reel-sharpen var(--settle-duration) ease-out both;
+	animation: none;
 }
 @keyframes petal-reel-scroll {
 	from {
@@ -47,16 +45,211 @@
 		transform: translate3d(0, -50%, 0);
 	}
 }
-@keyframes petal-reel-sharpen {
-	0%,
-	30% {
-		filter: blur(0.65px);
+
+/* Anticipation: the remaining reels glow while a third Scatter could still land. */
+.reel-column.anticipating::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 3;
+	border-radius: 6px;
+	box-shadow:
+		inset 0 0 0 3px var(--antic, #f5c96a),
+		inset 0 0 26px var(--antic, #f5c96a);
+	animation: anticipation-pulse 0.5s ease-in-out infinite alternate;
+	pointer-events: none;
+}
+.blight .reel-column.anticipating::after {
+	--antic: #d47ab5;
+}
+@keyframes anticipation-pulse {
+	from {
+		opacity: 0.55;
 	}
-	85%,
-	100% {
-		filter: blur(0);
+	to {
+		opacity: 1;
 	}
 }
+
+/* ---------- Symbol life ---------- */
+.reel-cell > .symbol {
+	transition:
+		opacity 0.25s,
+		filter 0.25s;
+}
+/* Characters breathe gently, out of phase with each other. */
+.reel-cell > .symbol-keeper > img,
+.reel-cell > .symbol-traveler > img,
+.reel-cell > .symbol-guardian > img {
+	transform-origin: 50% 92%;
+	animation: symbol-breathe 3.8s ease-in-out infinite;
+	animation-delay: calc(0.6s + var(--reel, 0) * 0.37s + var(--row, 0) * 0.23s);
+}
+/* Props sway a little, like objects on a windowsill. */
+.reel-cell > .symbol > .prop-art {
+	transform-origin: 50% 85%;
+	animation: symbol-sway 5.2s ease-in-out infinite;
+	animation-delay: calc(0.6s + var(--reel, 0) * 0.41s + var(--row, 0) * 0.29s);
+}
+.special-symbol .wild-bloom {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: wild-turn 14s linear infinite;
+}
+.special-symbol .wild-halo {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: halo-pulse 2.4s ease-in-out infinite;
+}
+.special-symbol .scatter-rays {
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: wild-turn 9s linear infinite;
+}
+.special-symbol .last-petal {
+	transform-box: fill-box;
+	transform-origin: 20% 0%;
+	animation: petal-drift 3.2s ease-in-out infinite;
+}
+.petal-world .symbol-word {
+	fill: #fff6df;
+	font-family: var(--display-font);
+	font-size: 10.5px;
+	font-weight: 800;
+	letter-spacing: 0.6px;
+	paint-order: stroke;
+	stroke: #2a1a12;
+	stroke-width: 1.6px;
+}
+
+/* Landing: Scatters and Wilds pop as soon as their reel settles. */
+.just-landed .reel-cell > .symbol-scatter,
+.just-landed .reel-cell > .symbol-wild {
+	animation: symbol-pop 0.55s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+/* Wins: non-paying symbols step back, paying symbols come forward. */
+.showing-wins .reel-cell:not(.win-any) > .symbol {
+	opacity: 0.38;
+	filter: saturate(0.4) brightness(0.9);
+}
+.reel-cell.win-any::before {
+	content: '';
+	position: absolute;
+	inset: 3px;
+	border-radius: 10px;
+	background: radial-gradient(ellipse at 50% 55%, #fff3c2d0, #fff3c200 72%);
+	pointer-events: none;
+}
+.reel-cell.winning {
+	z-index: 2;
+}
+.reel-cell.winning::after {
+	content: '';
+	position: absolute;
+	inset: 2px;
+	border: 2px solid var(--win-frame, #c4892f);
+	border-radius: 10px;
+	box-shadow:
+		0 0 0 1px #fff4cf,
+		0 0 14px var(--win-glow, #f6c75e);
+	pointer-events: none;
+	animation: frame-in 0.22s ease-out both;
+}
+.reel-cell.winning > .symbol {
+	animation: symbol-win 0.8s ease-in-out infinite;
+}
+.reel-cell.winning > .symbol > img {
+	animation: none;
+}
+.blight .reel-cell.win-any::before {
+	background: radial-gradient(ellipse at 50% 55%, #f0b3dbb0, #f0b3db00 72%);
+}
+.blight .reel-cell.winning::after {
+	--win-frame: #b0577f;
+	--win-glow: #e48ac2;
+}
+
+@keyframes symbol-breathe {
+	0%,
+	100% {
+		transform: translateY(0) scale(1);
+	}
+	50% {
+		transform: translateY(-2%) scale(1.035);
+	}
+}
+@keyframes symbol-sway {
+	0%,
+	100% {
+		transform: rotate(0deg);
+	}
+	25% {
+		transform: rotate(-2deg);
+	}
+	75% {
+		transform: rotate(2deg);
+	}
+}
+@keyframes wild-turn {
+	to {
+		transform: rotate(360deg);
+	}
+}
+@keyframes halo-pulse {
+	0%,
+	100% {
+		transform: scale(0.94);
+		opacity: 0.6;
+	}
+	50% {
+		transform: scale(1.06);
+		opacity: 1;
+	}
+}
+@keyframes petal-drift {
+	0%,
+	100% {
+		transform: translate(0, 0) rotate(0deg);
+	}
+	50% {
+		transform: translate(-3px, 4px) rotate(-14deg);
+	}
+}
+@keyframes symbol-pop {
+	0% {
+		transform: scale(0.7);
+	}
+	60% {
+		transform: scale(1.18);
+	}
+	100% {
+		transform: scale(1);
+	}
+}
+@keyframes symbol-win {
+	0%,
+	100% {
+		transform: scale(1);
+	}
+	45% {
+		transform: scale(1.13) rotate(-1.5deg);
+	}
+	70% {
+		transform: scale(1.08) rotate(1.5deg);
+	}
+}
+@keyframes frame-in {
+	from {
+		opacity: 0;
+		transform: scale(1.15);
+	}
+	to {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
 .reduced .reel-spin-viewport {
 	display: none;
 }

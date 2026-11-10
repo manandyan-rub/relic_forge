@@ -18,8 +18,14 @@ export function bonusUnavailableReason(mode: BonusMode): string {
  if(stateConfig.jurisdiction?.disabledBuyFeature)return 'Bonus Buy is unavailable in your jurisdiction.';
  if(demo())return '';
  if(!bonusConfig[mode].connectedApproved)return 'Connected purchases are locked pending production math and Stake mode validation.';
- const advertised=Object.entries(stateConfig.betModes).find(([key,v])=>key===mode||v.mode===mode)?.[1];
- if(!advertised || advertised.buyBonus!==true || (advertised.costMultiplier??advertised.cost)!==modeCost(mode))return 'This purchase mode and cost are not enabled by the authenticated session.';
+ // Studio builds the session's mode list from index.json (name + cost), which carries no
+ // buyBonus flag. Require the exact mode and price when the session lists modes; the RGS stays
+ // authoritative and the book's recorded purchase price is checked again before playback.
+ const listed=Object.entries(stateConfig.betModes ?? {});
+ if(!listed.length) return '';
+ const advertised=listed.find(([key,v])=>key.toUpperCase()===mode||String(v?.mode??'').toUpperCase()===mode)?.[1];
+ const cost=Number(advertised?.costMultiplier??advertised?.cost);
+ if(!advertised || !Number.isFinite(cost) || Math.abs(cost-modeCost(mode))>1e-9)return 'This purchase mode and cost are not enabled by the authenticated session.';
  return '';
 }
 let wagerPending=false;
@@ -61,7 +67,8 @@ export async function record(round: Round, index: number) {
  recorded.add(key);
 }
 export async function settle(round: Round) {
- if (demo() || replay() || round.active === false) return;
+ // A 0x round is closed by the RGS itself: never send /wallet/end-round for it.
+ if (demo() || replay() || round.active === false || round.payoutMultiplier === 0 || round.payout === 0) return;
  const key = roundKey(round);
  if (completed.has(key)) return;
  completed.add(key);

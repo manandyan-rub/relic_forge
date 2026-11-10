@@ -1,5 +1,6 @@
 <script lang="ts">
  import { tr, t, locale } from './i18n';
+	import { art } from './config';
 	import { onMount } from 'svelte';
 	import type { World } from './types';
 	import type { createWinCountAudio } from './winCountAudio';
@@ -107,6 +108,9 @@
 </script>
 
 <dialog bind:this={dialog} class="big-win-count" class:reduced data-world={world} data-counting={counting} aria-labelledby={`${id}-heading`} aria-describedby={`${id}-total`} oncancel={cancel}>
+	<div class="count-backdrop" style:--room={`url('${art(world,'room')}')`} aria-hidden="true">
+		{#each Array.from({ length: 14 }, (_, i) => i) as i (i)}<span class="falling-petal" style:--i={i}></span>{/each}
+	</div>
 	<div class="count-content">
 		<p class="count-kicker">{tr("THE LAST PETAL")}</p>
 		<h2 id={`${id}-heading`}>{tr("BIG WIN")}</h2>
@@ -139,7 +143,7 @@
 		border: 0;
 		overflow: auto;
 		overscroll-behavior: contain;
-		background: radial-gradient(ellipse at 50% 40%, #3c4829 0%, #192619 55%, #10190f 100%);
+		background: #192619;
 		color: var(--count-paper);
 		font-family: var(--font-ui, sans-serif);
 		text-align: center;
@@ -149,20 +153,31 @@
 		--count-gold: #e6b08b;
 		--count-paper: #f6e2ce;
 		--count-ink: #2b1a14;
-		background: radial-gradient(ellipse at 50% 40%, #4b3025 0%, #271b16 55%, #150e0c 100%);
+		background: #271b16;
 	}
 	.big-win-count::backdrop { background: #10150f; }
+	.big-win-count { isolation: isolate; }
+	.count-backdrop { position: absolute; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; background: var(--room) center / cover; }
+	.count-backdrop::after { content: ''; position: absolute; inset: 0; background: #141c12c7; }
+	.big-win-count[data-world='BLIGHT'] .count-backdrop::after { background: #1b100cc9; }
+	.falling-petal { z-index: 1; position: absolute; top: -40px; left: calc(var(--i) * 7.3% + 2%); width: 18px; height: 26px; border-radius: 100% 0 100% 0; background: #f3b4a6; border: 1.5px solid #4a2f22; opacity: 0.85; animation: count-petal calc(5s + var(--i) * 0.37s) linear calc(var(--i) * -0.83s) infinite; }
+	.big-win-count[data-world='BLIGHT'] .falling-petal { background: #8a5b80; border-color: #170d0b; }
+	.reduced .falling-petal { display: none; }
+	@keyframes count-petal { from { transform: translate(0, 0) rotate(0deg); } 50% { transform: translate(40px, 55vh) rotate(200deg); } to { transform: translate(-20px, 110vh) rotate(420deg); } }
+	@media (prefers-reduced-motion: reduce) { .falling-petal { display: none; } }
 	.count-content { display: grid; justify-items: center; width: 100%; min-width: 0; }
 	.count-kicker { margin: 0 0 24px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.24em; color: var(--count-gold); }
-	h2 { margin: 0 0 28px; font-size: clamp(1.5rem, 4vw, 3rem); font-weight: 700; letter-spacing: 0.16em; }
+	h2 { margin: 0 0 28px; font-family: var(--display-font, serif); font-size: clamp(1.8rem, 5vw, 3.6rem); font-style: italic; font-weight: 800; letter-spacing: 0.06em; text-shadow: 0 3px 0 #0008; }
 	.count-amount {
 		display: grid;
 		max-width: 100%;
 		color: var(--count-gold);
 		font-size: min(clamp(2.8rem, 14vw, 11rem), calc((100vw - 48px) / (var(--amount-characters) * 0.72)));
+		font-family: var(--display-font, serif);
 		font-weight: 800;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: tabular-nums lining-nums;
 		line-height: 1.15;
+		text-shadow: 0 4px 0 #0009, 0 0 30px #f5c96a55;
 		white-space: nowrap;
 	}
 	.count-amount strong { grid-area: 1 / 1; text-align: right; }

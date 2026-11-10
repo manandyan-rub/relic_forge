@@ -13,7 +13,7 @@ const delay=ms=>new Promise(r=>setTimeout(r,ms));
 let socket;
 const results=[],errors=[],retiredBigMediaRequests=[];
 const counts={authenticate:0,play:0,event:0,end:0,replay:0};
-let modes=[],restricted=false,recovery=false,bad=false,recoveryMode='BLIGHT',historicPrice=null;
+let omitMode=null,modes=[],restricted=false,recovery=false,bad=false,recoveryMode='BLIGHT',historicPrice=null;
 let identityKind='numeric',completedRecovery=false;
 let holdWinInfo=false,releaseWinInfo;
 let playBookIndex=2,holdPlayAt=-1,releasePlay;
@@ -55,7 +55,7 @@ try{
   if(p.request.method==='OPTIONS')body={};
   else if(url.includes('authenticate')){
    counts.authenticate++;
-   body={balance:{amount:1000000000,currency:'USD'},config:{minBet:200000,maxBet:50000000,stepBet:100000,defaultBetLevel:1000000,betLevels:[200000,500000,1000000,2000000],betModes:{BLOOM:{costMultiplier:1},BLIGHT:{costMultiplier:1},...Object.fromEntries(Object.entries(bonusConfig).map(([mode,c])=>[mode,{costMultiplier:c.costMultiplier,buyBonus:true}]))},jurisdiction:{disabledTurbo:restricted,disabledAutoplay:restricted,disabledSpacebar:restricted,disabledBuyFeature:restricted,minimumRoundDuration:0}},...(recovery?{round:makeRound(recoveryMode,4)}:{})};
+   body={balance:{amount:1000000000,currency:'USD'},config:{minBet:200000,maxBet:50000000,stepBet:100000,defaultBetLevel:1000000,betLevels:[200000,500000,1000000,2000000],betModes:{BLOOM:{costMultiplier:1},BLIGHT:{costMultiplier:1},...Object.fromEntries(Object.entries(bonusConfig).filter(([mode])=>mode!==omitMode).map(([mode,c])=>[mode,{costMultiplier:c.costMultiplier}]))},jurisdiction:{disabledTurbo:restricted,disabledAutoplay:restricted,disabledSpacebar:restricted,disabledBuyFeature:restricted,minimumRoundDuration:0}},...(recovery?{round:makeRound(recoveryMode,4)}:{})};
   }else if(url.includes('/wallet/play')){counts.play++;modes.push(input.mode);body={balance:{amount:999000000,currency:'USD'},round:makeRound(input.mode,playBookIndex)};if(counts.play===holdPlayAt)await new Promise(resolve=>{releasePlay=resolve;});}
   else if(url.includes('/bet/event')){counts.event++;body={event:String(input.event)};if(holdWinInfo&&Number(input.event)===fixtures.BLOOM[2].events.find(e=>e.type==='winInfo').index)await new Promise(resolve=>{releaseWinInfo=resolve;});}
   else if(url.includes('end-round')){counts.end++;body={balance:{amount:1000200000,currency:'USD'}};}
@@ -66,13 +66,13 @@ try{
  await ev('document.fonts.ready');
 
  check(await ev("![...document.querySelectorAll('link')].some(l=>/fonts\\.(googleapis|gstatic)\\.com/.test(l.href))"),'fonts have no external stylesheet or preconnect dependency');
- await ev(`document.fonts.load('400 14px "Google Sans"','Magic')`);
- check(await ev(`(()=>{const family=f=>f.family.replaceAll('"','').replaceAll("'",'');return [...document.fonts].some(f=>family(f)==='Google Sans'&&f.style==='normal'&&f.status==='loaded')&&getComputedStyle(document.body).fontFamily.split(',')[0].replaceAll('"','').replaceAll("'",'').trim()==='Google Sans'&&getComputedStyle(document.documentElement).fontOpticalSizing==='auto'})()`),'bundled Google Sans loads as the primary face with optical sizing '+JSON.stringify(await ev("({faces:[...document.fonts].map(f=>({family:f.family,style:f.style,status:f.status})),body:getComputedStyle(document.body).fontFamily,optical:getComputedStyle(document.documentElement).fontOpticalSizing})")));
+ await ev(`document.fonts.load('400 14px "Alegreya Sans"','Magic')`);
+ check(await ev(`(()=>{const family=f=>f.family.replaceAll('"','').replaceAll("'",'');return [...document.fonts].some(f=>family(f)==='Alegreya Sans'&&f.style==='normal'&&f.status==='loaded')&&getComputedStyle(document.body).fontFamily.split(',')[0].replaceAll('"','').replaceAll("'",'').trim()==='Alegreya Sans'&&getComputedStyle(document.documentElement).fontOpticalSizing==='auto'})()`),'bundled Alegreya Sans loads as the primary face with optical sizing '+JSON.stringify(await ev("({faces:[...document.fonts].map(f=>({family:f.family,style:f.style,status:f.status})),body:getComputedStyle(document.body).fontFamily,optical:getComputedStyle(document.documentElement).fontOpticalSizing})")));
  await send('Network.setCacheDisabled',{cacheDisabled:true});await send('Network.setBlockedURLs',{urls:['*://fonts.googleapis.com/*','*://fonts.gstatic.com/*']});await viewport(390,844);await navigate(origin+'/?demo=true');await idle();await ev('document.fonts.ready');
- check(await ev(`(()=>{const family=f=>f.family.replaceAll('"','').replaceAll("'",'');return [...document.fonts].some(f=>family(f)==='Google Sans'&&f.status==='loaded')&&document.documentElement.scrollWidth<=innerWidth})()`),'bundled font renders with external font origins blocked and without mobile overflow');
+ check(await ev(`(()=>{const family=f=>f.family.replaceAll('"','').replaceAll("'",'');return [...document.fonts].some(f=>family(f)==='Alegreya Sans'&&f.status==='loaded')&&document.documentElement.scrollWidth<=innerWidth})()`),'bundled font renders with external font origins blocked and without mobile overflow');
  await send('Network.setBlockedURLs',{urls:[]});await viewport(1536,960);await navigate(origin+'/?demo=true');await idle();await ev('document.fonts.ready');await send('Network.setCacheDisabled',{cacheDisabled:false});
- const wrongFonts=await ev(`[...document.querySelectorAll('.petal-world *')].filter(e=>[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&!getComputedStyle(e).fontFamily.includes('Google Sans')).map(e=>({tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:getComputedStyle(e).fontFamily}))`);
- check(wrongFonts.length===0,'all game text uses Google Sans '+JSON.stringify(wrongFonts));
+ const wrongFonts=await ev(`[...document.querySelectorAll('.petal-world *')].filter(e=>[...e.childNodes].some(n=>n.nodeType===3&&n.textContent.trim())&&!getComputedStyle(e).fontFamily.includes('Alegreya')).map(e=>({tag:e.tagName,class:e.className,text:e.textContent.slice(0,80),font:getComputedStyle(e).fontFamily}))`);
+ check(wrongFonts.length===0,'all game text uses the bundled Alegreya families '+JSON.stringify(wrongFonts));
  check(await ev("document.querySelectorAll('.reel-cell').length===25"),'5 by 5 board');
  check(await ev("document.title==='The Last Petal'"),'new branding');
  check(await ev("!document.querySelector('.title-lockup img')"),'round title logo removed');
@@ -87,8 +87,8 @@ try{
   check(await ev("[...document.querySelectorAll('.secondary-control svg')].every(i=>{const p=i.parentElement,b=p.getBoundingClientRect(),a=getComputedStyle(p).flexDirection==='row'?[...p.children].reduce((r,c)=>{const x=c.getBoundingClientRect();return {left:Math.min(r.left,x.left),right:Math.max(r.right,x.right)}},{left:Infinity,right:-Infinity}):i.getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})"),name+' control icons centered in buttons');
   check(await ev("(()=>{const a=document.querySelector('.win-presentation').getBoundingClientRect(),b=document.querySelector('.under-reels').getBoundingClientRect();return Math.abs((a.left+a.right-b.left-b.right)/2)<1})()"),name+' win display centered below reels');
 
-  check(await ev("[...document.querySelectorAll('.world-choice')].every(b=>{const a=b.children[1].getBoundingClientRect(),p=b.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2)<1})"),name+' world labels centered inside cards');
-  check(await ev("[...document.querySelectorAll('.header-tools button,.bet-picker button')].every(b=>{const i=b.querySelector('svg'),a=i.getBoundingClientRect(),p=b.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2)<1&&Math.abs((a.top+a.bottom-p.top-p.bottom)/2)<1})"),name+' header and bet icons centered on both axes');
+  check(await ev("[...document.querySelectorAll('.world-choice')].every(b=>{const a=b.children[1].getBoundingClientRect(),p=b.getBoundingClientRect();return a.left>=p.left&&a.right<=p.right&&Math.abs((a.top+a.bottom-p.top-p.bottom)/2)<1})"),name+' world labels sit inside the segmented switch');
+  check(await ev("[...document.querySelectorAll('.header-tools button,.bet-picker .bet-step')].every(b=>{const i=b.querySelector('svg'),a=i.getBoundingClientRect(),p=b.getBoundingClientRect();return Math.abs((a.left+a.right-p.left-p.right)/2)<1&&Math.abs((a.top+a.bottom-p.top-p.bottom)/2)<1})"),name+' header and bet icons centered on both axes');
   check(await ev("(()=>{const a=document.querySelector('.bonus-buy-button'),b=a.getBoundingClientRect(),x=[...a.children].map(c=>c.getBoundingClientRect());return Math.abs((Math.min(...x.map(p=>p.left))+Math.max(...x.map(p=>p.right))-b.left-b.right)/2)<1&&x.every(p=>Math.abs((p.top+p.bottom-b.top-b.bottom)/2)<1)})()"),name+' bonus icon and label centered as a group');
   check(await ev("[...document.querySelectorAll('svg.ui-icon')].every(i=>{const b=i.getBBox();return Math.abs(b.x+b.width/2-12)<.5&&Math.abs(b.y+b.height/2-12)<.5})"),name+' visible icon paths centered within viewboxes');
   check(await ev("(()=>{const p=document.querySelector('.under-reels').getBoundingClientRect();return [...document.querySelectorAll('.world-description,.win-presentation small,.win-presentation strong')].every(e=>{const b=e.getBoundingClientRect();return b.top>=p.top&&b.bottom<=p.bottom})})()"),name+' result text rows fit without clipping');
@@ -118,7 +118,7 @@ try{
   check(await ev("!document.querySelector('.character-winnings')"),world+' small win stays below reels');
   await click('.spin-button');
   await wait("document.querySelector('main').dataset.presentingLines==='true'",world+' lines before big win');
-  check(await ev("!document.querySelector('dialog.big-win-count,video.cinematic')&&document.querySelector('.spin-button').disabled&&Boolean(document.querySelector('.winning-payline'))"),world+' lines show first while wagers stay locked');
+  check(await ev("!document.querySelector('dialog.big-win-count,video.cinematic')&&(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))&&Boolean(document.querySelector('.winning-payline'))"),world+' lines show first while wagers stay locked');
   if(world==='BLIGHT'){
    const target=await ev("(()=>{const b=document.querySelector('[aria-label=\"Open game rules\"]').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
    await send('Input.dispatchMouseEvent',{type:'mousePressed',...target,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',clickCount:1});
@@ -130,7 +130,7 @@ try{
   }
   await wait("document.querySelector('dialog.big-win-count[open]')?.dataset.counting==='true'",world+' full-screen big-win count');
   if(world==='BLOOM')check(await ev("(()=>{clearInterval(window.__lineWatch);return window.__shownLines.length===3})()"),world+' all three winning lines finish before counting');
-  check(await ev("!document.querySelector('video,audio,.character-winnings')&&document.querySelector('main').dataset.busy==='true'&&document.querySelector('.spin-button').disabled"),world+' counter replaces the cinematic and keeps wagers locked');
+  check(await ev("!document.querySelector('video,audio,.character-winnings')&&document.querySelector('main').dataset.busy==='true'&&(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))"),world+' counter replaces the cinematic and keeps wagers locked');
   check(await ev("document.querySelector('.count-target').textContent===document.querySelector('.win-presentation strong').textContent"),world+' count target matches the authoritative win');
   await shot(world.toLowerCase()+'-big-win-count');
   await viewport(390,844);
@@ -143,7 +143,7 @@ try{
   check(await ev(`document.elementFromPoint(${countTarget.x},${countTarget.y})?.closest('button')?.matches('.count-continue')`),world+' mobile count button receives pointer input');
   await send('Input.dispatchMouseEvent',{type:'mousePressed',...countTarget,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...countTarget,button:'left',clickCount:1});
   await wait("document.querySelector('dialog.big-win-count[open]')?.dataset.counting==='false'",world+' first click finishes counting',1000);
-  check(await ev("document.querySelector('.count-value').textContent===document.querySelector('.count-target').textContent&&document.querySelector('main').dataset.busy==='true'&&document.querySelector('.spin-button').disabled"),world+' first click shows the exact payout without closing or placing another wager');
+  check(await ev("document.querySelector('.count-value').textContent===document.querySelector('.count-target').textContent&&document.querySelector('main').dataset.busy==='true'&&(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))"),world+' first click shows the exact payout without closing or placing another wager');
   const continueTarget=await ev("(()=>{const b=document.querySelector('.count-continue').getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()");
   await send('Input.dispatchMouseEvent',{type:'mousePressed',...continueTarget,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...continueTarget,button:'left',clickCount:1});
   await wait("!document.querySelector('dialog.big-win-count[open]')",world+' second click continues safely',1000);await idle();
@@ -179,7 +179,7 @@ try{
  }
  // Compare the seam immediately before and after one exact strip cycle.
  await viewport(1536,960);await media(false);await navigate(origin+'/?demo=true');await idle();
- await ev(`(()=>{window.__rollingProbe=new Promise(resolve=>{const samples=[],started=performance.now();let raf,timer,done=false;const finish=(reason,seam)=>{if(done)return;done=true;cancelAnimationFrame(raf);clearTimeout(timer);const positions=samples.map(s=>s.y);resolve({reason,samples,span:positions.length?Math.max(...positions)-Math.min(...positions):0,seam,landing:Boolean(document.querySelector('.reel-landing-track')),busy:document.querySelector('main').dataset.busy,reduced:document.querySelector('main').classList.contains('reduced')})};const sample=now=>{const t=document.querySelector('.reel-spin-track:not(.reel-landing-track)');if(t){const a=t.getAnimations()[0],transform=getComputedStyle(t).transform,y=transform==='none'?0:new DOMMatrixReadOnly(transform).m42;samples.push({ms:Math.round(now-started),y,state:a?.playState??'missing',time:a?.currentTime??null,rate:a?.playbackRate??null});const positions=samples.map(s=>s.y);if(a&&samples.length>=2&&Math.max(...positions)-Math.min(...positions)>.5){a.pause();const frame=ms=>{a.currentTime=ms;const box=t.parentElement.getBoundingClientRect();return [...t.children].map(c=>{const b=c.getBoundingClientRect();return {label:c.querySelector('.symbol').getAttribute('aria-label'),y:(b.top+b.bottom)/2-box.top}}).filter(c=>c.y>0&&c.y<box.height)};const before=frame(479.99),after=frame(.01);a.play();finish('movement observed',{before,after});return;}}else if(document.querySelector('.reel-landing-track')){finish('landing reached before measurable rolling');return;}raf=requestAnimationFrame(sample)};raf=requestAnimationFrame(sample);timer=setTimeout(()=>finish('rolling probe timed out'),1500)});return true})()`);
+ await ev(`(()=>{window.__rollingProbe=new Promise(resolve=>{const samples=[],started=performance.now();let raf,timer,done=false;const finish=(reason,seam)=>{if(done)return;done=true;cancelAnimationFrame(raf);clearTimeout(timer);const positions=samples.map(s=>s.y);resolve({reason,samples,span:positions.length?Math.max(...positions)-Math.min(...positions):0,seam,landing:Boolean(document.querySelector('.reel-landing-track')),busy:document.querySelector('main').dataset.busy,reduced:document.querySelector('main').classList.contains('reduced')})};const sample=now=>{const t=document.querySelector('.reel-spin-track:not(.reel-landing-track)');if(t){const a=t.getAnimations()[0],transform=getComputedStyle(t).transform,y=transform==='none'?0:new DOMMatrixReadOnly(transform).m42;samples.push({ms:Math.round(now-started),y,state:a?.playState??'missing',time:a?.currentTime??null,rate:a?.playbackRate??null});const positions=samples.map(s=>s.y);if(a&&samples.length>=2&&Math.max(...positions)-Math.min(...positions)>.5){a.pause();const frame=ms=>{a.currentTime=ms;const box=t.parentElement.getBoundingClientRect();return [...t.children].map(c=>{const b=c.getBoundingClientRect();return {label:c.querySelector('.symbol').getAttribute('aria-label'),y:(b.top+b.bottom)/2-box.top}}).filter(c=>c.y>0&&c.y<box.height)};const cycle=Number(a.effect.getTiming().duration)||480,before=frame(cycle-.01),after=frame(.01);a.play();finish('movement observed',{before,after});return;}}else if(document.querySelector('.reel-landing-track')){finish('landing reached before measurable rolling');return;}raf=requestAnimationFrame(sample)};raf=requestAnimationFrame(sample);timer=setTimeout(()=>finish('rolling probe timed out'),1500)});return true})()`);
  await click('.spin-button');const motion=await ev('window.__rollingProbe');
  const moved=motion.reason==='movement observed'&&motion.samples.length>=2&&motion.span>.5;check(moved,'normal reels continuously advance before landing'+(moved?'':': '+JSON.stringify(motion)));
  const seam=motion.seam;
@@ -188,9 +188,9 @@ try{
  const lossBoard=fixtures.BLOOM[0].events.find(e=>e.type==='reveal').board;
  check(await ev(`(async()=>{const {worldLabels}=await import('/src/petal/config.ts');const expected=${JSON.stringify(lossBoard)};return [...document.querySelectorAll('.reel-landing-track')].every((t,r)=>[...t.children].slice(-5).every((c,row)=>c.querySelector('.symbol').getAttribute('aria-label')===worldLabels.BLOOM[expected[r][row].name??expected[r][row]]))})()`),'landing strip ends with the authoritative loss-book symbols');
  await wait("(()=>{const a=[...document.querySelectorAll('.reel-landing-track')].map(t=>t.getAnimations()[0]);return a.length===5&&a[0]?.playState==='finished'&&a[4]?.playState==='running'})()",'staggered final reel landing');
- check(await ev("document.querySelector('.spin-button').disabled&&!document.querySelector('.winning-payline')"),'wagers stay locked and paylines stay hidden until the last reel lands');
+ check(await ev("(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))&&!document.querySelector('.winning-payline')"),'wagers stay locked and paylines stay hidden until the last reel lands');
  await idle();
- check(await ev("!document.querySelector('.reel-spin-track,.reels-moving,.round-error')&&!document.querySelector('.spin-button').disabled"),'landing clears motion and unlocks the completed round');
+ check(await ev("!document.querySelector('.reel-spin-track,.reels-moving,.round-error')&&!(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))"),'landing clears motion and unlocks the completed round');
  check(await ev("[...document.querySelectorAll('.reel-column')].every(c=>new Set([...c.querySelectorAll('.reel-cell>.symbol')].map(s=>s.getAttribute('aria-label'))).size>=3)"),'first demo loss lands on mixed symbol columns');
  await shot('bloom-first-spin');
  // A system motion preference can hide the strip even after the in-game override.
@@ -198,7 +198,7 @@ try{
  await ev("[...document.querySelectorAll('.setting')].find(e=>e.textContent.includes('Reduce motion')).querySelector('input').click()");await click('[aria-label="Close dialog"]');
  check(await ev("!document.querySelector('main').classList.contains('reduced')&&matchMedia('(prefers-reduced-motion: reduce)').matches"),'in-game motion override exercised while system preference stays reduced');
  await click('.spin-button');await idle();
- check(await ev("!document.querySelector('.round-error,.reel-spin-track,.reels-moving')&&!document.querySelector('.spin-button').disabled"),'hidden reduced-motion strips settle without invalid geometry or round errors');
+ check(await ev("!document.querySelector('.round-error,.reel-spin-track,.reels-moving')&&!(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))"),'hidden reduced-motion strips settle without invalid geometry or round errors');
  await viewport(1536,960);await media(true);
  for(const world of ['BLOOM','BLIGHT']){
   await navigate(origin+'/?demo=true');await idle();if(world==='BLIGHT')await click('.world-choice:nth-child(2)');
@@ -218,11 +218,12 @@ try{
  for(const input of ['mouse','touch','click-only']){
   await viewport(input==='touch'?390:1536,input==='touch'?844:960);await media(false);await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Toggle turbo"]');
   for(let i=0;i<2;i++){await click('.spin-button');await idle();}
-  check(await ev("Boolean(document.querySelector('.winning-payline'))&&!document.querySelector('.spin-button').disabled&&document.querySelector('.line-detail').textContent.includes('Line ')"),input+' idle winning lines are visible before dismissal');
+  check(await ev("Boolean(document.querySelector('.winning-payline'))&&!(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))&&document.querySelector('.line-detail').textContent.includes('Line ')"),input+' idle winning lines are visible before dismissal');
   const winnings=await ev("document.querySelector('.win-presentation strong').textContent");
-  if(input==='click-only')await ev("document.querySelector('[aria-label=\"Open game rules\"]').click()");
+  // Idle lines never swallow a control tap (Spin works first time); tapping scenery clears them.
+  if(input==='click-only')await ev("document.querySelector('.title-lockup h1').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}))");
   else{
-   const target=await ev(`(()=>{const b=document.querySelector(${JSON.stringify(input==='mouse'?'.title-lockup h1':'[aria-label="Open game rules"]')}).getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()`);
+   const target=await ev(`(()=>{const b=document.querySelector(${JSON.stringify('.title-lockup h1')}).getBoundingClientRect();return{x:b.x+b.width/2,y:b.y+b.height/2}})()`);
    if(input==='touch'){await send('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});await send('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...target,id:1,radiusX:1,radiusY:1}]});await send('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}
    else{await send('Input.dispatchMouseEvent',{type:'mousePressed',...target,button:'left',clickCount:1});await send('Input.dispatchMouseEvent',{type:'mouseReleased',...target,button:'left',clickCount:1});}
   }
@@ -235,7 +236,7 @@ try{
  }
  await viewport(1536,960);await media(true);
  await navigate(origin+'/?demo=true');await idle();await click('[aria-label="Start 10 autoplay spins"]');await click('[aria-label="Confirm 10 autoplay spins"]');await wait("document.querySelector('[aria-label=\"Stop autoplay\"]')",'auto starts');await click('[aria-label="Stop autoplay"]');await idle();check(await ev("Boolean(document.querySelector('[aria-label=\"Start 10 autoplay spins\"]'))"),'autoplay stops');
- await click('[aria-label="Open game rules"]');check(await ev("document.querySelectorAll('tbody tr').length===8"),'paytable remains available');await click('[aria-label="Close dialog"]');
+ await click('[aria-label="Open game rules"]');check(await ev("document.querySelectorAll('table:not(.rtp-table) tbody tr').length===8&&document.querySelectorAll('.rtp-table tbody tr').length===8"),'paytable remains available');await click('[aria-label="Close dialog"]');
  // Every purchase starts from a fresh deterministic wallet and the minimum base bet.
  for(const [mode,c] of Object.entries(bonusConfig)){
   await navigate(origin+'/?demo=true');await idle();if(c.world==='BLIGHT')await click('.world-choice:nth-child(2)');
@@ -289,7 +290,7 @@ try{
  check(await ev("!document.querySelector('.winning-payline,.reel-cell.winning')&&!document.querySelector('.line-detail').textContent.trim()"),'early live click clears the pending line display');
  holdWinInfo=false;const release=releaseWinInfo;releaseWinInfo=undefined;release();
  await wait("Boolean(document.querySelector('dialog.big-win-count[open]'))",'early live dismissal skips the future hidden line delay',1100);
- check(await ev("document.querySelector('main').dataset.busy==='true'&&document.querySelector('.spin-button').disabled&&!document.querySelector('video,audio')"),'live count keeps wagering locked without cinematic media');
+ check(await ev("document.querySelector('main').dataset.busy==='true'&&(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))&&!document.querySelector('video,audio')"),'live count keeps wagering locked without cinematic media');
  await click('.count-continue');await wait("document.querySelector('dialog.big-win-count[open]')?.dataset.counting==='false'",'live count skips to the exact payout');await click('.count-continue');await idle();
  check(await ev("!document.querySelector('.round-error,dialog.big-win-count[open]')&&document.querySelector('main').dataset.presentingLines==='false'&&document.querySelector('.wallet strong').textContent.includes('1,000.20')"),'early live dismissal still settles the authoritative payout');await media(true);
  // A previous small win must not consume Stop while the next autoplay wager is pending.
@@ -309,14 +310,20 @@ try{
  check(await ev("document.querySelector('.purchase-receipt')?.textContent.includes('Mythic Bonus')&&!document.querySelector('.round-error')"),'purchase recovery restores variant and full cost');
  check(await ev("document.querySelector('.purchase-receipt').textContent.includes('611×')"),'recovery uses original book price rather than current catalog');
  recovery=false;historicPrice=null;recoveryMode='BLIGHT';await navigate(live);await idle();await click('[aria-label="Open Bonus Buy"]');
- check(await ev("[...document.querySelectorAll('.bonus-select')].every(b=>b.disabled)"),'connected purchase buttons locked despite advertised modes');
- const beforeBlocked=counts.play;
- const blocked=await ev("(async()=>{const {play}=await import('/src/petal/rgs.ts');try{await play('BLOOM_STANDARD_BONUS',1,999);return false}catch{return true}})()");
- check(blocked&&counts.play===beforeBlocked,'transport rejects unapproved connected purchase');await click('[aria-label="Close Bonus Buy"]');
+ check(await ev("[...document.querySelectorAll('.bonus-select')].every(b=>!b.disabled)&&!document.querySelector('.bonus-unavailable')"),'connected purchase buttons enabled for advertised modes');
+ const beforeBuy={...counts},buyModes=modes.length;
+ await click('[data-bonus-mode="BLOOM_STANDARD_BONUS"] .bonus-select');await click('[aria-label="Confirm bonus purchase"]');
+ await wait("Boolean(document.querySelector('dialog.award[open]'))",'connected purchase reaches the free-spin award');await click('dialog.award button');await idle();
+ check(counts.play===beforeBuy.play+1&&modes.slice(buyModes).join()==='BLOOM_STANDARD_BONUS'&&counts.end===beforeBuy.end+1&&await ev("document.querySelector('.purchase-receipt')?.textContent.includes('Standard Bonus')&&!document.querySelector('.round-error')"),'connected purchase sends exactly one wager in the confirmed mode and settles once');
+ omitMode='BLOOM_MYTHIC_BONUS';await navigate(live);await idle();await click('[aria-label="Open Bonus Buy"]');
+ check(await ev("document.querySelector('[data-bonus-mode=\"BLOOM_MYTHIC_BONUS\"] .bonus-select').disabled&&!document.querySelector('[data-bonus-mode=\"BLOOM_STANDARD_BONUS\"] .bonus-select').disabled"),'a purchase mode Stake does not advertise stays disabled');
+ const beforeUnadvertised=counts.play;
+ const unadvertised=await ev("(async()=>{const {play}=await import('/src/petal/rgs.ts');try{await play('BLOOM_MYTHIC_BONUS',1,999);return false}catch{return true}})()");
+ check(unadvertised&&counts.play===beforeUnadvertised,'transport rejects a purchase mode Stake did not advertise');await click('[aria-label="Close Bonus Buy"]');omitMode=null;
  restricted=true;await navigate(live);await idle();
  check(await ev("document.querySelector('[aria-label=\"Toggle turbo\"]').disabled&&document.querySelector('[aria-label=\"Start 10 autoplay spins\"]').disabled&&document.querySelector('[aria-label=\"Open Bonus Buy\"]').disabled"),'jurisdiction blocks Turbo, autoplay and Bonus Buy');
  const beforeSpace=counts.play;await send('Input.dispatchKeyEvent',{type:'keyDown',key:' ',code:'Space',windowsVirtualKeyCode:32});await delay(100);check(counts.play===beforeSpace,'jurisdiction blocks Space');restricted=false;
- bad=true;await navigate(live);await idle();await click('.spin-button');await idle();check(await ev("Boolean(document.querySelector('.round-error'))&&document.querySelector('.spin-button').disabled"),'unsupported live book locks wagering');const afterBad=counts.play;await click('.spin-button');check(counts.play===afterBad,'invalid book never falls back to demo');bad=false;
+ bad=true;await navigate(live);await idle();await click('.spin-button');await idle();check(await ev("Boolean(document.querySelector('.round-error'))&&(document.querySelector('.spin-button').disabled||document.querySelector('.spin-button').classList.contains('stop-mode'))"),'unsupported live book locks wagering');const afterBad=counts.play;await click('.spin-button');check(counts.play===afterBad,'invalid book never falls back to demo');bad=false;
  for(const mode of ['BLIGHT','BLIGHT_SUPER_BONUS']){
   const snapshot={...counts};await navigate(origin+`/?replay=true&rgs_url=mock.local&game=relic_forge&version=1&mode=${mode}&event=0&amount=200000`);await idle();
   check(counts.play===snapshot.play&&counts.event===snapshot.event&&counts.end===snapshot.end&&counts.replay===snapshot.replay+1,mode+' replay has no wallet writes');

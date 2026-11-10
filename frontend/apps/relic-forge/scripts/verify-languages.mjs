@@ -54,7 +54,7 @@ try{
   if(p.request.method==='OPTIONS')body={};
   else if(url.includes('authenticate')){
    counts.authenticate++;
-   body={balance:{amount:1000000000,currency:'USD'},config:{minBet:200000,maxBet:50000000,stepBet:100000,defaultBetLevel:1000000,betLevels:[200000,500000,1000000,2000000],betModes:{BLOOM:{costMultiplier:1},BLIGHT:{costMultiplier:1},...Object.fromEntries(Object.entries(bonusConfig).map(([mode,c])=>[mode,{costMultiplier:c.costMultiplier,buyBonus:true}]))},jurisdiction:{disabledTurbo:restricted,disabledAutoplay:restricted,disabledSpacebar:restricted,disabledBuyFeature:restricted,minimumRoundDuration:0}},...(recovery?{round:makeRound(recoveryMode,4)}:{})};
+   body={balance:{amount:1000000000,currency:'USD'},config:{minBet:200000,maxBet:50000000,stepBet:100000,defaultBetLevel:1000000,betLevels:[200000,500000,1000000,2000000],betModes:{BLOOM:{costMultiplier:1},BLIGHT:{costMultiplier:1},...Object.fromEntries(Object.entries(bonusConfig).map(([mode,c])=>[mode,{costMultiplier:c.costMultiplier}]))},jurisdiction:{disabledTurbo:restricted,disabledAutoplay:restricted,disabledSpacebar:restricted,disabledBuyFeature:restricted,minimumRoundDuration:0}},...(recovery?{round:makeRound(recoveryMode,4)}:{})};
   }else if(url.includes('/wallet/play')){counts.play++;modes.push(input.mode);body={balance:{amount:999000000,currency:'USD'},round:makeRound(input.mode,playBookIndex)};if(counts.play===holdPlayAt)await new Promise(resolve=>{releasePlay=resolve;});}
   else if(url.includes('/bet/event')){counts.event++;body={event:String(input.event)};if(holdWinInfo&&Number(input.event)===fixtures.BLOOM[2].events.find(e=>e.type==='winInfo').index)await new Promise(resolve=>{releaseWinInfo=resolve;});}
   else if(url.includes('end-round')){counts.end++;body={balance:{amount:1000200000,currency:'USD'}};}
@@ -84,7 +84,7 @@ try{
    if(width===390&&['ar','pt','ja','hi','ru'].includes(code))await shot('language-'+code+'-mobile');
   }
   await viewport(1536,960);await click('.header-tools button:nth-child(1)');
-  check(await ev(`document.querySelector('.petal-modal').textContent.includes(${JSON.stringify(pack.rulesBoard)})&&document.querySelector('.petal-modal').textContent.includes(${JSON.stringify(pack.rulesWild)})&&document.querySelectorAll('tbody tr').length===8`),code+' localized rules/paytable');await click('.modal-close');
+  check(await ev(`document.querySelector('.petal-modal').textContent.includes(${JSON.stringify(pack.rulesBoard)})&&document.querySelector('.petal-modal').textContent.includes(${JSON.stringify(pack.rulesWild)})&&document.querySelectorAll('table:not(.rtp-table) tbody tr').length===8&&document.querySelectorAll('.rtp-table tbody tr').length===8`),code+' localized rules/paytable');await click('.modal-close');
   await click('.bet-controls .secondary-control');
   check(await ev(`document.querySelector('dialog.auto-confirm h2').textContent===${JSON.stringify(code==='en'?'Start autoplay?':pack.startAutoplay)}&&document.querySelector('dialog.auto-confirm .actions button').getAttribute('aria-label')===${JSON.stringify(code==='en'?'Cancel autoplay':pack.cancel)}`),code+' localized autoplay confirmation and cancel label');await click('dialog.auto-confirm .actions button');
   await click('[aria-label='+JSON.stringify((code==='en'?'Open Bonus Buy':pack.bonusBuy))+']');await click('[data-bonus-mode="BLOOM_STANDARD_BONUS"] .bonus-select');

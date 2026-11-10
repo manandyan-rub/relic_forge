@@ -1,4 +1,5 @@
 """Last Petal mechanical and weighted-library regression tests."""
+from distribution import POLICY
 import csv, json, math
 from pathlib import Path
 import pytest
@@ -127,8 +128,8 @@ def test_entire_exported_library_and_weighted_statistics(mode):
     for b in books.values():verify(b)
     weight=sum(w for _,w,_ in rows)
     rtp=sum(w*p/100 for _,w,p in rows)/weight
-    assert abs(rtp-.96)<1e-6
-    assert sum(w for _,w,p in rows if p>=CAP)/weight==pytest.approx(1e-8,abs=1e-12)
+    assert abs(rtp-POLICY['targetRtp'])<1e-6
+    assert sum(w for _,w,p in rows if p>=CAP)/weight==pytest.approx(POLICY['baseCapProbability'],abs=1e-12)
     assert max(p for _,_,p in rows)==CAP
     s=next(s for s in json.loads((dest/'statistics.json').read_text()) if s['mode']==mode)
     assert s['weightedRtp']==pytest.approx(rtp)
@@ -182,7 +183,7 @@ def test_bonus_export_statistics_and_prices(mode):
     variance=sum(w*(p/100-mean)**2 for _,w,p in rows)/total
     stat=next(s for s in json.loads((dest/'bonus_statistics.json').read_text()) if s['mode']==mode)
     cost=stat['costMultiplier']
-    assert abs(mean/cost-.96)<1e-7
+    assert abs(mean/cost-POLICY['targetRtp'])<1e-7
     assert stat['weightedRtp']==pytest.approx(mean/cost)
     assert stat['standardDeviationBaseBetX']==pytest.approx(math.sqrt(variance))
     assert stat['standardDeviationPurchaseX']==pytest.approx(math.sqrt(variance)/cost)
@@ -190,11 +191,11 @@ def test_bonus_export_statistics_and_prices(mode):
     assert stat['maxPayoutPurchaseX']==5000/cost
     pricing=json.loads((ROOT/'bonus_pricing.json').read_text())
     assert 1<=cost<=1000
-    assert cost==min(1000,max(1,round(stat['tailLimitedMeanPayoutBaseBetX']/.96)))
+    assert cost==min(1000,max(1,round(stat['tailLimitedMeanPayoutBaseBetX']/POLICY['targetRtp'])))
     tail=sum(w for _,w,p in rows if p>=CAP)/total
     assert tail<=0.005
     assert stat['tail5000Probability']==pytest.approx(tail,abs=1e-12)
-    assert pricing[mode]['costMultiplier']==cost and pricing[mode]['connectedApproved'] is False
+    assert pricing[mode]['costMultiplier']==cost and pricing[mode]['connectedApproved'] is True
     assert all(b['events'][0]['purchaseCostMultiplier']==cost for b in books.values())
     index=json.loads((dest/'index.json').read_text())
     assert next(m for m in index['modes'] if m['name']==mode)['cost']==cost
@@ -233,7 +234,7 @@ def test_tail_budget_includes_natural_cap_outcomes_and_preserves_payouts():
     assert {b['id'] for b,_ in rows}=={1,2,3,4,99}
     assert all(isinstance(w,int) and w>0 for _,w in rows)
     assert sum(w for b,w in rows if b['payoutMultiplier']==CAP)/total==0.005
-    assert sum(b['payoutMultiplier']*w for b,w in rows)/100/total/cost==pytest.approx(.96,abs=1e-7)
+    assert sum(b['payoutMultiplier']*w for b,w in rows)/100/total/cost==pytest.approx(POLICY['targetRtp'],abs=1e-7)
 
 
 def test_cost_ceiling_recalibrates_distribution_instead_of_only_changing_price():
@@ -243,7 +244,7 @@ def test_cost_ceiling_recalibrates_distribution_instead_of_only_changing_price()
     rows,cost,details=calibrate_bonus(books,{'id':99,'payoutMultiplier':CAP},CAP)
     assert details['costLimited'] and cost==1000
     total=sum(w for _,w in rows)
-    assert sum(b['payoutMultiplier']*w for b,w in rows)/100/total/cost==pytest.approx(.96,abs=1e-7)
+    assert sum(b['payoutMultiplier']*w for b,w in rows)/100/total/cost==pytest.approx(POLICY['targetRtp'],abs=1e-7)
 
 
 def test_infeasible_priced_distribution_is_rejected():

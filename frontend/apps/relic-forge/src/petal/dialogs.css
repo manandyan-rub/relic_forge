@@ -193,7 +193,7 @@
 }
 
 .bonus-panel::before {
-	content: '❧';
+	content: none;
 	position: absolute;
 	top: 16px;
 	left: 16px;
@@ -478,7 +478,7 @@
 }
 
 .bonus-panel.dark-bonus::before {
-	content: '♧';
+	content: none;
 	color: #9c745544;
 }
 
@@ -629,4 +629,801 @@
 	.bonus-panel .bonus-purchase {
 		flex-basis: 100%;
 	}
+}
+
+/* ---------- Storybook pass: display type, flat painted fills, no in-panel scroll at 720p ---------- */
+.modal-scrim {
+	background: #120d08b8;
+}
+.modal-scrim :is(.petal-modal, .bonus-panel) {
+	scrollbar-width: thin;
+	scrollbar-color: #cfb37b80 transparent;
+	scrollbar-gutter: auto;
+	border-color: #24170f;
+	box-shadow:
+		inset 0 0 0 2px #e7c98c80,
+		0 30px 100px #000a;
+}
+.petal-modal h2,
+.bonus-panel .bonus-heading h2,
+.bonus-panel .bonus-card h3,
+.petal-modal h3 {
+	font-family: var(--display-font);
+	font-weight: 800;
+}
+.bonus-panel .bonus-heading h2 {
+	font-style: italic;
+}
+.bonus-panel {
+	background: #213726;
+}
+.bonus-panel.dark-bonus {
+	background: #2a1916;
+}
+.bonus-panel .bonus-card {
+	background: #00000026;
+}
+.bonus-panel :is(.bonus-select, .bonus-purchase) {
+	border: 2px solid #24170f;
+	background: #ecc679;
+	box-shadow:
+		inset 0 2px 0 #ffffff70,
+		inset 0 -3px 0 #00000030;
+	font-weight: 800;
+}
+.bonus-panel .bonus-petals {
+	display: grid;
+	place-items: center;
+	color: #e7c98c1f;
+	text-shadow: none;
+}
+.bonus-panel .confirmation-flower {
+	display: grid;
+	place-items: center;
+}
+@media (max-height: 820px) and (min-width: 701px) {
+	.modal-scrim :is(.petal-modal, .bonus-panel) {
+		padding: 22px 26px;
+	}
+	.bonus-panel .bonus-heading {
+		padding-bottom: 14px;
+	}
+	.bonus-panel .bonus-heading h2 {
+		margin: 2px 0 6px;
+	}
+	.bonus-panel .bonus-card {
+		padding: 16px 14px;
+	}
+	.bonus-panel .bonus-card-art {
+		height: 104px;
+		margin: 8px 0;
+	}
+	.bonus-panel .bonus-card h3 {
+		margin-bottom: 8px;
+		font-size: 24px;
+	}
+	.bonus-panel .bonus-card-detail p {
+		margin: 4px 0 12px;
+		line-height: 1.45;
+	}
+	.bonus-panel .bonus-cost-multiplier {
+		margin-bottom: 8px;
+	}
+	.bonus-panel .bonus-panel-foot {
+		margin-top: 14px;
+		padding-top: 12px;
+	}
+	.bonus-panel .bonus-panel-foot p {
+		margin: 6px 0;
+	}
+}
+.petal-modal .rtp-table th:first-child {
+	width: 46%;
+}
+.petal-modal .controls-guide {
+	margin: 8px 0 16px;
+	padding-inline-start: 20px;
+	font: 400 14px/1.6 var(--font-ui);
+}
+.petal-modal .controls-guide li + li {
+	margin-top: 6px;
+}
+.petal-modal .disclaimer {
+	font-size: 13px;
+	opacity: 0.9;
+}
+
+/* ---------- Rules & settings dialogs (storybook parchment) ---------- */
+.modal-scrim .eyebrow {
+	text-shadow: none;
+}
+.modal-scrim .petal-modal {
+	--ink: #2b1d14;
+	--paper: #f6ecd2;
+	--paper-2: #ecdfbd;
+	--rule: #b79f6e66;
+	--accent-ink: #4a5f34;
+	color: #33291c;
+	background: linear-gradient(var(--paper), var(--paper-2));
+	border: 2.5px solid var(--ink);
+	box-shadow:
+		inset 0 0 0 2px #fff6dc,
+		inset 0 0 0 4px #c9a86a,
+		0 30px 90px #000b;
+}
+.modal-scrim .petal-modal.blight-dialog {
+	--accent-ink: #6b2c55;
+}
+.petal-modal .dialog-head {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-right: 52px;
+}
+.petal-modal .dialog-mark {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 48px;
+	height: 48px;
+	border: 2px solid var(--ink);
+	border-radius: 50%;
+	color: #fff4d6;
+	background: var(--accent-ink);
+	box-shadow: inset 0 0 0 2px #e9cf8c;
+}
+.petal-modal .dialog-head .eyebrow {
+	color: #7a5a2c;
+	font-weight: 800;
+	letter-spacing: 0.16em;
+}
+.petal-modal .dialog-head h2 {
+	margin: 2px 0 0;
+	padding: 0;
+	color: var(--ink);
+	font-size: 30px;
+	font-style: italic;
+	line-height: 1.1;
+}
+.modal-scrim .petal-modal .modal-close {
+	border: 2px solid var(--ink);
+	color: var(--ink);
+	background: #ecc679;
+	box-shadow: inset 0 2px 0 #ffffff70;
+}
+.modal-scrim .petal-modal .modal-close:not(:disabled):hover {
+	background: #f3d38d;
+}
+.petal-modal h3 {
+	margin: 0 0 6px;
+	color: var(--ink);
+	font-size: 19px;
+}
+.petal-modal p {
+	margin: 0 0 10px;
+}
+.petal-modal .muted {
+	color: #5c4c34;
+	font-size: 13px;
+}
+
+/* Rules: fixed head + tabs, scrolling panels, disclaimer footer. */
+.modal-scrim .petal-modal.rules-dialog {
+	display: flex;
+	flex-direction: column;
+	width: min(860px, 100%);
+	height: min(720px, var(--dialog-height));
+	padding: 22px 26px 0;
+	overflow: hidden;
+}
+.rules-dialog .rules-intro {
+	margin: 12px 0;
+	font-size: 14px;
+}
+.rules-dialog .bet-note {
+	display: inline-block;
+	padding: 1px 8px;
+	border: 1px solid var(--rule);
+	border-radius: 999px;
+	color: var(--accent-ink);
+	background: #fff8e4;
+	font-size: 12.5px;
+	font-weight: 700;
+}
+.rules-dialog .rules-tabs {
+	display: flex;
+	flex: none;
+	gap: 6px;
+	padding: 5px;
+	overflow-x: auto;
+	border: 2px solid var(--ink);
+	border-radius: 14px;
+	background: #2b1d14;
+	scrollbar-width: none;
+}
+.rules-dialog .rules-tabs button {
+	display: flex;
+	flex: 1 0 auto;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 38px;
+	padding: 0 12px;
+	border: 0;
+	border-radius: 10px;
+	color: #e8d9b6;
+	background: transparent;
+	font-size: 14px;
+	font-weight: 700;
+	white-space: nowrap;
+}
+.rules-dialog .rules-tabs button:hover:not(.active) {
+	background: #ffffff14;
+}
+.rules-dialog .rules-tabs button.active {
+	color: var(--ink);
+	background: #ecc679;
+	box-shadow:
+		inset 0 2px 0 #ffffff70,
+		inset 0 -3px 0 #00000030;
+}
+.rules-dialog .tab-panels {
+	flex: 1;
+	min-height: 0;
+	margin: 0 -26px;
+	padding: 18px 26px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+	scrollbar-color: #b08e55 transparent;
+}
+.rules-dialog .tab-panel[hidden] {
+	display: none;
+}
+.rules-dialog .rules-foot {
+	flex: none;
+	margin: 0 -26px;
+	padding: 10px 26px 14px;
+	border-top: 1.5px solid var(--rule);
+	background: #efe2c1;
+}
+.rules-dialog .rules-foot strong {
+	display: block;
+	color: var(--ink);
+	font-size: 12px;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.rules-dialog .rules-foot .disclaimer {
+	margin: 2px 0 0;
+	color: #5c4c34;
+	font-size: 12px;
+	line-height: 1.45;
+}
+
+/* Symbol art frames reuse the reel's paper cell look. */
+.petal-modal .symbol-frame {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 92px;
+	height: 92px;
+	border: 2px solid var(--ink);
+	border-radius: 14px;
+	background: radial-gradient(ellipse at 50% 40%, #fffaf0, #ead9b0);
+	box-shadow: inset 0 0 14px #7a5a2c33;
+}
+.petal-modal .symbol-frame.small {
+	width: 58px;
+	height: 58px;
+	border-width: 1.5px;
+	border-radius: 10px;
+}
+.petal-modal .symbol-frame .symbol {
+	width: 90%;
+	height: 90%;
+}
+.petal-modal .symbol-frame .symbol > img {
+	max-width: 92%;
+	height: 92%;
+	object-fit: contain;
+}
+.blight-dialog .symbol-frame {
+	background: radial-gradient(ellipse at 50% 40%, #e6d6c0, #bfa88e);
+}
+.rules-dialog .special-cards {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-bottom: 16px;
+}
+.rules-dialog .special-card {
+	display: flex;
+	gap: 14px;
+	align-items: center;
+	padding: 12px;
+	border: 1.5px solid var(--rule);
+	border-radius: 16px;
+	background: #fff8e6aa;
+}
+.rules-dialog .special-card p {
+	margin: 0 0 4px;
+	font-size: 13.5px;
+	line-height: 1.45;
+}
+.petal-modal table {
+	margin: 0 0 10px;
+}
+.petal-modal table thead th {
+	color: #7a5a2c;
+	font-size: 12px;
+	font-weight: 800;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+.rules-dialog .paytable td {
+	vertical-align: middle;
+}
+.rules-dialog .paytable td strong {
+	display: block;
+	color: var(--ink);
+	font-size: 16px;
+	font-weight: 800;
+	font-variant-numeric: tabular-nums;
+}
+.rules-dialog .paytable td small {
+	color: #7a6a4e;
+	font-size: 12px;
+}
+.rules-dialog .paytable :is(th, td) {
+	padding: 6px 8px;
+}
+.rules-dialog .pay-symbol {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-weight: 700;
+}
+.rules-dialog .feature-block {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+	padding: 14px 0;
+	border-bottom: 1.5px solid var(--rule);
+}
+.rules-dialog .feature-block:last-child {
+	border-bottom: 0;
+}
+.rules-dialog :is(.feature-icon, .control-icon) {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	border: 2px solid var(--ink);
+	border-radius: 50%;
+	color: #fff4d6;
+	background: var(--accent-ink);
+}
+.rules-dialog .feature-block p {
+	margin: 0;
+	font-size: 14px;
+}
+.rules-dialog .bonus-rows {
+	display: grid;
+	gap: 10px;
+	margin-top: 6px;
+}
+.rules-dialog .bonus-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 12px 14px;
+	border: 1.5px solid var(--rule);
+	border-radius: 14px;
+	background: #fff8e6aa;
+}
+.rules-dialog .bonus-row p {
+	margin: 0;
+	font-size: 13.5px;
+}
+.rules-dialog .bonus-price {
+	flex: none;
+	text-align: end;
+}
+.rules-dialog .bonus-price strong {
+	display: block;
+	color: var(--ink);
+	font-size: 20px;
+	font-weight: 800;
+	font-variant-numeric: tabular-nums;
+}
+.rules-dialog .bonus-price small {
+	color: #7a6a4e;
+	font-size: 12px;
+	white-space: nowrap;
+}
+.rules-dialog .payline-map {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 10px;
+}
+.rules-dialog .payline-map svg {
+	border: 1.5px solid var(--rule);
+	background: #fff8e6;
+	color: var(--accent-ink);
+}
+.rules-dialog .world-tag {
+	display: inline-block;
+	margin-inline-end: 6px;
+	padding: 0 7px;
+	border-radius: 999px;
+	color: #fff4d6;
+	background: #4a5f34;
+	font-size: 11.5px;
+	font-weight: 800;
+	vertical-align: 1px;
+}
+.rules-dialog .world-tag.dark {
+	background: #6b2c55;
+}
+.rules-dialog .controls-guide {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.rules-dialog .controls-guide li {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin: 0;
+	font-size: 14px;
+}
+.rules-dialog .controls-guide li + li {
+	margin-top: 0;
+}
+
+/* Settings: switch rows. */
+.modal-scrim .petal-modal.settings-dialog {
+	width: min(520px, 100%);
+	padding: 22px 26px 18px;
+}
+.settings-dialog .settings-list {
+	display: grid;
+	gap: 10px;
+	margin-top: 18px;
+}
+.petal-modal.settings-dialog .setting {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-height: 64px;
+	padding: 10px 14px;
+	border: 1.5px solid var(--rule);
+	border-radius: 16px;
+	background: #fff8e6aa;
+	font-size: 16px;
+	font-weight: 700;
+}
+.settings-dialog .setting-disabled {
+	opacity: 0.55;
+}
+.settings-dialog .setting-icon {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	border: 2px solid var(--ink);
+	border-radius: 50%;
+	color: #fff4d6;
+	background: var(--accent-ink);
+}
+.settings-dialog .setting-text {
+	flex: 1;
+	min-width: 0;
+}
+.settings-dialog .setting-text small {
+	display: block;
+	margin-top: 2px;
+	color: #6a5a40;
+	font-size: 12.5px;
+	font-weight: 400;
+}
+.petal-modal.settings-dialog .setting input[type='checkbox'] {
+	position: relative;
+	flex: 0 0 54px;
+	width: 54px;
+	height: 30px;
+	margin: 0;
+	border: 2px solid var(--ink);
+	border-radius: 999px;
+	background: #cbbd9c;
+	appearance: none;
+	cursor: pointer;
+	transition: background 0.18s;
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']::after {
+	content: '';
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 22px;
+	height: 22px;
+	border: 1.5px solid var(--ink);
+	border-radius: 50%;
+	background: #fff8e6;
+	transition: transform 0.18s;
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']:checked {
+	background: var(--accent-ink);
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']:checked::after {
+	background: #ecc679;
+	transform: translateX(24px);
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']:disabled {
+	cursor: default;
+}
+
+@media (max-width: 640px) {
+	.modal-scrim .petal-modal.rules-dialog {
+		padding: 16px 14px 0;
+	}
+	.rules-dialog .tab-panels,
+	.rules-dialog .rules-foot {
+		margin: 0 -14px;
+		padding-inline: 14px;
+	}
+	.petal-modal .dialog-head h2 {
+		font-size: 24px;
+	}
+	.rules-dialog .special-cards {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.petal-modal .symbol-frame {
+		width: 72px;
+		height: 72px;
+	}
+	.petal-modal .symbol-frame.small {
+		width: 44px;
+		height: 44px;
+	}
+	.rules-dialog .pay-symbol {
+		gap: 8px;
+		font-size: 13px;
+	}
+	.rules-dialog .paytable td strong {
+		font-size: 14px;
+	}
+	.rules-dialog .payline-map {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+	.rules-dialog .rules-tabs button {
+		padding: 0 10px;
+		font-size: 13px;
+	}
+	.rules-dialog .bonus-row {
+		flex-direction: column;
+		align-items: stretch;
+	}
+	.rules-dialog .bonus-price {
+		text-align: start;
+	}
+}
+@media (max-height: 520px) {
+	.rules-dialog .rules-intro {
+		display: none;
+	}
+	.rules-dialog .rules-foot .disclaimer {
+		max-height: 3.1em;
+		overflow-y: auto;
+	}
+}
+@media (max-width: 640px) {
+	.rules-dialog .rules-foot {
+		padding-block: 8px 10px;
+	}
+	.rules-dialog .rules-foot .disclaimer {
+		max-height: 4.4em;
+		overflow-y: auto;
+	}
+	.rules-dialog .rules-intro {
+		margin: 8px 0;
+		font-size: 13px;
+	}
+}
+.settings-dialog .settings-note {
+	margin: 14px 4px 0;
+	color: #5c4c34;
+	font-size: 13px;
+}
+
+/* ---------- Dark storybook theme for rules & settings (matches the bet bar and Bonus Buy) ---------- */
+.modal-scrim .petal-modal {
+	--edge: #0f150c;
+	--gold-soft: #e7c98c;
+	--line-dim: #e7c98c2e;
+	--card: #ffffff0d;
+	--head: #f6e6bb;
+	--body: #ecdfc2;
+	--soft: #c9b993;
+	--accent-ink: #5f7d3f;
+	--switch-on: #6f8d48;
+	color: var(--body);
+	border-color: var(--edge);
+	background:
+		radial-gradient(ellipse 120% 70% at 50% -10%, #44633f 0%, #23361f 55%, #172416 100%);
+	box-shadow:
+		inset 0 0 0 2px #e7c98c66,
+		inset 0 0 0 5px var(--edge),
+		0 30px 90px #000c;
+}
+.modal-scrim .petal-modal.blight-dialog {
+	--edge: #12080a;
+	--accent-ink: #7c3a62;
+	--switch-on: #a8577e;
+	background:
+		radial-gradient(ellipse 120% 70% at 50% -10%, #5c3047 0%, #2d1519 55%, #1b0c0f 100%);
+}
+.modal-scrim .petal-modal :is(h2, h3) {
+	color: var(--head);
+}
+.modal-scrim .petal-modal .dialog-head h2 {
+	color: var(--head);
+	text-shadow: 0 2px 0 #0007;
+}
+.modal-scrim .petal-modal .dialog-head .eyebrow {
+	color: #e0b96a;
+}
+.modal-scrim .petal-modal p {
+	color: var(--body);
+}
+.modal-scrim .petal-modal .muted,
+.modal-scrim .petal-modal .settings-note {
+	color: var(--soft);
+}
+.modal-scrim .petal-modal .dialog-mark,
+.rules-dialog :is(.feature-icon, .control-icon),
+.settings-dialog .setting-icon {
+	border-color: var(--edge);
+	color: #fff4d6;
+	background: var(--accent-ink);
+	box-shadow: inset 0 0 0 2px #e7c98c99;
+}
+.modal-scrim .petal-modal .modal-close {
+	border-color: var(--edge);
+}
+.rules-dialog .bet-note {
+	border-color: #e7c98c55;
+	color: #f0d48f;
+	background: #e7c98c14;
+}
+.rules-dialog .rules-tabs {
+	border: 1.5px solid #e7c98c40;
+	background: #00000059;
+}
+.rules-dialog .tab-panels {
+	scrollbar-color: #c9a86a transparent;
+}
+.rules-dialog .special-card,
+.rules-dialog .bonus-row,
+.petal-modal.settings-dialog .setting {
+	border-color: var(--line-dim);
+	background: var(--card);
+}
+.petal-modal.settings-dialog .setting {
+	color: var(--head);
+}
+.modal-scrim .petal-modal :is(th, td) {
+	border-bottom-color: var(--line-dim);
+}
+.modal-scrim .petal-modal table thead th {
+	color: #e0b96a;
+}
+.modal-scrim .petal-modal tbody th {
+	color: var(--head);
+}
+.rules-dialog .paytable td strong,
+.rules-dialog .bonus-price strong {
+	color: var(--head);
+}
+.rules-dialog .paytable td small,
+.rules-dialog .bonus-price small {
+	color: var(--soft);
+}
+.rules-dialog .feature-block {
+	border-bottom-color: var(--line-dim);
+}
+.rules-dialog .rules-foot {
+	border-top-color: #e7c98c33;
+	background: #00000040;
+}
+.rules-dialog .rules-foot strong {
+	color: #e0b96a;
+}
+.rules-dialog .rules-foot .disclaimer {
+	color: var(--soft);
+}
+.petal-modal .symbol-frame {
+	border-color: var(--edge);
+	box-shadow:
+		inset 0 0 14px #7a5a2c33,
+		0 0 0 1.5px #e7c98c66;
+}
+.rules-dialog .payline-map svg {
+	border-color: var(--line-dim);
+	color: #f0d48f;
+	background: #00000033;
+	fill: #f0d48f;
+}
+.rules-dialog .world-tag {
+	background: #5f7d3f;
+}
+.rules-dialog .world-tag.dark {
+	background: #7c3a62;
+}
+
+/* Switches: knob centred on both axes in either state. */
+.petal-modal.settings-dialog .setting input[type='checkbox'] {
+	border-color: #e7c98c80;
+	background: #00000059;
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']::after {
+	box-sizing: border-box;
+	top: 50%;
+	left: 3px;
+	width: 22px;
+	height: 22px;
+	border-color: var(--edge);
+	background: #f6ecd2;
+	transform: translateY(-50%);
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']:checked {
+	border-color: var(--gold-soft);
+	background: var(--switch-on);
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']:checked::after {
+	background: #ecc679;
+	transform: translate(22px, -50%);
+}
+.petal-modal.settings-dialog .setting input[type='checkbox']:focus-visible {
+	outline: 3px solid #f5d799;
+	outline-offset: 3px;
+}
+
+/* Flat ink pass for dialogs. */
+.modal-scrim .petal-modal,
+.modal-scrim .petal-modal.blight-dialog,
+.bonus-panel,
+.bonus-panel.dark-bonus {
+	box-shadow: none !important;
+}
+.modal-scrim .petal-modal {
+	background: var(--paper-noise), #22341f;
+	border: 3px solid var(--edge);
+	outline: 1.5px solid #e7c98c66;
+	outline-offset: -8px;
+}
+.modal-scrim .petal-modal.blight-dialog {
+	background: var(--paper-noise), #2b161a;
+}
+.bonus-panel {
+	background: var(--paper-noise), #213726;
+}
+.bonus-panel.dark-bonus {
+	background: var(--paper-noise), #2c1d19;
+}
+.petal-modal .symbol-frame {
+	background: var(--paper-noise), #f6ecd2;
+}
+.blight-dialog .symbol-frame {
+	background: var(--paper-noise), #dccbb2;
+}
+.bonus-panel.dark-bonus :is(.bonus-select, .bonus-purchase) {
+	border: 2px solid #12080a;
+	color: #2b1a14;
+	background: #d9a274;
 }

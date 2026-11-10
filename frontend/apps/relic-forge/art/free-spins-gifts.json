@@ -9,7 +9,7 @@
   "variants": [
     {
       "world": "BLOOM",
-      "file": "static/art/bloom-free-spins-gift.png",
+      "file": "static/art/bloom-free-spins-gift.webp", "source": "art/sources/bloom-free-spins-gift.png",
       "palettePrompt": "Forest green and muted sage painted paper (#466443 / #71805a), parchment ivory (#e5d8b7) and aged warm gold ribbon (#dac28b). Delicate small botanical embossed details, gentle storybook magic.",
       "lidRegionPercent": [
         0,
@@ -26,7 +26,7 @@
     },
     {
       "world": "BLIGHT",
-      "file": "static/art/blight-free-spins-gift.png",
+      "file": "static/art/blight-free-spins-gift.webp", "source": "art/sources/blight-free-spins-gift.png",
       "palettePrompt": "Deep umber painted paper (#493d32), weathered bone parchment accents (#d0baa0) and muted copper satin ribbon (#ba7b5e). Subtle worn leaf embossing, dark woodland fairytale mood.",
       "lidRegionPercent": [
         0,

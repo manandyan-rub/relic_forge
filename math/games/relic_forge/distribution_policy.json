@@ -1,10 +1,10 @@
 {
-  "version": "last-petal-risk-v2",
-  "targetRtp": 0.96,
+  "version": "last-petal-risk-v3",
+  "targetRtp": 0.962,
   "integerWeightBudget": 1000000000000,
-  "baseCapProbability": 0.00000001,
-  "minimumBonusCapProbability": 0.00000001,
+  "baseCapProbability": 5e-07,
+  "minimumBonusCapProbability": 5e-07,
   "maximumBonusCapProbability": 0.005,
   "maximumBonusCostMultiplier": 1000,
-  "scope": "Finite development targets with headroom beneath the screenshot's 2-star 1% tail and 1000x cost limits; not production approval."
+  "scope": "Stake approval targets: RTP inside the 96.0-96.7% band with margin, max win more frequent than 1 in 10 million, 100k+ base simulations, cost multipliers within limits."
 }

@@ -28,7 +28,7 @@
 				<dd title={receipt.baseBet}>{receipt.baseBet}</dd>
 			</div>
 			<div>
-				<dt>{tr("Paid")}</dt>
+				<dt>{t("totalCost")}</dt>
 				<dd title={receipt.paid}>{receipt.paid}</dd>
 			</div>
 			<div>

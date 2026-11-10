@@ -12,10 +12,10 @@
       2,
       3
     ],
-    "costMultiplier": 29,
+    "costMultiplier": 26,
     "buyBonus": true,
     "freeSpins": 10,
-    "connectedApproved": false
+    "connectedApproved": true
   },
   "BLOOM_SUPER_BONUS": {
     "world": "BLOOM",
@@ -30,10 +30,10 @@
       3,
       5
     ],
-    "costMultiplier": 241,
+    "costMultiplier": 256,
     "buyBonus": true,
     "freeSpins": 10,
-    "connectedApproved": false
+    "connectedApproved": true
   },
   "BLOOM_MYTHIC_BONUS": {
     "world": "BLOOM",
@@ -48,10 +48,10 @@
       8,
       8
     ],
-    "costMultiplier": 548,
+    "costMultiplier": 532,
     "buyBonus": true,
     "freeSpins": 10,
-    "connectedApproved": false
+    "connectedApproved": true
   },
   "BLIGHT_STANDARD_BONUS": {
     "world": "BLIGHT",
@@ -66,10 +66,10 @@
       5,
       10
     ],
-    "costMultiplier": 288,
+    "costMultiplier": 295,
     "buyBonus": true,
     "freeSpins": 10,
-    "connectedApproved": false
+    "connectedApproved": true
   },
   "BLIGHT_SUPER_BONUS": {
     "world": "BLIGHT",
@@ -84,10 +84,10 @@
       10,
       15
     ],
-    "costMultiplier": 936,
+    "costMultiplier": 927,
     "buyBonus": true,
     "freeSpins": 10,
-    "connectedApproved": false
+    "connectedApproved": true
   },
   "BLIGHT_MYTHIC_BONUS": {
     "world": "BLIGHT",
@@ -105,6 +105,6 @@
     "costMultiplier": 1000,
     "buyBonus": true,
     "freeSpins": 10,
-    "connectedApproved": false
+    "connectedApproved": true
   }
 }

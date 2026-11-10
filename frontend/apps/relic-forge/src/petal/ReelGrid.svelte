@@ -17,6 +17,10 @@
 		line,
 		reduced,
 		turbo = false,
+		quick = false,
+		winCells = [],
+		onreelstop,
+		onanticipate,
 	}: {
 		board: SymbolId[][];
 		world: World;
@@ -27,7 +31,15 @@
 		line?: LineWin;
 		reduced: boolean;
 		turbo?: boolean;
+		quick?: boolean;
+		winCells?: string[];
+		onreelstop?: (reel: number, column: SymbolId[]) => void;
+		onanticipate?: () => void;
 	} = $props();
+	let anticipating = $state<number[]>([]);
+	let justLanded = $state(false);
+	let landedTimer: ReturnType<typeof setTimeout> | undefined;
+	let stopTimers: ReturnType<typeof setTimeout>[] = [];
 
 	let phase = $state<'idle' | 'rolling' | 'landing'>('idle');
 	let rollingBoard = $state<SymbolId[][]>(board.map((column) => [...column]));
@@ -49,6 +61,14 @@
 		starts.clear();
 		for (const animation of landings) animation.cancel();
 		landings.clear();
+		for (const timer of stopTimers) clearTimeout(timer);
+		stopTimers = [];
+		anticipating = [];
+	}
+
+	/** Slam-stop: finish every landing reel immediately (same authoritative board). */
+	export function hurry() {
+		for (const animation of landings) animation.finish();
 	}
 
 	// Begin at the resting symbols, then gently accelerate each reel into the loop.
@@ -60,8 +80,8 @@
 		if (animation && !reduced) {
 			animation.pause();
 			animation.currentTime = 0;
-			const begins = performance.now() + reel * (motionTurbo ? 4 : 28);
-			const accelerate = motionTurbo ? 45 : 190;
+			const begins = performance.now() + reel * (motionTurbo ? 4 : 36);
+			const accelerate = motionTurbo ? 45 : 140;
 			const advance = (now: number) => {
 				if (cancelled) return;
 				if (now < begins) {
@@ -97,6 +117,11 @@
 			return;
 		}
 		const currentGeneration = generation;
+		const fast = motionTurbo || quick;
+		// Two Scatters already showing: slow the remaining reels so the third can be anticipated.
+		const scattersBefore = next.map((_, reel) => next.slice(0, reel).flat().filter((s) => s === 'scatter').length);
+		const slowReels = fast ? [] : next.map((_, reel) => reel).filter((reel) => scattersBefore[reel] >= 2);
+		let extra = 0;
 		const rollingSpeeds = new SvelteMap<number, { rate: number; period: number }>();
 		// Freeze every strip before measuring, so rebuilding the landing rows
 		// cannot consume another rolling frame between capture and presentation.
@@ -105,7 +130,7 @@
 			const duration = animation?.effect?.getTiming().duration;
 			rollingSpeeds.set(reel, {
 				rate: animation?.playState === 'running' ? animation.playbackRate : 0,
-				period: typeof duration === 'number' && duration > 0 ? duration : motionTurbo ? 160 : 480,
+				period: typeof duration === 'number' && duration > 0 ? duration : motionTurbo ? 150 : 300,
 			});
 			animation?.pause();
 		}
@@ -117,7 +142,9 @@
 		for (let reel = 0; reel < next.length; reel++) {
 			const node = tracks.get(reel);
 			const column = rollingBoard[reel];
-			const height = node?.parentElement?.getBoundingClientRect().height ?? 0;
+			// Layout pixels, not on-screen pixels: the whole stage is CSS-scaled to fit the window,
+			// and the strip's transform is in unscaled layout pixels.
+			const height = node?.parentElement?.clientHeight ?? 0;
 			if (!node || !column?.length || !Number.isFinite(height) || height <= 0) {
 				rows.push([...next[reel]]);
 				offsets.push('translate3d(0,0,0)');
@@ -141,16 +168,22 @@
 			rows.push([...visible, ...next[reel]]);
 			offsets.push(tr(`translate3d(0,${-remainder}px,0)`));
 			destinations.push(-(column.length + 1) * cell);
-			const duration = motionTurbo ? 240 + reel * 16 : 730 + reel * 34;
+			if (slowReels.includes(reel)) extra += 720;
+			const duration = (fast ? 190 + reel * 26 : 360 + reel * 95) + extra;
 			const speed = rollingSpeeds.get(reel)!;
-			const distance = (column.length + 1) * cell - remainder;
+			const overshoot = fast ? cell * 0.02 : cell * 0.035;
+			const distance = (column.length + 1) * cell - remainder + overshoot;
 			const velocity = height * speed.rate / speed.period;
 			// Linear x controls make the first derivative exactly 3*y1.
 			// Match the incoming pixel velocity and reach zero velocity at the end.
-			const initialSlope = Math.max(0, Math.min(1, velocity * duration / (3 * distance)));
+			const initialSlope = Math.max(0, Math.min(1, velocity * duration * 0.84 / (3 * distance)));
 			times.push(duration);
 			easings.push(tr(`cubic-bezier(.3333333333,${initialSlope},.6666666667,1)`));
 		}
+		const overshoots = rows.map((_, reel) => {
+			const height = tracks.get(reel)?.parentElement?.clientHeight ?? 0;
+			return (height / 5) * (fast ? 0.02 : 0.035);
+		});
 		landingRows = rows;
 		landingOffsets = offsets;
 		landingTimes = times;
@@ -162,17 +195,43 @@
 		for (let reel = 0; reel < next.length; reel++) {
 			const node = tracks.get(reel);
 			if (!node || !times[reel]) continue;
+			// Arrive slightly past the stop, then settle back: the classic reel "thunk".
 			const animation = node.animate(
-				[{ transform: offsets[reel] }, { transform: tr(`translate3d(0,${destinations[reel]}px,0)`) }],
-				{ duration: times[reel], easing: landingEasings[reel], fill: 'forwards' },
+				[
+					{ transform: offsets[reel], easing: landingEasings[reel] },
+					{ transform: `translate3d(0,${destinations[reel] - overshoots[reel]}px,0)`, offset: 0.84, easing: 'cubic-bezier(.3,0,.4,1)' },
+					{ transform: `translate3d(0,${destinations[reel]}px,0)` },
+				],
+				{ duration: times[reel], fill: 'forwards' },
 			);
 			landings.add(animation);
+			const column = next[reel];
+			let stopped = false;
+			const stop = () => {
+				if (stopped || generation !== currentGeneration) return;
+				stopped = true;
+				anticipating = anticipating.filter((r) => r !== reel);
+				onreelstop?.(reel, column);
+				const following = slowReels.filter((r) => r > reel);
+				if (following.length && reel === Math.min(...following) - 1) {
+					anticipating = following;
+					onanticipate?.();
+				}
+			};
+			stopTimers.push(setTimeout(stop, times[reel] * 0.84));
+			void animation.finished.then(stop, () => undefined);
 			finished.push(
 				animation.finished.catch(() => undefined).finally(() => landings.delete(animation)),
 			);
 		}
 		await Promise.all(finished);
-		if (generation === currentGeneration) phase = 'idle';
+		if (generation === currentGeneration) {
+			phase = 'idle';
+			anticipating = [];
+			justLanded = true;
+			clearTimeout(landedTimer);
+			landedTimer = setTimeout(() => (justLanded = false), 650);
+		}
 	}
 
 	// The event presenter waits for the actual landing before highlighting wins.
@@ -198,13 +257,15 @@
 			wasSpinning = active;
 		});
 	});
-	onDestroy(cancelMotion);
+	onDestroy(() => { cancelMotion(); clearTimeout(landedTimer); });
 </script>
 
 <div
 	class="reel-cabinet"
  dir="ltr"
 	class:reels-moving={spinning || phase !== 'idle'}
+	class:just-landed={justLanded}
+	class:showing-wins={winCells.length > 0 && !spinning && phase === 'idle'}
 	aria-label={tr("Five reels, five rows, twenty paylines")}
 >
 	<div class="cabinet-top">
@@ -217,11 +278,14 @@
 				class="reel-column"
 				class:locked={sticky && wilds.some((w) => w.reel === r)}
 				class:reel-in-motion={phase !== 'idle' && !(sticky && wilds.some((w) => w.reel === r))}
+				class:anticipating={anticipating.includes(r)}
 				style:--reel={r}
 			>
 				{#each column as symbol, row (row)}<div
 						class="reel-cell"
 						class:winning={highlights.includes(`${r}:${row}`)}
+						class:win-any={winCells.includes(`${r}:${row}`)}
+						style:--row={row}
 					>
 						<ReelSymbol {symbol} {world} />
 					</div>{/each}
@@ -238,7 +302,7 @@
 							style:grid-template-rows={tr(`repeat(${symbols.length},minmax(0,1fr))`)}
 							style:transform={phase === 'landing' ? landingOffsets[r] : undefined}
 							style:--settle-duration={tr(`${landingTimes[r] ?? 730}ms`)}
-							style:--reel-cycle-duration={motionTurbo ? '160ms' : '480ms'}
+							style:--reel-cycle-duration={motionTurbo ? '150ms' : '300ms'}
 							use:reelMotion={r}
 						>
 							{#each symbols as symbol, row (row)}<div class="reel-spin-cell">

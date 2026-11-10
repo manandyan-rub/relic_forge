@@ -9,7 +9,7 @@ const worldLabelSources: Record<World, Record<SymbolId,string>> = {
  BLIGHT: { ...labels, keeper:'Withered Keeper',traveler:'Skull Gnome',guardian:'Corrupted Brute',flower:'Stone',lantern:'Chained Flail',key:'Belt Pouch',book:'Shears',mushroom:'Spiked Club',wild:'Withered Petal Wild',scatter:'Corrupted Flower Scatter' },
 };
 export const worldLabels = new Proxy(worldLabelSources, { get(target, world: World) { return Object.fromEntries(Object.entries(target[world]).map(([id,label])=>[id,tr(label)])); } });
-export const art = (world: World, role: string) => `./art/${world.toLowerCase()}-${role}.webp?v=2`;
+export const art = (world: World, role: string) => `./art/${world.toLowerCase()}-${role}.webp?v=3`;
 export const initialBoard = (): SymbolId[][] => Array.from({ length: 5 }, (_, r) => Array.from({ length: 5 }, (_, row) => symbolIds[(r * 3 + row) % 8]));
 export const betLevels = [.2,.5,1,2,5,10,20,50];
 

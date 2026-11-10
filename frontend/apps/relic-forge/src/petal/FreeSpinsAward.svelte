@@ -183,16 +183,23 @@
 		position: absolute;
 		inset: 0;
 		z-index: -1;
-		background:
-			linear-gradient(180deg, #09100bd9, #10170dd9 50%, #080d09f2),
-			var(--award-room) center / cover no-repeat;
+		background: var(--award-room) center / cover no-repeat;
 		pointer-events: none;
 	}
 
+	.scene::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: #0b120c80;
+	}
+
+	.award[data-world='BLIGHT'] .scene::after {
+		background: #160b0890;
+	}
+
 	.award[data-world='BLIGHT'] .scene {
-		background:
-			linear-gradient(180deg, #180b08de, #1d100bd9 50%, #100907f2),
-			var(--award-room) center / cover no-repeat;
+		background: var(--award-room) center / cover no-repeat;
 	}
 
 	.content {
@@ -277,17 +284,19 @@
 
 	.count {
 		display: block;
+		font-family: var(--display-font, serif);
 		color: var(--award-accent);
 		font-size: clamp(64px, 19cqw, 130px);
 		font-weight: 800;
-		font-variant-numeric: tabular-nums;
+		font-variant-numeric: tabular-nums lining-nums;
 		line-height: 0.88;
-		letter-spacing: -0.06em;
+		letter-spacing: -0.02em;
 		text-shadow: 0 5px 24px #0008;
 	}
 
 	h2 {
 		margin: 12px 0 0;
+		font-family: var(--display-font, serif);
 		font-size: clamp(14px, 4.2cqw, 28px);
 		font-weight: 700;
 		line-height: 1.2;

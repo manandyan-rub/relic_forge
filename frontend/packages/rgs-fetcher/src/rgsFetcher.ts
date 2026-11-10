@@ -35,6 +35,12 @@ type PathOperation<Path extends string, Method extends 'get' | 'post'> = Path ex
 	? Operation<Path, Method>
 	: never;
 
+/** rgs_url may arrive as a bare host or with a scheme; never double the scheme. */
+const rgsBase = (rgsUrl: string) => {
+	const value = (rgsUrl || '').trim().replace(/\/+$/, '');
+	return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+};
+
 export const rgsFetcher = {
 	post: async function post<
 		T extends keyof paths,
@@ -47,10 +53,9 @@ export const rgsFetcher = {
 		const response = await fetcher({
 			method: 'POST',
 			variables: options.variables,
-			endpoint: `https://${options.rgsUrl}${options.url}`,
+			endpoint: `${rgsBase(options.rgsUrl)}${options.url}`,
 		});
 
-		if (response.status !== 200) console.error('error', response);
 		const data = await response.json();
 		return data as TResponse;
 	},
@@ -60,10 +65,9 @@ export const rgsFetcher = {
 	>(options: { url: T; rgsUrl: string }): Promise<TResponse> {
 		const response = await fetcher({
 			method: 'GET',
-			endpoint: `https://${options.rgsUrl}${options.url}`,
+			endpoint: `${rgsBase(options.rgsUrl)}${options.url}`,
 		});
 
-		if (response.status !== 200) console.error('error', response);
 		const data = await response.json();
 		return data as TResponse;
 	},

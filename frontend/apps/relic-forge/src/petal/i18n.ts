@@ -1,4 +1,4 @@
-import { stateUrlDerived } from 'state-shared';
+import { stateUrlDerived, stateConfig } from 'state-shared';
 import en from './locales/en.json';
 import ar from './locales/ar.json';
 import da from './locales/da.json';
@@ -25,12 +25,41 @@ export function normalizeLanguage(value: string): Language {
  const code=value.toLowerCase().replace('_','-').split('-')[0];
  return code==='br'?'pt':Object.hasOwn(catalogs,code)?code as Language:'en';
 }
-export const language = () => normalizeLanguage(stateUrlDerived.lang());
+/** stake.us social casino: URL `social=true` or the authenticated jurisdiction flag. */
+export const social = () => stateUrlDerived.social() || Boolean(stateConfig.jurisdiction?.socialCasino);
+// English is the only supported language in social mode.
+export const language = () => social() ? 'en' as Language : normalizeLanguage(stateUrlDerived.lang());
+
+/** Stake's restricted-phrase table (approval guidelines › jurisdiction requirements), longest phrases first. */
+const SOCIAL_PHRASES: [string, string][] = [
+ ['place your bets','come and play'], ["be awarded to player's accounts","appear in player's accounts"], ['at the cost of','for'],
+ ['pays out','wins'], ['paid out','won'], ['pay out','win'], ['buy bonus','get bonus'], ['bonus buy','bonus'],
+ ['full purchase cost','total'], ['purchase cost','total'], ['purchase multiplier','multiplier'],
+ ['total bet','total play'], ['replay bet','play amount'], ['base bet','base play'], ['win feature','play feature'], ['cost of','can be played for'],
+ ['stake session','game session'], ['pay table','win table'], ['paytable','win table'], ['paylines','win lines'], ['payline','win line'],
+ ['betting','playing'], ['bet/s','play/s'], ['rebet','respin'], ['bets','plays'], ['bet','play'],
+ ['purchases','plays'], ['purchased','triggered'], ['purchasing','starting'], ['purchase','play'], ['bought','instantly triggered'], ['buy','play'],
+ ['wagered','played'], ['wagers','plays'], ['wager','play'], ['payer','winner'], ['pays','wins'], ['paid','won'], ['pay','win'],
+ ['cash','coins'], ['money','coins'], ['credit','balance'], ['currency','token'], ['deposit','get coins'], ['funds','balance'], ['fund','balance'],
+ ['gamble','play'], ['withdraw','redeem'], ['stake','play amount'],
+];
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+// Whole-word match; "bet/s" etc. are escaped. Longest phrases are listed first so they win.
+const socialPattern = new RegExp('\\b(' + SOCIAL_PHRASES.map(([from]) => escapeRegExp(from)).join('|') + ')\\b', 'gi');
+const socialMap = new Map(SOCIAL_PHRASES.map(([from,to])=>[from,to]));
+const matchCase = (sample: string, text: string) =>
+ sample === sample.toUpperCase() && /[A-Z]/.test(sample) ? text.toUpperCase()
+ : sample[0] === sample[0].toUpperCase() ? text[0].toUpperCase() + text.slice(1) : text;
+/** Rewrite restricted gambling terms for social mode (no-op otherwise). */
+export function socialize(text: string): string {
+ if (!social() || !text) return text;
+ return text.replace(socialPattern, match => matchCase(match, socialMap.get(match.toLowerCase()) ?? match));
+}
 const localeNames: Partial<Record<Language,string>> = { en:'en-US', pt:'pt-BR', zh:'zh-CN', ar:'ar-EG' };
 export const locale = () => localeNames[language()] ?? language();
 export const number = (value: number, options: Intl.NumberFormatOptions = {}) => new Intl.NumberFormat(locale(),options).format(value);
 export function t(key: TextKey, values: Record<string, string | number> = {}) {
- return catalogs[language()][key].replace(/\{(\w+)\}/g,(match,name)=>String(values[name]??match));
+ return socialize(catalogs[language()][key].replace(/\{(\w+)\}/g,(match,name)=>String(values[name]??match)));
 }
 
 const aliases: Partial<Record<TextKey,string[]>> = {
@@ -77,6 +106,9 @@ const names = new Set(['The Last Petal','THE LAST PETAL','THE LAST PETAL ·','Bl
 
 /** Translate authored UI copy; identifiers, asset paths and event data stay unchanged. */
 export function tr(source: string): string {
+ return socialize(translate(source));
+}
+function translate(source: string): string {
  if(language()==='en'||!source.trim())return source;
  const value=source.trim();
  if(/^(?:·\s*)?10 Free Spins$/i.test(value))return `${value.startsWith('·')?'· ':''}${number(10)} ${t('freeSpins')}`;
