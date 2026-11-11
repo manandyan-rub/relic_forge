@@ -7,7 +7,7 @@
  let visible = $state(false);
  let video = $state<HTMLVideoElement>();
  const name = $derived(world==='BLOOM'?'bloom-traveler':'blight-keeper');
- const loopRevision = $derived(world==='BLOOM' ? 'clean-specks-6' : 'blight-cloak-4');
+ const loopRevision = $derived(world==='BLOOM' ? 'lp-animate-1' : 'blight-cloak-4');
  const still = $derived(world==='BLOOM' ? art(world,'traveler-stage') : `./art/${name}-spin-poster.webp?v=${loopRevision}`);
  const phase = $derived(!reduced && feature ? 'spin' : null);
  $effect(()=>{
