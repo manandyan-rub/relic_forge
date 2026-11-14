@@ -1,11 +1,30 @@
 <script lang="ts">
  import { tr, t } from './i18n';
  import type { Wild, World } from './types';
- import UiIcon from './UiIcon.svelte';
+ import rigs from './wild-rigs.json';
  let { wild, world, sticky }: { wild: Wild; world: World; sticky: boolean } = $props();
+ // Each world has three character Wilds; the reel picks which one steps in.
+ const cast: Record<World, (keyof typeof rigs)[]> = {
+  BLOOM: ['bloom-grandma', 'bloom-gnome', 'bloom-traveler'],
+  BLIGHT: ['blight-skull', 'blight-brute', 'blight-keeper'],
+ };
+ const key = $derived(cast[world][wild.reel % 3]);
+ const rig = $derived(rigs[key]);
+ const src = (name: string) => `./art/wild/${key}-${name}.webp?v=2`;
 </script>
-<div class="expanded-wild" class:sticky style:grid-column={wild.reel+1} aria-label={`${t('reel')} ${wild.reel+1}, ${sticky?t('stickyWild'):t('petalWild')}, ${wild.multiplier}×`}>
- <svg viewBox="0 0 100 500" preserveAspectRatio="none" aria-hidden="true"><path d="M50 510 Q5 420 50 360 Q95 300 48 240 Q3 180 50 120 Q95 60 50 -10 M48 400 Q5 380 13 335 M50 280 Q90 260 87 220 M50 150 Q12 130 17 100" fill="none" stroke="currentColor" stroke-width="5"/>
- {#each [70,190,330,440] as y (y)}<path d="M50 {y} Q15 {y-50} 22 {y-55} Q60 {y-42} 50 {y} M50 {y} Q85 {y-50} 80 {y-55} Q40 {y-40} 50 {y}" fill="currentColor"/>{/each}</svg>
- <div class="wild-badge"><span><UiIcon name={world === 'BLOOM' ? 'flower' : 'sparkle'} size={22}/></span><strong>{wild.multiplier}×</strong><small>{sticky ? tr('STICKY WILD') : tr('PETAL WILD')}</small></div>
+<div class="expanded-wild char-wild" class:sticky data-character={key} style:grid-column={wild.reel+1} aria-label={`${t('reel')} ${wild.reel+1}, ${sticky?t('stickyWild'):t('petalWild')}, ${wild.multiplier}×`}>
+ <div class="char-wild-head">
+  <strong class="char-wild-mult">{wild.multiplier}×</strong>
+  <small>{sticky ? tr('STICKY WILD') : tr('PETAL WILD')}</small>
+ </div>
+ <div class="char-wild-stage">
+  <div class="char-rig" style:aspect-ratio={`${rig.width} / ${rig.height}`} style:--ratio={rig.width / rig.height} style:--delay={`${(wild.reel % 3) * -0.9}s`}>
+   <img class="char-base" src={src('base')} alt="" draggable="false" />
+   {#each rig.parts as part (part.name)}
+    <img class="char-part" data-anim={part.anim} src={src(part.name)} alt="" draggable="false"
+     style:left={`${part.left}%`} style:top={`${part.top}%`} style:width={`${part.width}%`} style:height={`${part.height}%`}
+     style:transform-origin={`${part.originX}% ${part.originY}%`} />
+   {/each}
+  </div>
+ </div>
 </div>

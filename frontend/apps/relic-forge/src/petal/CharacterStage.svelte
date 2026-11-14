@@ -1,14 +1,14 @@
 <script lang="ts">
  import { tr, t } from './i18n';
  import { fade } from 'svelte/transition';
- import { art } from './config';
  import type { World, Reaction } from './types';
  let { world, reaction, feature, reduced }: { world: World; reaction: Reaction; feature: boolean; reduced: boolean } = $props();
  let visible = $state(false);
  let video = $state<HTMLVideoElement>();
  const name = $derived(world==='BLOOM'?'bloom-traveler':'blight-keeper');
- const loopRevision = $derived(world==='BLOOM' ? 'lp-animate-1' : 'blight-cloak-4');
- const still = $derived(world==='BLOOM' ? art(world,'traveler-stage') : `./art/${name}-spin-poster.webp?v=${loopRevision}`);
+ const loopRevision = $derived(world==='BLOOM' ? 'lp-animate-2' : 'blight-cloak-4');
+ // The resting image is the loop's own first frame, so starting and stopping never swaps drawings.
+ const still = $derived(`./art/${name}-spin-poster.webp?v=${loopRevision}`);
  const phase = $derived(!reduced && feature ? 'spin' : null);
  $effect(()=>{
   const element=video, clipPhase=phase;visible=false;

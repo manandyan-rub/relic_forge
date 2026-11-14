@@ -42,8 +42,10 @@ export const formatCurrency = (amount: number, currency = 'USD') => {
 	const value = Number.isFinite(amount) ? amount : 0;
 	// Never round a real payout away: widen decimals until the RGS amount is shown exactly.
 	let decimals = meta.decimals;
-	while (decimals < MAX_DECIMALS && Math.abs(Number(value.toFixed(decimals)) - value) > 1e-9) decimals++;
-	const number = new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(Math.abs(value));
+	// Floating-point steps (0.1 + 0.2) must not widen the display; only genuine sub-unit amounts do.
+	const clean = Math.round(value * 10 ** MAX_DECIMALS) / 10 ** MAX_DECIMALS;
+	while (decimals < MAX_DECIMALS && Math.abs(Number(clean.toFixed(decimals)) - clean) > 1e-9) decimals++;
+	const number = new Intl.NumberFormat('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(Math.abs(clean));
 	const sign = value < 0 ? '-' : '';
 	return meta.after ? `${sign}${number} ${meta.symbol}` : `${sign}${meta.symbol}${number}`;
 };

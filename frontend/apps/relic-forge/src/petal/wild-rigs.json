@@ -1,0 +1,108 @@
+{
+ "bloom-grandma": {
+  "width": 446,
+  "height": 640,
+  "parts": [
+   {
+    "name": "hand",
+    "anim": "wave",
+    "left": 75.56053811659193,
+    "top": 25.3125,
+    "width": 24.43946188340807,
+    "height": 8.4375,
+    "originX": 9.847094801223255,
+    "originY": 59.506172839506156
+   }
+  ]
+ },
+ "bloom-gnome": {
+  "width": 550,
+  "height": 640,
+  "parts": [
+   {
+    "name": "pot",
+    "anim": "lift",
+    "left": 6.181818181818182,
+    "top": 12.03125,
+    "width": 22.727272727272727,
+    "height": 28.90625,
+    "originX": 76.90666666666665,
+    "originY": 88.68468468468468
+   },
+   {
+    "name": "tool",
+    "anim": "tap",
+    "left": 68.54545454545455,
+    "top": 28.281250000000004,
+    "width": 24.90909090909091,
+    "height": 23.28125,
+    "originX": 8.223844282238431,
+    "originY": 61.78970917225951
+   }
+  ]
+ },
+ "bloom-traveler": {
+  "width": 381,
+  "height": 640,
+  "parts": [
+   {
+    "name": "lantern",
+    "anim": "swing",
+    "left": 0.0,
+    "top": 7.34375,
+    "width": 14.435695538057743,
+    "height": 18.75,
+    "originX": 73.69696969696969,
+    "originY": 7.055555555555556
+   }
+  ]
+ },
+ "blight-skull": {
+  "width": 431,
+  "height": 640,
+  "parts": [
+   {
+    "name": "stone",
+    "anim": "bob",
+    "left": 9.51276102088167,
+    "top": 36.71875,
+    "width": 25.290023201856147,
+    "height": 14.0625,
+    "originX": 87.64525993883791,
+    "originY": 49.407407407407376
+   }
+  ]
+ },
+ "blight-brute": {
+  "width": 493,
+  "height": 640,
+  "parts": [
+   {
+    "name": "fist",
+    "anim": "pump",
+    "left": 0.0,
+    "top": 37.1875,
+    "width": 16.024340770791078,
+    "height": 13.125,
+    "originX": 89.11392405063292,
+    "originY": 49.36507936507933
+   }
+  ]
+ },
+ "blight-keeper": {
+  "width": 364,
+  "height": 640,
+  "parts": [
+   {
+    "name": "flail",
+    "anim": "pendulum",
+    "left": 12.087912087912088,
+    "top": 26.875,
+    "width": 17.857142857142858,
+    "height": 25.0,
+    "originX": 60.30769230769231,
+    "originY": 0.5000000000000071
+   }
+  ]
+ }
+}

@@ -1,6 +1,8 @@
 <script lang="ts">
  import { tr, t, locale } from './i18n';
 	import { art } from './config';
+	import { stateBet } from 'state-shared';
+	import { currencyStep } from '../game/currency';
 	import { onMount } from 'svelte';
 	import type { World } from './types';
 	import type { createWinCountAudio } from './winCountAudio';
@@ -85,7 +87,9 @@
 			const step = (now: number) => {
 				if (dismissed || !counting) return;
 				const progress = Math.min(1, Math.max(0, (now - start) / duration));
-				displayed = amount * (1 - (1 - progress) ** 3);
+				// Count in whole currency steps (cents, yen...); only the final value is exact.
+				const unit = currencyStep(stateBet.currency);
+				displayed = progress >= 1 ? amount : Math.min(amount, Math.floor(amount * (1 - (1 - progress) ** 3) / unit) * unit);
 				if (progress === 1) complete();
 				else frame = requestAnimationFrame(step);
 			};

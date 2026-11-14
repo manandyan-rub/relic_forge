@@ -2,15 +2,15 @@
   "clip": "bloom-traveler-spin",
   "source": "D:/Untitled-1.fla (Adobe Animate 24, Scene 1, Layer_1, frames 1-59: library bitmaps lp_0001-lp_0059)",
   "excluded": "Frame 60 (a broken-apart shape of the older frame_0060 bitmap) - it repeats the uncleaned art and frame 59 already closes the loop.",
-  "fps": 30,
-  "frames": 59,
-  "durationSeconds": 1.967,
+  "fps": 60,
+  "frames": 54,
+  "durationSeconds": 0.9,
   "dimensions": [
     560,
     748
   ],
   "encode": "libvpx-vp9 lossless, yuva420p with the alpha plane reattached unchanged, alpha_mode=1",
-  "poster": "lp_0001 as lossless WebP",
+  "poster": "lp_0001 as lossless WebP; also the resting image beside the reels",
   "sha256": {
     "lp_0001.png": "f08455b69aeba77254a3cb83e71b4e2ff7cf694ea29ecc63eb0826adf8d41354",
     "lp_0002.png": "83c2f774c00c355e920e47dcd32fa207a1157c9c2c1119878c90b47952bbf7c7",
@@ -71,5 +71,6 @@
     "lp_0057.png": "3cce3026b53a6878e7a099668333a10049c43e31fe78006d607a33b72ddc0ae0",
     "lp_0058.png": "dd7a84755343ad1c1e7dede8be74bb3386c7a9e79508679c5f8942c7a0f17b55",
     "lp_0059.png": "893f2921ae58feab1308717ed0717216108abd13c6244278b4d41f1424f7c539"
-  }
+  },
+  "sequence": "lp_0001-0004, lp_0006-0055 (lp_0005 and lp_0056-0059 repeat lp_0001/0004; dropping them makes the rest-pose hold 4 frames, matching the mid-swing hold)"
 }
